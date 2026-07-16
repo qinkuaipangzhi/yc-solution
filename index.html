@@ -133,14 +133,6 @@
             text-align: center;
             flex-shrink: 0;
         }
-        .nav-item .badge {
-            margin-left: auto;
-            background: rgba(255, 255, 255, 0.12);
-            padding: 1px 10px;
-            border-radius: 30px;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.5);
-        }
 
         .sidebar-footer {
             padding: 14px 20px;
@@ -270,6 +262,48 @@
             margin-top: 2px;
         }
 
+        /* ===== 加载失败/占位 ===== */
+        .tool-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2edf5;
+            padding: 40px;
+            text-align: center;
+            color: #7a8eaa;
+        }
+        .tool-error .icon-big {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .tool-error h3 {
+            color: #1f3a5f;
+            margin-bottom: 8px;
+        }
+        .tool-error p {
+            max-width: 400px;
+            line-height: 1.6;
+        }
+        .tool-error .btn-open {
+            margin-top: 16px;
+            padding: 10px 32px;
+            border-radius: 60px;
+            border: none;
+            background: #1a5d8c;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tool-error .btn-open:hover {
+            background: #0e466b;
+            transform: translateY(-1px);
+        }
+
         /* ===== 响应式 ===== */
         @media (max-width: 768px) {
             .sidebar {
@@ -305,8 +339,7 @@
             .sidebar-brand p,
             .nav-item .label,
             .nav-section-title,
-            .sidebar-footer,
-            .nav-item .badge {
+            .sidebar-footer {
                 display: none;
             }
             .nav-item {
@@ -369,26 +402,7 @@
             label: '首页',
             section: '导航',
             desc: '工具箱主页',
-            url: null,
             isWelcome: true
-        },
-        {
-            id: 'excel-merge',
-            icon: '📊',
-            label: 'Excel合并工具',
-            section: 'Excel工具',
-            desc: '合并多个Excel文件',
-            url: null, // 使用内联HTML
-            inline: 'excel-merge'
-        },
-        {
-            id: 'excel-split',
-            icon: '✂️',
-            label: 'Excel拆分工具',
-            section: 'Excel工具',
-            desc: '按工作表拆分Excel',
-            url: null,
-            inline: 'excel-split'
         },
         {
             id: 'address-geocode',
@@ -396,8 +410,7 @@
             label: '地址转经纬度',
             section: '地理编码',
             desc: '批量地址→经纬度',
-            url: null,
-            inline: 'address-geocode'
+            file: 'address-geocode.html'
         },
         {
             id: 'route-distance',
@@ -405,8 +418,7 @@
             label: '线路排程·距离计算',
             section: '路线规划',
             desc: '站点排序+距离+轨迹',
-            url: null,
-            inline: 'route-distance'
+            file: 'route-distance.html'
         },
         {
             id: 'od-distance',
@@ -414,8 +426,7 @@
             label: '起终点距离测算',
             section: '路线规划',
             desc: '批量OD距离计算',
-            url: null,
-            inline: 'od-distance'
+            file: 'od-distance.html'
         },
         {
             id: 'kmeans-cluster',
@@ -423,105 +434,9 @@
             label: 'K-Means聚类规划',
             section: '智能规划',
             desc: '容量约束聚类',
-            url: null,
-            inline: 'kmeans-cluster'
-        },
-        {
-            id: 'freight-rate',
-            icon: '💰',
-            label: '货运价格查询',
-            section: '货运工具',
-            desc: '零担/整车价格参考',
-            url: null,
-            inline: 'freight-rate'
-        },
-        {
-            id: 'novel-reader',
-            icon: '📖',
-            label: '小说阅读器',
-            section: '休闲工具',
-            desc: '搜索+章节阅读',
-            url: null,
-            inline: 'novel-reader'
+            file: 'kmeans-cluster.html'
         }
     ];
-
-    // ============================================================
-    //  各工具的 HTML 内容（内联）
-    // ============================================================
-    const INLINE_TOOLS = {
-        'excel-merge': `
-            <div style="padding:20px;text-align:center;color:#7a8eaa;">
-                <div style="font-size:48px;margin-bottom:12px;">📊</div>
-                <h3 style="color:#1f3a5f;margin-bottom:8px;">Excel合并工具</h3>
-                <p>上传多个Excel文件，合并所有工作表，保留唯一标题行</p>
-                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
-                <button onclick="window.open('excel-merge.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
-            </div>
-        `,
-        'excel-split': `
-            <div style="padding:20px;text-align:center;color:#7a8eaa;">
-                <div style="font-size:48px;margin-bottom:12px;">✂️</div>
-                <h3 style="color:#1f3a5f;margin-bottom:8px;">Excel拆分工具</h3>
-                <p>按工作表拆分Excel为多个独立文件</p>
-                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
-                <button onclick="window.open('excel-split.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
-            </div>
-        `,
-        'address-geocode': `
-            <div style="padding:20px;text-align:center;color:#7a8eaa;">
-                <div style="font-size:48px;margin-bottom:12px;">📍</div>
-                <h3 style="color:#1f3a5f;margin-bottom:8px;">地址转经纬度</h3>
-                <p>批量将地址转换为经纬度坐标，支持Excel导入导出</p>
-                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
-                <button onclick="window.open('address-geocode.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
-            </div>
-        `,
-        'route-distance': `
-            <div style="padding:20px;text-align:center;color:#7a8eaa;">
-                <div style="font-size:48px;margin-bottom:12px;">🗺️</div>
-                <h3 style="color:#1f3a5f;margin-bottom:8px;">线路排程 · 距离计算</h3>
-                <p>站点排序、相邻距离计算、轨迹地图渲染</p>
-                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
-                <button onclick="window.open('route-distance.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
-            </div>
-        `,
-        'od-distance': `
-            <div style="padding:20px;text-align:center;color:#7a8eaa;">
-                <div style="font-size:48px;margin-bottom:12px;">📏</div>
-                <h3 style="color:#1f3a5f;margin-bottom:8px;">起终点距离测算</h3>
-                <p>批量计算起终点之间的货运距离，支持限流和重试</p>
-                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
-                <button onclick="window.open('od-distance.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
-            </div>
-        `,
-        'kmeans-cluster': `
-            <div style="padding:20px;text-align:center;color:#7a8eaa;">
-                <div style="font-size:48px;margin-bottom:12px;">🧠</div>
-                <h3 style="color:#1f3a5f;margin-bottom:8px;">K-Means聚类规划</h3>
-                <p>基于经纬度聚类，容量约束优化，自动分配车型</p>
-                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
-                <button onclick="window.open('kmeans-cluster.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
-            </div>
-        `,
-        'freight-rate': `
-            <div style="padding:20px;text-align:center;color:#7a8eaa;">
-                <div style="font-size:48px;margin-bottom:12px;">💰</div>
-                <h3 style="color:#1f3a5f;margin-bottom:8px;">货运价格查询</h3>
-                <p>查询零担/整车货运价格参考</p>
-                <p style="font-size:13px;margin-top:12px;">💡 此功能暂未集成完整数据，敬请期待</p>
-            </div>
-        `,
-        'novel-reader': `
-            <div style="padding:20px;text-align:center;color:#7a8eaa;">
-                <div style="font-size:48px;margin-bottom:12px;">📖</div>
-                <h3 style="color:#1f3a5f;margin-bottom:8px;">小说阅读器</h3>
-                <p>按书名/类型搜索小说，点击章节阅读完整内容</p>
-                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
-                <button onclick="window.open('novel-reader.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
-            </div>
-        `
-    };
 
     // ============================================================
     //  渲染导航树
@@ -530,7 +445,6 @@
         const nav = document.getElementById('sidebarNav');
         const sections = {};
         
-        // 分组
         TOOLS.forEach(t => {
             if (!sections[t.section]) sections[t.section] = [];
             sections[t.section].push(t);
@@ -555,7 +469,7 @@
                     <a class="nav-item ${active}" href="#" data-id="${t.id}" onclick="loadTool('${t.id}')">
                         <span class="icon">${t.icon}</span>
                         <span class="label">${t.label}</span>
-                        ${t.desc ? `<span class="badge">${t.desc}</span>` : ''}
+                        ${t.desc ? `<span class="badge" style="margin-left:auto;background:rgba(255,255,255,0.12);padding:1px 10px;border-radius:30px;font-size:10px;color:rgba(255,255,255,0.5);">${t.desc}</span>` : ''}
                     </a>
                 `;
             });
@@ -583,7 +497,7 @@
     }
 
     // ============================================================
-    //  加载工具
+    //  加载工具（支持 iframe 内嵌）
     // ============================================================
     function loadTool(toolId) {
         const tool = TOOLS.find(t => t.id === toolId);
@@ -600,13 +514,13 @@
 
         const body = document.getElementById('contentBody');
 
-        // 欢迎页
+        // --- 欢迎页 ---
         if (tool.isWelcome) {
             body.innerHTML = `
                 <div class="welcome-content">
                     <div class="logo-big">📦</div>
                     <h2>物流工具箱</h2>
-                    <p>欢迎使用物流工具箱 · 集成了 Excel 处理、地理编码、路线规划、聚类分析等实用工具</p>
+                    <p>欢迎使用物流工具箱 · 集成了地理编码、路线规划、聚类分析等核心工具</p>
                     <div class="tool-grid">
                         ${TOOLS.filter(t => !t.isWelcome).map(t => `
                             <div class="card" onclick="loadTool('${t.id}')">
@@ -621,29 +535,75 @@
             return;
         }
 
-        // 检查是否有内联内容
-        const inlineContent = INLINE_TOOLS[toolId];
-        if (inlineContent) {
-            body.innerHTML = inlineContent;
+        // --- 检查是否有对应的 HTML 文件 ---
+        const filePath = tool.file;
+        if (!filePath) {
+            body.innerHTML = `
+                <div class="tool-error">
+                    <div class="icon-big">🔧</div>
+                    <h3>${tool.label}</h3>
+                    <p>此工具配置错误，未指定文件路径。</p>
+                </div>
+            `;
             return;
         }
 
-        // 如果有外部URL，使用iframe
-        if (tool.url) {
-            body.innerHTML = `
-                <div class="iframe-wrapper">
-                    <iframe src="${tool.url}" allow="geolocation"></iframe>
-                </div>
-            `;
-        } else {
-            body.innerHTML = `
-                <div style="padding:40px;text-align:center;color:#7a8eaa;">
-                    <div style="font-size:48px;margin-bottom:12px;">🔧</div>
-                    <h3 style="color:#1f3a5f;">${tool.label}</h3>
-                    <p>此工具正在开发中，敬请期待...</p>
-                </div>
-            `;
-        }
+        // --- 使用 iframe 加载工具页面 ---
+        body.innerHTML = `
+            <div class="iframe-wrapper" id="iframeWrapper">
+                <iframe id="toolIframe" src="${filePath}" allow="geolocation" onerror="handleIframeError()"></iframe>
+            </div>
+        `;
+
+        // 监听 iframe 加载失败（通过超时检测）
+        const iframe = document.getElementById('toolIframe');
+        let loadTimeout = setTimeout(() => {
+            // 检查 iframe 是否成功加载
+            try {
+                const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                if (!doc || doc.body.innerHTML.trim() === '' || doc.body.innerHTML.includes('404')) {
+                    showIframeError(filePath);
+                }
+            } catch (e) {
+                // 跨域无法访问，假设加载成功
+            }
+        }, 3000);
+
+        iframe.onload = function() {
+            clearTimeout(loadTimeout);
+            // 检查是否加载了错误页面
+            try {
+                const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                if (doc && doc.body && doc.body.innerHTML.includes('404') || doc.body.innerHTML.includes('找不到')) {
+                    showIframeError(filePath);
+                }
+            } catch (e) {
+                // 跨域无法访问，假设加载成功
+            }
+        };
+    }
+
+    // ============================================================
+    //  显示 iframe 加载错误
+    // ============================================================
+    function showIframeError(filePath) {
+        const body = document.getElementById('contentBody');
+        body.innerHTML = `
+            <div class="tool-error">
+                <div class="icon-big">📄</div>
+                <h3>工具页面加载失败</h3>
+                <p>无法加载文件：<strong>${filePath}</strong></p>
+                <p style="font-size:13px;margin-top:4px;">请确保该文件与主页放在同一目录下。</p>
+                <button class="btn-open" onclick="window.open('${filePath}','_blank')">在新窗口中打开</button>
+            </div>
+        `;
+    }
+
+    // ============================================================
+    //  全局错误处理
+    // ============================================================
+    function handleIframeError() {
+        // 由 onerror 触发，但可能不会捕获所有错误
     }
 
     // ============================================================
