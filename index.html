@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物流工具箱 - 主页导航</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+        }
+
+        body {
+            background: #f0f3f7;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* ===== 左侧导航 ===== */
+        .sidebar {
+            width: 280px;
+            min-width: 280px;
+            background: linear-gradient(180deg, #1e3a5f 0%, #0f2b44 100%);
+            color: #e0eefa;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 16px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+        }
+
+        .sidebar-brand {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+        .sidebar-brand h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #f9e0a8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-brand p {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 0 20px;
+        }
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .nav-section {
+            margin-bottom: 6px;
+        }
+        .nav-section-title {
+            padding: 8px 20px 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: rgba(255, 255, 255, 0.35);
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-section-title .arrow {
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+        .nav-section-title .arrow.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .nav-items {
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .nav-items.collapsed {
+            max-height: 0 !important;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 20px 9px 32px;
+            cursor: pointer;
+            transition: 0.15s;
+            border-left: 3px solid transparent;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+        }
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+        }
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.10);
+            border-left-color: #ffb347;
+            color: #fff;
+        }
+        .nav-item .icon {
+            font-size: 16px;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .nav-item .badge {
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.12);
+            padding: 1px 10px;
+            border-radius: 30px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .sidebar-footer {
+            padding: 14px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.25);
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        /* ===== 右侧内容区 ===== */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f0f3f7;
+            overflow: hidden;
+        }
+
+        .content-header {
+            background: white;
+            padding: 16px 28px;
+            border-bottom: 1px solid #e2edf5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            min-height: 64px;
+        }
+        .content-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f3a5f;
+        }
+        .content-header .breadcrumb {
+            font-size: 13px;
+            color: #7a8eaa;
+        }
+        .content-header .breadcrumb span {
+            color: #1a5d8c;
+        }
+
+        .content-body {
+            flex: 1;
+            overflow: hidden;
+            padding: 16px 20px 20px;
+            background: #f0f3f7;
+        }
+
+        .iframe-wrapper {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2edf5;
+        }
+        .iframe-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* ===== 欢迎页 ===== */
+        .welcome-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2edf5;
+        }
+        .welcome-content .logo-big {
+            font-size: 72px;
+            margin-bottom: 20px;
+        }
+        .welcome-content h2 {
+            font-size: 28px;
+            color: #1f3a5f;
+            margin-bottom: 10px;
+        }
+        .welcome-content p {
+            color: #7a8eaa;
+            font-size: 16px;
+            max-width: 480px;
+            line-height: 1.7;
+        }
+        .welcome-content .tool-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 28px;
+            justify-content: center;
+        }
+        .welcome-content .tool-grid .card {
+            background: #f8fafd;
+            border: 1px solid #e2edf5;
+            border-radius: 12px;
+            padding: 16px 24px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: left;
+            min-width: 180px;
+        }
+        .welcome-content .tool-grid .card:hover {
+            border-color: #1a5d8c;
+            background: #f1f6fc;
+            transform: translateY(-2px);
+        }
+        .welcome-content .tool-grid .card .icon {
+            font-size: 24px;
+        }
+        .welcome-content .tool-grid .card .name {
+            font-weight: 600;
+            color: #1f3a5f;
+            margin-top: 4px;
+        }
+        .welcome-content .tool-grid .card .desc {
+            font-size: 12px;
+            color: #7a8eaa;
+            margin-top: 2px;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+                min-width: 200px;
+            }
+            .nav-item {
+                font-size: 13px;
+                padding: 8px 16px 8px 24px;
+            }
+            .content-header {
+                padding: 12px 16px;
+            }
+            .content-body {
+                padding: 12px;
+            }
+            .welcome-content .tool-grid .card {
+                min-width: 140px;
+                padding: 12px 16px;
+            }
+        }
+        @media (max-width: 600px) {
+            .sidebar {
+                width: 56px;
+                min-width: 56px;
+            }
+            .sidebar-brand h1 {
+                font-size: 0;
+            }
+            .sidebar-brand h1 span {
+                font-size: 24px;
+            }
+            .sidebar-brand p,
+            .nav-item .label,
+            .nav-section-title,
+            .sidebar-footer,
+            .nav-item .badge {
+                display: none;
+            }
+            .nav-item {
+                padding: 12px 16px;
+                justify-content: center;
+            }
+            .nav-item .icon {
+                font-size: 20px;
+                width: auto;
+            }
+            .nav-section-title .arrow {
+                display: none;
+            }
+            .content-header h2 {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- ===== 左侧导航 ===== -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <h1><span>📦</span> 物流工具箱</h1>
+            <p>Logistics Toolbox</p>
+        </div>
+
+        <div class="sidebar-nav" id="sidebarNav">
+            <!-- 导航树由 JS 动态渲染 -->
+        </div>
+
+        <div class="sidebar-footer">
+            v2.0 · 本地工具集
+        </div>
+    </nav>
+
+    <!-- ===== 右侧内容区 ===== -->
+    <main class="main-content">
+        <header class="content-header">
+            <h2 id="pageTitle">📦 物流工具箱</h2>
+            <span class="breadcrumb" id="breadcrumb">首页 / <span id="breadcrumbCurrent">欢迎</span></span>
+        </header>
+
+        <div class="content-body" id="contentBody">
+            <!-- 默认显示欢迎页，由 JS 渲染 -->
+        </div>
+    </main>
+</div>
+
+<script>
+    // ============================================================
+    //  工具导航树配置
+    // ============================================================
+    const TOOLS = [
+        {
+            id: 'welcome',
+            icon: '🏠',
+            label: '首页',
+            section: '导航',
+            desc: '工具箱主页',
+            url: null,
+            isWelcome: true
+        },
+        {
+            id: 'excel-merge',
+            icon: '📊',
+            label: 'Excel合并工具',
+            section: 'Excel工具',
+            desc: '合并多个Excel文件',
+            url: null, // 使用内联HTML
+            inline: 'excel-merge'
+        },
+        {
+            id: 'excel-split',
+            icon: '✂️',
+            label: 'Excel拆分工具',
+            section: 'Excel工具',
+            desc: '按工作表拆分Excel',
+            url: null,
+            inline: 'excel-split'
+        },
+        {
+            id: 'address-geocode',
+            icon: '📍',
+            label: '地址转经纬度',
+            section: '地理编码',
+            desc: '批量地址→经纬度',
+            url: null,
+            inline: 'address-geocode'
+        },
+        {
+            id: 'route-distance',
+            icon: '🗺️',
+            label: '线路排程·距离计算',
+            section: '路线规划',
+            desc: '站点排序+距离+轨迹',
+            url: null,
+            inline: 'route-distance'
+        },
+        {
+            id: 'od-distance',
+            icon: '📏',
+            label: '起终点距离测算',
+            section: '路线规划',
+            desc: '批量OD距离计算',
+            url: null,
+            inline: 'od-distance'
+        },
+        {
+            id: 'kmeans-cluster',
+            icon: '🧠',
+            label: 'K-Means聚类规划',
+            section: '智能规划',
+            desc: '容量约束聚类',
+            url: null,
+            inline: 'kmeans-cluster'
+        },
+        {
+            id: 'freight-rate',
+            icon: '💰',
+            label: '货运价格查询',
+            section: '货运工具',
+            desc: '零担/整车价格参考',
+            url: null,
+            inline: 'freight-rate'
+        },
+        {
+            id: 'novel-reader',
+            icon: '📖',
+            label: '小说阅读器',
+            section: '休闲工具',
+            desc: '搜索+章节阅读',
+            url: null,
+            inline: 'novel-reader'
+        }
+    ];
+
+    // ============================================================
+    //  各工具的 HTML 内容（内联）
+    // ============================================================
+    const INLINE_TOOLS = {
+        'excel-merge': `
+            <div style="padding:20px;text-align:center;color:#7a8eaa;">
+                <div style="font-size:48px;margin-bottom:12px;">📊</div>
+                <h3 style="color:#1f3a5f;margin-bottom:8px;">Excel合并工具</h3>
+                <p>上传多个Excel文件，合并所有工作表，保留唯一标题行</p>
+                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
+                <button onclick="window.open('excel-merge.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
+            </div>
+        `,
+        'excel-split': `
+            <div style="padding:20px;text-align:center;color:#7a8eaa;">
+                <div style="font-size:48px;margin-bottom:12px;">✂️</div>
+                <h3 style="color:#1f3a5f;margin-bottom:8px;">Excel拆分工具</h3>
+                <p>按工作表拆分Excel为多个独立文件</p>
+                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
+                <button onclick="window.open('excel-split.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
+            </div>
+        `,
+        'address-geocode': `
+            <div style="padding:20px;text-align:center;color:#7a8eaa;">
+                <div style="font-size:48px;margin-bottom:12px;">📍</div>
+                <h3 style="color:#1f3a5f;margin-bottom:8px;">地址转经纬度</h3>
+                <p>批量将地址转换为经纬度坐标，支持Excel导入导出</p>
+                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
+                <button onclick="window.open('address-geocode.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
+            </div>
+        `,
+        'route-distance': `
+            <div style="padding:20px;text-align:center;color:#7a8eaa;">
+                <div style="font-size:48px;margin-bottom:12px;">🗺️</div>
+                <h3 style="color:#1f3a5f;margin-bottom:8px;">线路排程 · 距离计算</h3>
+                <p>站点排序、相邻距离计算、轨迹地图渲染</p>
+                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
+                <button onclick="window.open('route-distance.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
+            </div>
+        `,
+        'od-distance': `
+            <div style="padding:20px;text-align:center;color:#7a8eaa;">
+                <div style="font-size:48px;margin-bottom:12px;">📏</div>
+                <h3 style="color:#1f3a5f;margin-bottom:8px;">起终点距离测算</h3>
+                <p>批量计算起终点之间的货运距离，支持限流和重试</p>
+                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
+                <button onclick="window.open('od-distance.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
+            </div>
+        `,
+        'kmeans-cluster': `
+            <div style="padding:20px;text-align:center;color:#7a8eaa;">
+                <div style="font-size:48px;margin-bottom:12px;">🧠</div>
+                <h3 style="color:#1f3a5f;margin-bottom:8px;">K-Means聚类规划</h3>
+                <p>基于经纬度聚类，容量约束优化，自动分配车型</p>
+                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
+                <button onclick="window.open('kmeans-cluster.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
+            </div>
+        `,
+        'freight-rate': `
+            <div style="padding:20px;text-align:center;color:#7a8eaa;">
+                <div style="font-size:48px;margin-bottom:12px;">💰</div>
+                <h3 style="color:#1f3a5f;margin-bottom:8px;">货运价格查询</h3>
+                <p>查询零担/整车货运价格参考</p>
+                <p style="font-size:13px;margin-top:12px;">💡 此功能暂未集成完整数据，敬请期待</p>
+            </div>
+        `,
+        'novel-reader': `
+            <div style="padding:20px;text-align:center;color:#7a8eaa;">
+                <div style="font-size:48px;margin-bottom:12px;">📖</div>
+                <h3 style="color:#1f3a5f;margin-bottom:8px;">小说阅读器</h3>
+                <p>按书名/类型搜索小说，点击章节阅读完整内容</p>
+                <p style="font-size:13px;margin-top:12px;">⚠️ 此工具需要独立部署，点击下方按钮跳转</p>
+                <button onclick="window.open('novel-reader.html','_blank')" style="margin-top:16px;padding:10px 32px;border-radius:60px;border:none;background:#1a5d8c;color:white;font-weight:600;cursor:pointer;">打开工具 →</button>
+            </div>
+        `
+    };
+
+    // ============================================================
+    //  渲染导航树
+    // ============================================================
+    function renderNav() {
+        const nav = document.getElementById('sidebarNav');
+        const sections = {};
+        
+        // 分组
+        TOOLS.forEach(t => {
+            if (!sections[t.section]) sections[t.section] = [];
+            sections[t.section].push(t);
+        });
+
+        let html = '';
+        let isFirst = true;
+        for (const [section, items] of Object.entries(sections)) {
+            const collapsedClass = isFirst ? '' : 'collapsed';
+            const arrowClass = isFirst ? '' : 'collapsed';
+            html += `
+                <div class="nav-section">
+                    <div class="nav-section-title" onclick="toggleSection(this)">
+                        ${section}
+                        <span class="arrow ${arrowClass}">▼</span>
+                    </div>
+                    <div class="nav-items ${collapsedClass}" style="max-height:${isFirst ? '999px' : '0'}">
+            `;
+            items.forEach(t => {
+                const active = t.isWelcome ? 'active' : '';
+                html += `
+                    <a class="nav-item ${active}" href="#" data-id="${t.id}" onclick="loadTool('${t.id}')">
+                        <span class="icon">${t.icon}</span>
+                        <span class="label">${t.label}</span>
+                        ${t.desc ? `<span class="badge">${t.desc}</span>` : ''}
+                    </a>
+                `;
+            });
+            html += `</div></div>`;
+            isFirst = false;
+        }
+        nav.innerHTML = html;
+    }
+
+    // ============================================================
+    //  折叠/展开
+    // ============================================================
+    function toggleSection(el) {
+        const items = el.nextElementSibling;
+        const arrow = el.querySelector('.arrow');
+        if (items.classList.contains('collapsed')) {
+            items.classList.remove('collapsed');
+            items.style.maxHeight = items.scrollHeight + 'px';
+            arrow.classList.remove('collapsed');
+        } else {
+            items.classList.add('collapsed');
+            items.style.maxHeight = '0';
+            arrow.classList.add('collapsed');
+        }
+    }
+
+    // ============================================================
+    //  加载工具
+    // ============================================================
+    function loadTool(toolId) {
+        const tool = TOOLS.find(t => t.id === toolId);
+        if (!tool) return;
+
+        // 更新导航高亮
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        const navItem = document.querySelector(`.nav-item[data-id="${toolId}"]`);
+        if (navItem) navItem.classList.add('active');
+
+        // 更新标题和面包屑
+        document.getElementById('pageTitle').textContent = tool.icon + ' ' + tool.label;
+        document.getElementById('breadcrumbCurrent').textContent = tool.label;
+
+        const body = document.getElementById('contentBody');
+
+        // 欢迎页
+        if (tool.isWelcome) {
+            body.innerHTML = `
+                <div class="welcome-content">
+                    <div class="logo-big">📦</div>
+                    <h2>物流工具箱</h2>
+                    <p>欢迎使用物流工具箱 · 集成了 Excel 处理、地理编码、路线规划、聚类分析等实用工具</p>
+                    <div class="tool-grid">
+                        ${TOOLS.filter(t => !t.isWelcome).map(t => `
+                            <div class="card" onclick="loadTool('${t.id}')">
+                                <div class="icon">${t.icon}</div>
+                                <div class="name">${t.label}</div>
+                                <div class="desc">${t.desc || ''}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // 检查是否有内联内容
+        const inlineContent = INLINE_TOOLS[toolId];
+        if (inlineContent) {
+            body.innerHTML = inlineContent;
+            return;
+        }
+
+        // 如果有外部URL，使用iframe
+        if (tool.url) {
+            body.innerHTML = `
+                <div class="iframe-wrapper">
+                    <iframe src="${tool.url}" allow="geolocation"></iframe>
+                </div>
+            `;
+        } else {
+            body.innerHTML = `
+                <div style="padding:40px;text-align:center;color:#7a8eaa;">
+                    <div style="font-size:48px;margin-bottom:12px;">🔧</div>
+                    <h3 style="color:#1f3a5f;">${tool.label}</h3>
+                    <p>此工具正在开发中，敬请期待...</p>
+                </div>
+            `;
+        }
+    }
+
+    // ============================================================
+    //  初始化
+    // ============================================================
+    renderNav();
+    loadTool('welcome');
+
+    // 窗口大小变化时，重新计算折叠高度
+    window.addEventListener('resize', () => {
+        document.querySelectorAll('.nav-items').forEach(el => {
+            if (!el.classList.contains('collapsed')) {
+                el.style.maxHeight = el.scrollHeight + 'px';
+            }
+        });
+    });
+</script>
+</body>
+</html>

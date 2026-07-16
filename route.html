@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>K-Means车辆路径聚类规划 - 容量约束版</title>
+    <!-- SheetJS 核心库 -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #eef2f9 0%, #e0e8f2 100%);
+            min-height: 100vh;
+            padding: 2rem 1.5rem 140px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 2rem;
+            box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a5f, #0f2b44);
+            padding: 2rem 2.2rem;
+            color: white;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header p {
+            opacity: 0.85;
+            margin-top: 8px;
+            font-size: 0.95rem;
+        }
+        .badge-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .badge {
+            background: #2c6288;
+            padding: 4px 16px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        /* 上传区域 */
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.8rem;
+        }
+        @media (max-width: 900px) {
+            .upload-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .upload-card {
+            background: #f8fafd;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            border: 1px solid #e2edf5;
+        }
+        .upload-card h3 {
+            color: #1f3a5f;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .drop-zone {
+            background: #fafcff;
+            border: 2px dashed #bdd2ec;
+            border-radius: 1.2rem;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .drop-zone:hover {
+            border-color: #1f6392;
+            background: #f2f8ff;
+        }
+        .drop-zone .icon {
+            font-size: 2rem;
+        }
+        .drop-zone .title {
+            font-weight: 600;
+            color: #1f3a5f;
+            font-size: 0.9rem;
+        }
+        .drop-zone .sub {
+            font-size: 0.7rem;
+            color: #7a8eaa;
+            margin-top: 2px;
+        }
+        .file-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .file-tag {
+            background: white;
+            border-radius: 30px;
+            padding: 2px 12px;
+            font-size: 0.7rem;
+            border: 1px solid #d4e2f0;
+        }
+
+        .btn {
+            border: none;
+            padding: 10px 28px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: #1a5d8c;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: #0e466b;
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background: #2a7f6e;
+            color: white;
+        }
+        .btn-success:hover:not(:disabled) {
+            background: #1e6657;
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: #eef3fc;
+            color: #1f4970;
+            border: 1px solid #cde0ee;
+        }
+        .btn-outline:hover {
+            background: #e2ebf5;
+        }
+        .btn-danger {
+            background: #fce4e4;
+            color: #b13b3b;
+            border: 1px solid #f5c2c2;
+        }
+        .btn-danger:hover {
+            background: #fccfcf;
+        }
+        .btn-warning {
+            background: #ffecd6;
+            color: #a1552a;
+            border: 1px solid #ffd5aa;
+        }
+        .btn-copy {
+            background: #4a7a9c;
+            color: white;
+        }
+        .btn-copy:hover:not(:disabled) {
+            background: #1e5a7a;
+            transform: translateY(-1px);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 16px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 参数设置 */
+        .param-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f1f5f9;
+            border-radius: 1rem;
+            margin-top: 12px;
+        }
+        .param-row label {
+            font-weight: 500;
+            color: #1f3a5f;
+            font-size: 0.8rem;
+        }
+        .param-row input {
+            padding: 6px 12px;
+            border-radius: 40px;
+            border: 1px solid #cbdde9;
+            font-size: 0.8rem;
+            width: 80px;
+        }
+        .param-row input[type="number"] {
+            width: 70px;
+        }
+
+        /* 结果表格 */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 1.2rem;
+            border: 1px solid #e3ecf5;
+            background: white;
+            margin-top: 0.5rem;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .data-table {
+            width: 100%;
+            font-size: 0.78rem;
+            border-collapse: collapse;
+            min-width: 1300px;
+        }
+        .data-table th {
+            background: #f1f6fc;
+            color: #1f3a5f;
+            font-weight: 600;
+            padding: 10px 8px;
+            border-bottom: 2px solid #d3e0ee;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            white-space: nowrap;
+        }
+        .data-table td {
+            padding: 8px 8px;
+            border-bottom: 1px solid #e6edf5;
+            vertical-align: middle;
+        }
+        .data-table tr:hover td {
+            background: #f8fafd;
+        }
+        .data-table .cluster-header {
+            background: #e8f0f8;
+            font-weight: 700;
+        }
+        .data-table .cluster-header td {
+            border-bottom: 2px solid #b8cde0;
+        }
+        .data-table .over-capacity {
+            color: #b13b3b;
+            font-weight: 700;
+        }
+        .data-table .within-capacity {
+            color: #2a7f6e;
+            font-weight: 700;
+        }
+
+        .stat-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            padding: 12px 16px;
+            background: #f8fafd;
+            border-radius: 1rem;
+            margin-top: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .stat-item {
+            font-size: 0.8rem;
+            color: #2c3e66;
+        }
+        .stat-item strong {
+            color: #1a5d8c;
+        }
+
+        .log-card {
+            background: #0f1a24;
+            border-radius: 1.2rem;
+            padding: 1rem;
+            margin-top: 1.2rem;
+        }
+        .log-content {
+            color: #c9e1f0;
+            font-family: monospace;
+            font-size: 0.75rem;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .progress-wrap {
+            height: 4px;
+            background: #dce3ec;
+            border-radius: 4px;
+            margin: 12px 0 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #ffaa33;
+            transition: width 0.3s;
+        }
+
+        .template-download {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 0.7rem;
+            color: #7a8eaa;
+        }
+        .template-download a {
+            color: #1a5d8c;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .template-download a:hover {
+            text-decoration: underline;
+        }
+
+        /* 底部固定下载栏 */
+        .fixed-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #0f2f46, #1a405e);
+            border-top: 3px solid #ffb347;
+            padding: 14px 28px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            z-index: 999;
+            box-shadow: 0 -6px 24px rgba(0,0,0,0.25);
+        }
+        .fixed-bar .info {
+            color: #ffde9c;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .fixed-bar .dl-btn {
+            background: #ffc107;
+            border: none;
+            padding: 10px 32px;
+            border-radius: 60px;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+            color: #1e3a5f;
+        }
+        .fixed-bar .dl-btn:hover:not(:disabled) {
+            background: #ffda6a;
+            transform: scale(1.02);
+        }
+        .fixed-bar .dl-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .fixed-bar .reset-btn {
+            background: rgba(255,255,255,0.15);
+            color: #ffdfb3;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+        .fixed-bar .reset-btn:hover {
+            background: rgba(255,255,255,0.25);
+        }
+        .hidden-bar {
+            display: none !important;
+        }
+
+        .cluster-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 8px 0;
+        }
+        .cluster-badge {
+            background: #e8f0f8;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            border-left: 3px solid #1a5d8c;
+        }
+        .cluster-badge .vol {
+            font-weight: 700;
+            color: #1a5d8c;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #6c86a3;
+            padding: 1rem 0 0;
+        }
+
+        .status-valid {
+            color: #2a7f6e;
+            font-weight: 600;
+        }
+        .status-invalid {
+            color: #b13b3b;
+            font-weight: 600;
+        }
+
+        .copy-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2a7f6e;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-weight: 600;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            z-index: 2000;
+            animation: fadeInDown 0.3s ease;
+            display: none;
+        }
+        .copy-toast.show {
+            display: block;
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+    </style>
+</head>
+<body>
+<div id="copyToast" class="copy-toast">✅ 已复制到剪贴板！</div>
+
+<div class="container">
+    <div class="header">
+        <h1>📦 K-Means 车辆路径聚类规划 · 容量约束</h1>
+        <p>基于经纬度聚类站点，强制每个聚类的总货量不超过车辆容量，自动过滤空聚类</p>
+        <div class="badge-group">
+            <span class="badge">📁 站点 + 车型数据</span>
+            <span class="badge">🧠 K-Means 聚类</span>
+            <span class="badge">📐 严格容量约束</span>
+            <span class="badge">📋 结果可复制/导出</span>
+        </div>
+    </div>
+
+    <div class="content">
+        <!-- 上传区域 -->
+        <div class="upload-section">
+            <!-- 站点数据 -->
+            <div class="upload-card">
+                <h3>📍 站点数据</h3>
+                <div class="drop-zone" id="siteDropZone">
+                    <div class="icon">📂</div>
+                    <div class="title">拖拽或点击上传站点Excel</div>
+                    <div class="sub">需包含：站点代码, 站点名称, 省, 市, 站点地址, 经度, 纬度, 单次提货量(m³)</div>
+                    <input type="file" id="siteFileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+                    <div class="file-tags" id="siteFileTags"></div>
+                </div>
+                <div class="template-download">
+                    <a id="downloadSiteTemplate">📋 下载站点模板</a>
+                </div>
+            </div>
+
+            <!-- 车型参数 -->
+            <div class="upload-card">
+                <h3>🚛 车型参数</h3>
+                <div class="drop-zone" id="vehicleDropZone">
+                    <div class="icon">📂</div>
+                    <div class="title">拖拽或点击上传车型Excel</div>
+                    <div class="sub">需包含：车型代码, 车厢内径长(m), 车厢内径宽(m), 车厢内径高(m)</div>
+                    <input type="file" id="vehicleFileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+                    <div class="file-tags" id="vehicleFileTags"></div>
+                </div>
+                <div class="template-download">
+                    <a id="downloadVehicleTemplate">📋 下载车型模板</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 参数设置 -->
+        <div class="param-row">
+            <label>最大迭代次数：</label>
+            <input type="number" id="maxIterations" value="200" min="10" max="500">
+            <label>收敛阈值：</label>
+            <input type="number" id="convergenceThreshold" value="0.001" step="0.0001" min="0.0001">
+            <button class="btn btn-success" id="runClusterBtn" disabled>🧠 运行聚类优化</button>
+            <button class="btn btn-outline" id="clearResultBtn">🗑️ 清空结果</button>
+        </div>
+
+        <!-- 结果摘要 -->
+        <div id="resultSummary" style="display:none; margin-top:12px;">
+            <div class="cluster-summary" id="clusterSummary"></div>
+        </div>
+
+        <!-- 数据表格 -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:16px;">
+            <span style="font-weight:600; color:#1f3a5f;">📊 聚类结果（已过滤空聚类）</span>
+            <span style="font-size:0.75rem; color:#7a8eaa;" id="rowCount">共 0 条</span>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>聚类ID</th>
+                        <th>车型代码</th>
+                        <th>站点代码</th>
+                        <th>站点名称</th>
+                        <th>省</th>
+                        <th>市</th>
+                        <th>站点地址</th>
+                        <th>经度</th>
+                        <th>纬度</th>
+                        <th>提货量(m³)</th>
+                        <th>聚类总货量(m³)</th>
+                        <th>车辆容量(m³)</th>
+                        <th>容量利用率</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="14" style="text-align:center; color:#a18163; padding:30px;">请上传站点数据和车型参数，然后点击「运行聚类优化」</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 进度条 -->
+        <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+
+        <!-- 统计栏 -->
+        <div class="stat-bar">
+            <span class="stat-item">📌 总站点：<strong id="totalSites">0</strong></span>
+            <span class="stat-item">📦 有效聚类数：<strong id="totalClusters">0</strong></span>
+            <span class="stat-item">📐 总货量：<strong id="totalVolume">0</strong> m³</span>
+            <span class="stat-item" id="progressText">⏳ 就绪</span>
+        </div>
+
+        <!-- 操作栏 -->
+        <div class="action-bar">
+            <button class="btn btn-copy" id="copyResultBtn" disabled>📋 复制全部结果</button>
+            <button class="btn btn-outline" id="exportResultBtn" disabled>📥 导出Excel</button>
+        </div>
+
+        <!-- 日志 -->
+        <div class="log-card">
+            <div class="log-content" id="logArea">⚙️ 等待操作… 请上传站点数据和车型参数</div>
+        </div>
+
+        <footer>🔒 所有处理在浏览器本地完成 | K-Means聚类 + 严格容量约束</footer>
+    </div>
+</div>
+
+<!-- 底部固定下载栏 -->
+<div id="fixedBar" class="fixed-bar hidden-bar">
+    <span class="info" id="dlStatus">📦 聚类完成，可导出结果</span>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+        <button class="dl-btn" id="downloadBtn">⬇️ 下载聚类结果 (Excel)</button>
+        <button class="reset-btn" id="resetBottomBtn">🔄 重新计算</button>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    //  全局状态
+    // ============================================================
+    let siteData = [];
+    let vehicleData = [];
+    let clusterResults = [];
+    let resultBlob = null;
+
+    // DOM
+    const siteDropZone = document.getElementById('siteDropZone');
+    const vehicleDropZone = document.getElementById('vehicleDropZone');
+    const siteFileInput = document.getElementById('siteFileInput');
+    const vehicleFileInput = document.getElementById('vehicleFileInput');
+    const siteFileTags = document.getElementById('siteFileTags');
+    const vehicleFileTags = document.getElementById('vehicleFileTags');
+    const runClusterBtn = document.getElementById('runClusterBtn');
+    const clearResultBtn = document.getElementById('clearResultBtn');
+    const copyResultBtn = document.getElementById('copyResultBtn');
+    const exportResultBtn = document.getElementById('exportResultBtn');
+    const tableBody = document.getElementById('tableBody');
+    const rowCount = document.getElementById('rowCount');
+    const totalSites = document.getElementById('totalSites');
+    const totalClusters = document.getElementById('totalClusters');
+    const totalVolume = document.getElementById('totalVolume');
+    const progressText = document.getElementById('progressText');
+    const progressFill = document.getElementById('progressFill');
+    const logArea = document.getElementById('logArea');
+    const fixedBar = document.getElementById('fixedBar');
+    const dlStatus = document.getElementById('dlStatus');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resetBottomBtn = document.getElementById('resetBottomBtn');
+    const resultSummary = document.getElementById('resultSummary');
+    const clusterSummary = document.getElementById('clusterSummary');
+    const maxIterationsInput = document.getElementById('maxIterations');
+    const convergenceThresholdInput = document.getElementById('convergenceThreshold');
+    const downloadSiteTemplate = document.getElementById('downloadSiteTemplate');
+    const downloadVehicleTemplate = document.getElementById('downloadVehicleTemplate');
+    const copyToast = document.getElementById('copyToast');
+
+    let siteFileLoaded = false;
+    let vehicleFileLoaded = false;
+
+    // ========== 日志 ==========
+    function addLog(msg, isError = false) {
+        const time = new Date().toLocaleTimeString();
+        const prefix = isError ? '❌' : '📌';
+        const color = isError ? '#ffb4a2' : '#b9e0ff';
+        logArea.innerHTML += `<span style="color:${color}">${prefix} [${time}] ${msg}</span><br>`;
+        logArea.scrollTop = logArea.scrollHeight;
+        if (logArea.innerHTML.split('<br>').length > 120) {
+            const lines = logArea.innerHTML.split('<br>');
+            logArea.innerHTML = lines.slice(-80).join('<br>');
+        }
+    }
+
+    // ========== 解析Excel ==========
+    function parseExcel(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+                    resolve(rows);
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            reader.onerror = () => reject(new Error(`读取失败 ${file.name}`));
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    // ========== 加载站点数据 ==========
+    async function loadSiteData(file) {
+        try {
+            const rows = await parseExcel(file);
+            const headers = Object.keys(rows[0] || {});
+            const codeCol = headers.find(h => /站点代码|code/i.test(h));
+            const nameCol = headers.find(h => /站点名称|名称|name/i.test(h));
+            const provinceCol = headers.find(h => /省|省份|province/i.test(h));
+            const cityCol = headers.find(h => /市|城市|city/i.test(h));
+            const addrCol = headers.find(h => /站点地址|地址|addr/i.test(h));
+            const lngCol = headers.find(h => /经度|lng|longitude/i.test(h));
+            const latCol = headers.find(h => /纬度|lat|latitude/i.test(h));
+            const volCol = headers.find(h => /提货量|货量|volume|m³/i.test(h));
+
+            if (!codeCol || !nameCol || !provinceCol || !cityCol || !lngCol || !latCol || !volCol) {
+                addLog('站点数据缺少必要列！需要: 站点代码, 站点名称, 省, 市, 站点地址, 经度, 纬度, 单次提货量(m³)', true);
+                return false;
+            }
+
+            siteData = [];
+            for (let row of rows) {
+                let code = row[codeCol]?.toString().trim();
+                let name = row[nameCol]?.toString().trim();
+                let province = row[provinceCol]?.toString().trim() || '';
+                let city = row[cityCol]?.toString().trim() || '';
+                let addr = row[addrCol]?.toString().trim() || '';
+                let lng = parseFloat(row[lngCol]);
+                let lat = parseFloat(row[latCol]);
+                let volume = parseFloat(row[volCol]) || 0;
+                if (code && name && !isNaN(lng) && !isNaN(lat) && volume > 0) {
+                    siteData.push({ code, name, province, city, addr, lng, lat, volume });
+                }
+            }
+
+            if (siteData.length === 0) {
+                addLog('未解析到有效站点数据', true);
+                return false;
+            }
+
+            addLog(`✅ 加载 ${siteData.length} 个站点数据`, false);
+            return true;
+        } catch (err) {
+            addLog(`解析站点数据失败: ${err.message}`, true);
+            return false;
+        }
+    }
+
+    // ========== 加载车型数据 ==========
+    async function loadVehicleData(file) {
+        try {
+            const rows = await parseExcel(file);
+            const headers = Object.keys(rows[0] || {});
+            const codeCol = headers.find(h => /车型代码|车型|code/i.test(h));
+            const lenCol = headers.find(h => /车厢内径长|长|length/i.test(h));
+            const widCol = headers.find(h => /车厢内径宽|宽|width/i.test(h));
+            const heiCol = headers.find(h => /车厢内径高|高|height/i.test(h));
+
+            if (!codeCol || !lenCol || !widCol || !heiCol) {
+                addLog('车型数据缺少必要列！需要: 车型代码, 车厢内径长(m), 车厢内径宽(m), 车厢内径高(m)', true);
+                return false;
+            }
+
+            vehicleData = [];
+            for (let row of rows) {
+                let code = row[codeCol]?.toString().trim();
+                let length = parseFloat(row[lenCol]);
+                let width = parseFloat(row[widCol]);
+                let height = parseFloat(row[heiCol]);
+                if (code && !isNaN(length) && !isNaN(width) && !isNaN(height) && length > 0 && width > 0 && height > 0) {
+                    vehicleData.push({
+                        code,
+                        length,
+                        width,
+                        height,
+                        capacity: length * width * height
+                    });
+                }
+            }
+
+            if (vehicleData.length === 0) {
+                addLog('未解析到有效车型数据', true);
+                return false;
+            }
+
+            vehicleData.sort((a, b) => a.capacity - b.capacity);
+            addLog(`✅ 加载 ${vehicleData.length} 种车型`, false);
+            return true;
+        } catch (err) {
+            addLog(`解析车型数据失败: ${err.message}`, true);
+            return false;
+        }
+    }
+
+    // ========== 文件上传处理 ==========
+    async function handleSiteFile(file) {
+        if (!file) return;
+        const ok = await loadSiteData(file);
+        if (ok) {
+            siteFileLoaded = true;
+            siteFileTags.innerHTML = `<span class="file-tag">📄 ${file.name} (${siteData.length}条)</span>`;
+            updateUI();
+        }
+    }
+
+    async function handleVehicleFile(file) {
+        if (!file) return;
+        const ok = await loadVehicleData(file);
+        if (ok) {
+            vehicleFileLoaded = true;
+            vehicleFileTags.innerHTML = `<span class="file-tag">📄 ${file.name} (${vehicleData.length}种)</span>`;
+            updateUI();
+        }
+    }
+
+    function updateUI() {
+        runClusterBtn.disabled = !(siteFileLoaded && vehicleFileLoaded && siteData.length > 0 && vehicleData.length > 0);
+    }
+
+    // ========== 工具函数 ==========
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    function getClusterCenter(sites) {
+        if (sites.length === 0) return { lng: 0, lat: 0 };
+        let sumLng = 0, sumLat = 0;
+        for (let s of sites) {
+            sumLng += s.lng;
+            sumLat += s.lat;
+        }
+        return { lng: sumLng / sites.length, lat: sumLat / sites.length };
+    }
+
+    // ========== 获取匹配车型 ==========
+    function getMatchingVehicle(volume, vehicles) {
+        let best = null;
+        for (let v of vehicles) {
+            if (v.capacity >= volume) {
+                if (!best || v.capacity < best.capacity) {
+                    best = v;
+                }
+            }
+        }
+        if (!best && vehicles.length > 0) {
+            best = vehicles.reduce((a, b) => a.capacity > b.capacity ? a : b);
+        }
+        return best;
+    }
+
+    // ========== K-Means 聚类（严格容量约束） ==========
+    function kMeansClusterWithCapacity(sites, vehicles, maxIter, threshold) {
+        if (sites.length === 0) return [];
+        if (vehicles.length === 0) return [];
+
+        const capacities = vehicles.map(v => v.capacity);
+        const maxCap = Math.max(...capacities);
+        const totalVolume = sites.reduce((sum, s) => sum + s.volume, 0);
+
+        let k = Math.max(1, Math.ceil(totalVolume / maxCap));
+        k = Math.min(k, sites.length);
+
+        addLog(`📊 初始聚类数: ${k} (总货量 ${totalVolume.toFixed(1)}m³ / 最大车型 ${maxCap.toFixed(1)}m³)`, false);
+
+        let centers = initializeCenters(sites, k);
+        let clusters = [];
+
+        for (let iter = 0; iter < maxIter; iter++) {
+            const assignments = sites.map((site) => {
+                let minDist = Infinity;
+                let minIdx = 0;
+                for (let c = 0; c < centers.length; c++) {
+                    const dist = haversineDistance(site.lat, site.lng, centers[c].lat, centers[c].lng);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        minIdx = c;
+                    }
+                }
+                return { site, clusterIdx: minIdx, dist: minDist };
+            });
+
+            const newClusters = centers.map((c, idx) => ({
+                clusterId: idx + 1,
+                sites: [],
+                centerLng: c.lng,
+                centerLat: c.lat,
+                totalVolume: 0,
+                vehicle: null,
+                capacity: 0,
+                utilization: 0,
+                isValid: true
+            }));
+
+            for (let a of assignments) {
+                newClusters[a.clusterIdx].sites.push(a.site);
+            }
+
+            let needResplit = false;
+            for (let c of newClusters) {
+                c.totalVolume = c.sites.reduce((sum, s) => sum + s.volume, 0);
+                const matched = getMatchingVehicle(c.totalVolume, vehicles);
+                if (matched) {
+                    c.vehicle = matched;
+                    c.capacity = matched.capacity;
+                    c.utilization = (c.totalVolume / c.capacity) * 100;
+                    c.isValid = c.totalVolume <= c.capacity;
+                } else {
+                    c.vehicle = null;
+                    c.capacity = 0;
+                    c.utilization = 0;
+                    c.isValid = false;
+                }
+                if (!c.isValid) needResplit = true;
+            }
+
+            if (!needResplit) {
+                const newCenters = newClusters.map(c => {
+                    if (c.sites.length === 0) return { lng: 0, lat: 0 };
+                    const center = getClusterCenter(c.sites);
+                    return { lng: center.lng, lat: center.lat };
+                });
+
+                let maxShift = 0;
+                for (let i = 0; i < centers.length; i++) {
+                    if (newCenters[i]) {
+                        const shift = haversineDistance(
+                            centers[i].lat, centers[i].lng,
+                            newCenters[i].lat, newCenters[i].lng
+                        );
+                        maxShift = Math.max(maxShift, shift);
+                    }
+                }
+
+                centers = newCenters;
+                clusters = newClusters;
+
+                if (maxShift < threshold) {
+                    addLog(`✅ 收敛于第 ${iter + 1} 次迭代`, false);
+                    break;
+                }
+                continue;
+            }
+
+            const finalClusters = [];
+            for (let c of newClusters) {
+                if (c.isValid) {
+                    finalClusters.push(c);
+                } else {
+                    const splitResult = splitOverCapacityCluster(c, vehicles);
+                    finalClusters.push(...splitResult);
+                }
+            }
+
+            const newCenters = finalClusters.map(c => {
+                if (c.sites.length === 0) return { lng: 0, lat: 0 };
+                const center = getClusterCenter(c.sites);
+                return { lng: center.lng, lat: center.lat };
+            });
+
+            centers = newCenters;
+            clusters = finalClusters;
+
+            let allValid = true;
+            for (let c of clusters) {
+                c.totalVolume = c.sites.reduce((sum, s) => sum + s.volume, 0);
+                const matched = getMatchingVehicle(c.totalVolume, vehicles);
+                if (matched) {
+                    c.vehicle = matched;
+                    c.capacity = matched.capacity;
+                    c.utilization = (c.totalVolume / c.capacity) * 100;
+                    c.isValid = c.totalVolume <= c.capacity;
+                } else {
+                    c.isValid = false;
+                }
+                if (!c.isValid) allValid = false;
+            }
+
+            if (allValid) {
+                addLog(`✅ 所有聚类满足容量约束，第 ${iter + 1} 次迭代`, false);
+                break;
+            }
+
+            if (centers.length >= sites.length) break;
+        }
+
+        // 最终处理
+        const validClusters = [];
+        for (let c of clusters) {
+            if (c.sites.length === 0) continue;
+            c.totalVolume = c.sites.reduce((sum, s) => sum + s.volume, 0);
+            const matched = getMatchingVehicle(c.totalVolume, vehicles);
+            if (matched) {
+                c.vehicle = matched;
+                c.capacity = matched.capacity;
+                c.utilization = (c.totalVolume / c.capacity) * 100;
+                c.isValid = c.totalVolume <= c.capacity;
+            } else {
+                c.isValid = false;
+                c.vehicle = null;
+                c.capacity = 0;
+                c.utilization = 0;
+            }
+            validClusters.push(c);
+        }
+
+        validClusters.forEach((c, idx) => c.clusterId = idx + 1);
+
+        return validClusters;
+    }
+
+    // ========== 拆分超载聚类 ==========
+    function splitOverCapacityCluster(cluster, vehicles) {
+        const maxCap = Math.max(...vehicles.map(v => v.capacity));
+        const sites = cluster.sites;
+        const result = [];
+
+        const sortedSites = [...sites].sort((a, b) => b.volume - a.volume);
+
+        let currentCluster = {
+            clusterId: cluster.clusterId,
+            sites: [],
+            totalVolume: 0,
+            vehicle: null,
+            capacity: 0,
+            utilization: 0,
+            isValid: false
+        };
+
+        let currentVolume = 0;
+
+        for (let site of sortedSites) {
+            if (site.volume > maxCap) {
+                if (currentCluster.sites.length > 0) {
+                    result.push({ ...currentCluster });
+                    currentCluster = {
+                        clusterId: cluster.clusterId + result.length,
+                        sites: [],
+                        totalVolume: 0,
+                        vehicle: null,
+                        capacity: 0,
+                        utilization: 0,
+                        isValid: false
+                    };
+                    currentVolume = 0;
+                }
+                const singleCluster = {
+                    clusterId: cluster.clusterId + result.length + 1,
+                    sites: [site],
+                    totalVolume: site.volume,
+                    vehicle: null,
+                    capacity: 0,
+                    utilization: 0,
+                    isValid: false
+                };
+                const matched = getMatchingVehicle(site.volume, vehicles);
+                if (matched) {
+                    singleCluster.vehicle = matched;
+                    singleCluster.capacity = matched.capacity;
+                    singleCluster.utilization = (site.volume / matched.capacity) * 100;
+                    singleCluster.isValid = site.volume <= matched.capacity;
+                }
+                result.push(singleCluster);
+                continue;
+            }
+
+            if (currentVolume + site.volume <= maxCap) {
+                currentCluster.sites.push(site);
+                currentVolume += site.volume;
+            } else {
+                if (currentCluster.sites.length > 0) {
+                    const matched = getMatchingVehicle(currentVolume, vehicles);
+                    if (matched) {
+                        currentCluster.vehicle = matched;
+                        currentCluster.capacity = matched.capacity;
+                        currentCluster.utilization = (currentVolume / matched.capacity) * 100;
+                        currentCluster.isValid = currentVolume <= matched.capacity;
+                    }
+                    currentCluster.totalVolume = currentVolume;
+                    result.push({ ...currentCluster });
+                }
+
+                currentCluster = {
+                    clusterId: cluster.clusterId + result.length + 1,
+                    sites: [site],
+                    totalVolume: 0,
+                    vehicle: null,
+                    capacity: 0,
+                    utilization: 0,
+                    isValid: false
+                };
+                currentVolume = site.volume;
+            }
+        }
+
+        if (currentCluster.sites.length > 0) {
+            const matched = getMatchingVehicle(currentVolume, vehicles);
+            if (matched) {
+                currentCluster.vehicle = matched;
+                currentCluster.capacity = matched.capacity;
+                currentCluster.utilization = (currentVolume / matched.capacity) * 100;
+                currentCluster.isValid = currentVolume <= matched.capacity;
+            }
+            currentCluster.totalVolume = currentVolume;
+            result.push({ ...currentCluster });
+        }
+
+        let idCounter = 1;
+        for (let c of result) {
+            c.clusterId = idCounter++;
+        }
+
+        return result;
+    }
+
+    // ========== 初始化中心点 ==========
+    function initializeCenters(sites, k) {
+        const centers = [];
+        if (sites.length === 0) return centers;
+
+        const firstIdx = Math.floor(Math.random() * sites.length);
+        centers.push({ lng: sites[firstIdx].lng, lat: sites[firstIdx].lat });
+
+        for (let i = 1; i < k; i++) {
+            const distances = sites.map(s => {
+                let minDist = Infinity;
+                for (let c of centers) {
+                    const d = haversineDistance(s.lat, s.lng, c.lat, c.lng);
+                    if (d < minDist) minDist = d;
+                }
+                return minDist;
+            });
+            const totalDist = distances.reduce((a, b) => a + b, 0);
+            if (totalDist === 0) break;
+            let r = Math.random() * totalDist;
+            let selectedIdx = 0;
+            for (let j = 0; j < distances.length; j++) {
+                r -= distances[j];
+                if (r <= 0) { selectedIdx = j; break; }
+            }
+            centers.push({ lng: sites[selectedIdx].lng, lat: sites[selectedIdx].lat });
+        }
+        return centers;
+    }
+
+    // ========== 运行聚类 ==========
+    function runClustering() {
+        if (siteData.length === 0 || vehicleData.length === 0) {
+            addLog('请先上传站点数据和车型参数', true);
+            return;
+        }
+
+        const maxIter = parseInt(maxIterationsInput.value) || 200;
+        const threshold = parseFloat(convergenceThresholdInput.value) || 0.001;
+
+        addLog(`🧠 开始 K-Means 聚类优化 (最大迭代 ${maxIter}，阈值 ${threshold})...`, false);
+
+        const startTime = Date.now();
+
+        try {
+            clusterResults = kMeansClusterWithCapacity(siteData, vehicleData, maxIter, threshold);
+
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            const validCount = clusterResults.filter(c => c.isValid).length;
+            const invalidCount = clusterResults.filter(c => !c.isValid).length;
+            addLog(`✅ 聚类完成！耗时 ${elapsed}s，生成 ${clusterResults.length} 个有效聚类 (有效 ${validCount}，超载 ${invalidCount})`, false);
+
+            renderResults();
+            showDownloadBar();
+
+        } catch (err) {
+            addLog(`聚类失败: ${err.message}`, true);
+        }
+    }
+
+    // ========== 渲染结果 ==========
+    function renderResults() {
+        if (!clusterResults || clusterResults.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#a18163; padding:30px;">暂无聚类结果</td></tr>`;
+            resultSummary.style.display = 'none';
+            copyResultBtn.disabled = true;
+            exportResultBtn.disabled = true;
+            return;
+        }
+
+        let html = '';
+        let totalVol = 0;
+        let totalSitesCount = 0;
+        let validClusters = 0;
+        let invalidClusters = 0;
+
+        clusterResults.forEach((cluster, idx) => {
+            const color = `hsl(${(idx * 137) % 360}, 70%, 55%)`;
+            const isValid = cluster.isValid;
+            const statusText = isValid ? '✅ 容量合格' : '❌ 超载';
+            const statusClass = isValid ? 'status-valid' : 'status-invalid';
+            const utilColor = cluster.utilization > 90 ? '#b13b3b' : (cluster.utilization > 75 ? '#cc6600' : '#2a7f6e');
+            const vehicleCode = cluster.vehicle ? cluster.vehicle.code : '无';
+
+            if (isValid) validClusters++;
+            else invalidClusters++;
+
+            html += `<tr class="cluster-header" style="background:#f0f4fa;">
+                <td colspan="14" style="font-weight:700; color:#1f3a5f;">
+                    🚛 聚类 ${cluster.clusterId} &nbsp;|&nbsp; 车型: <strong>${vehicleCode}</strong> &nbsp;|&nbsp; 站点数: ${cluster.sites.length} &nbsp;|&nbsp; 
+                    总货量: <strong>${cluster.totalVolume.toFixed(1)}</strong> m³ &nbsp;|&nbsp; 容量: ${cluster.capacity.toFixed(1)} m³ &nbsp;|&nbsp; 
+                    利用率: <span style="color:${utilColor}; font-weight:700;">${cluster.utilization.toFixed(1)}%</span>
+                    &nbsp;|&nbsp; <span class="${statusClass}">${statusText}</span>
+                    ${!isValid ? ' ⚠️ 货量超过车辆容量！' : ''}
+                </td>
+            </tr>`;
+
+            cluster.sites.forEach((site) => {
+                html += `<tr>
+                    <td>${cluster.clusterId}</td>
+                    <td>${vehicleCode}</td>
+                    <td>${escHtml(site.code)}</td>
+                    <td>${escHtml(site.name)}</td>
+                    <td>${escHtml(site.province)}</td>
+                    <td>${escHtml(site.city)}</td>
+                    <td style="font-size:11px;">${escHtml(site.addr)}</td>
+                    <td>${site.lng}</td>
+                    <td>${site.lat}</td>
+                    <td>${site.volume.toFixed(1)}</td>
+                    <td>${cluster.totalVolume.toFixed(1)}</td>
+                    <td>${cluster.capacity.toFixed(1)}</td>
+                    <td style="color:${utilColor}; font-weight:600;">${cluster.utilization.toFixed(1)}%</td>
+                    <td class="${statusClass}">${statusText}</td>
+                </tr>`;
+                totalSitesCount++;
+                totalVol += site.volume;
+            });
+        });
+
+        tableBody.innerHTML = html;
+        rowCount.textContent = `共 ${totalSitesCount} 条`;
+        totalSites.textContent = totalSitesCount;
+        totalClusters.textContent = clusterResults.length;
+        totalVolume.textContent = totalVol.toFixed(1);
+
+        copyResultBtn.disabled = false;
+        exportResultBtn.disabled = false;
+
+        let summaryHtml = '';
+        clusterResults.forEach((c, idx) => {
+            const color = `hsl(${(idx * 137) % 360}, 70%, 55%)`;
+            const validTag = c.isValid ? '✅' : '❌';
+            const vCode = c.vehicle ? c.vehicle.code : '无';
+            summaryHtml += `<span class="cluster-badge" style="border-left-color:${color};">
+                ${validTag} 聚类${c.clusterId}(${vCode}): <span class="vol">${c.sites.length}</span>站 | 
+                货量 <span class="vol">${c.totalVolume.toFixed(1)}</span>m³ | 
+                容量 <span class="vol">${c.capacity.toFixed(1)}</span>m³ | 
+                利用率 <span class="vol">${c.utilization.toFixed(1)}%</span>
+            </span>`;
+        });
+        clusterSummary.innerHTML = summaryHtml;
+        resultSummary.style.display = 'block';
+
+        progressFill.style.width = '100%';
+        progressText.textContent = `✅ 完成！${clusterResults.length} 个有效聚类 (有效 ${validClusters}，超载 ${invalidClusters})，${totalSitesCount} 个站点`;
+
+        if (invalidClusters > 0) {
+            addLog(`⚠️ 有 ${invalidClusters} 个聚类超载，请检查数据或增加更大车型`, true);
+        } else {
+            addLog(`✅ 所有 ${validClusters} 个聚类均满足容量约束`, false);
+        }
+    }
+
+    // ========== 复制结果到剪贴板 ==========
+    function copyResultsToClipboard() {
+        if (!clusterResults || clusterResults.length === 0) {
+            addLog('没有可复制的结果', true);
+            return;
+        }
+
+        const headers = ['聚类ID', '车型代码', '站点代码', '站点名称', '省', '市', '站点地址', '经度', '纬度', '提货量(m³)', '聚类总货量(m³)', '车辆容量(m³)', '容量利用率(%)', '状态'];
+        let csv = headers.join('\t') + '\n';
+
+        clusterResults.forEach(cluster => {
+            const vehicleCode = cluster.vehicle ? cluster.vehicle.code : '无';
+            cluster.sites.forEach(site => {
+                const statusText = cluster.isValid ? '合格' : '超载';
+                csv += [
+                    cluster.clusterId,
+                    vehicleCode,
+                    site.code,
+                    site.name,
+                    site.province || '',
+                    site.city || '',
+                    site.addr || '',
+                    site.lng,
+                    site.lat,
+                    site.volume.toFixed(1),
+                    cluster.totalVolume.toFixed(1),
+                    cluster.capacity.toFixed(1),
+                    cluster.utilization.toFixed(1),
+                    statusText
+                ].join('\t') + '\n';
+            });
+        });
+
+        navigator.clipboard.writeText(csv).then(() => {
+            showCopyToast('✅ 已复制 ' + clusterResults.length + ' 个聚类数据到剪贴板！');
+            addLog(`📋 已复制 ${clusterResults.length} 个聚类数据到剪贴板（制表符分隔）`, false);
+        }).catch(() => {
+            const textarea = document.createElement('textarea');
+            textarea.value = csv;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showCopyToast('✅ 已复制 ' + clusterResults.length + ' 个聚类数据到剪贴板！');
+            addLog(`📋 已复制 ${clusterResults.length} 个聚类数据到剪贴板`, false);
+        });
+    }
+
+    let toastTimer = null;
+    function showCopyToast(msg) {
+        copyToast.textContent = msg;
+        copyToast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { copyToast.classList.remove('show'); }, 2500);
+    }
+
+    // ========== 导出结果 ==========
+    function exportResults() {
+        if (!clusterResults || clusterResults.length === 0) {
+            addLog('没有可导出的结果', true);
+            return;
+        }
+
+        const data = [];
+        clusterResults.forEach(cluster => {
+            cluster.sites.forEach(site => {
+                data.push({
+                    '聚类ID': cluster.clusterId,
+                    '车型代码': cluster.vehicle ? cluster.vehicle.code : '无',
+                    '站点代码': site.code,
+                    '站点名称': site.name,
+                    '省': site.province || '',
+                    '市': site.city || '',
+                    '站点地址': site.addr || '',
+                    '经度': site.lng,
+                    '纬度': site.lat,
+                    '单次提货量(m³)': site.volume,
+                    '聚类总货量(m³)': cluster.totalVolume,
+                    '车辆容量(m³)': cluster.capacity,
+                    '容量利用率(%)': cluster.utilization.toFixed(1),
+                    '容量状态': cluster.isValid ? '合格' : '超载'
+                });
+            });
+        });
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '聚类结果');
+        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        resultBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        downloadFile(resultBlob, `聚类结果_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`);
+    }
+
+    function downloadFile(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 200);
+        addLog(`📥 开始下载 ${filename}`, false);
+    }
+
+    // ========== 显示/隐藏底部栏 ==========
+    function showDownloadBar() {
+        fixedBar.classList.remove('hidden-bar');
+        dlStatus.innerHTML = `📦 聚类完成！共 ${clusterResults.length} 个有效聚类，点击下载结果`;
+    }
+
+    function hideDownloadBar() {
+        fixedBar.classList.add('hidden-bar');
+    }
+
+    // ========== 工具函数 ==========
+    function escHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m);
+    }
+
+    // ========== 模板下载 ==========
+    function downloadSiteTemplateFile() {
+        const headers = ['站点代码', '站点名称', '省', '市', '站点地址', '经度', '纬度', '单次提货量(m³)'];
+        const sample = [
+            ['S001', '上海仓库', '上海市', '上海市', '上海市浦东新区世纪大道1号', 121.51, 31.23, 12.5],
+            ['S002', '北京物流中心', '北京市', '北京市', '北京市通州区物流园区路4号', 116.65, 39.90, 8.2],
+            ['S003', '广州分拨中心', '广东省', '广州市', '广东省广州市白云区白云大道北1号', 113.26, 23.18, 15.0],
+            ['S004', '深圳配送站', '广东省', '深圳市', '广东省深圳市南山区科技园路88号', 113.95, 22.55, 6.8],
+            ['S005', '成都仓库', '四川省', '成都市', '四川省成都市武侯区天府大道中段1号', 104.06, 30.57, 10.3]
+        ];
+        const wsData = [headers, ...sample];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = [{ wch: 12 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 18 }];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '站点数据');
+        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        downloadFile(blob, '站点数据模板.xlsx');
+    }
+
+    function downloadVehicleTemplateFile() {
+        const headers = ['车型代码', '车厢内径长(m)', '车厢内径宽(m)', '车厢内径高(m)'];
+        const sample = [
+            ['V001', 4.2, 2.0, 2.0],
+            ['V002', 6.8, 2.4, 2.4],
+            ['V003', 9.6, 2.5, 2.6],
+            ['V004', 12.5, 2.5, 2.8],
+            ['V005', 7.6, 2.4, 2.5]
+        ];
+        const wsData = [headers, ...sample];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '车型数据');
+        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        downloadFile(blob, '车型参数模板.xlsx');
+    }
+
+    // ========== 事件绑定 ==========
+    siteDropZone.addEventListener('click', () => siteFileInput.click());
+    siteDropZone.addEventListener('dragover', (e) => { e.preventDefault(); siteDropZone.style.borderColor = '#1f6392'; });
+    siteDropZone.addEventListener('dragleave', () => siteDropZone.style.borderColor = '#bdd2ec');
+    siteDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        siteDropZone.style.borderColor = '#bdd2ec';
+        if (e.dataTransfer.files.length > 0) {
+            handleSiteFile(e.dataTransfer.files[0]);
+        }
+    });
+    siteFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleSiteFile(e.target.files[0]);
+        }
+        siteFileInput.value = '';
+    });
+
+    vehicleDropZone.addEventListener('click', () => vehicleFileInput.click());
+    vehicleDropZone.addEventListener('dragover', (e) => { e.preventDefault(); vehicleDropZone.style.borderColor = '#1f6392'; });
+    vehicleDropZone.addEventListener('dragleave', () => vehicleDropZone.style.borderColor = '#bdd2ec');
+    vehicleDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        vehicleDropZone.style.borderColor = '#bdd2ec';
+        if (e.dataTransfer.files.length > 0) {
+            handleVehicleFile(e.dataTransfer.files[0]);
+        }
+    });
+    vehicleFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleVehicleFile(e.target.files[0]);
+        }
+        vehicleFileInput.value = '';
+    });
+
+    runClusterBtn.addEventListener('click', runClustering);
+    clearResultBtn.addEventListener('click', () => {
+        clusterResults = [];
+        resultBlob = null;
+        renderResults();
+        hideDownloadBar();
+        resultSummary.style.display = 'none';
+        progressFill.style.width = '0%';
+        progressText.textContent = '⏳ 就绪';
+        copyResultBtn.disabled = true;
+        exportResultBtn.disabled = true;
+        addLog('已清空聚类结果', false);
+    });
+
+    copyResultBtn.addEventListener('click', copyResultsToClipboard);
+    exportResultBtn.addEventListener('click', exportResults);
+    downloadBtn.addEventListener('click', exportResults);
+    resetBottomBtn.addEventListener('click', () => {
+        clusterResults = [];
+        resultBlob = null;
+        renderResults();
+        hideDownloadBar();
+        resultSummary.style.display = 'none';
+        progressFill.style.width = '0%';
+        progressText.textContent = '⏳ 就绪';
+        copyResultBtn.disabled = true;
+        exportResultBtn.disabled = true;
+        addLog('已重置', false);
+    });
+
+    downloadSiteTemplate.addEventListener('click', (e) => { e.preventDefault(); downloadSiteTemplateFile(); });
+    downloadVehicleTemplate.addEventListener('click', (e) => { e.preventDefault(); downloadVehicleTemplateFile(); });
+
+    // 初始化
+    updateUI();
+    addLog('📋 请上传站点数据和车型参数，然后点击「运行聚类优化」', false);
+</script>
+</body>
+</html>

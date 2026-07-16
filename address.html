@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>站点地址批量转经纬度 - 文件导入版（限流优化）</title>
+    <!-- SheetJS 核心库 -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #eef2f9 0%, #e0e8f2 100%);
+            min-height: 100vh;
+            padding: 2rem 1.5rem 140px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 2rem;
+            box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a5f, #0f2b44);
+            padding: 2rem 2.2rem;
+            color: white;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header p {
+            opacity: 0.85;
+            margin-top: 8px;
+            font-size: 0.95rem;
+        }
+        .badge-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .badge {
+            background: #2c6288;
+            padding: 4px 16px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+        }
+        .badge.limit {
+            background: #cc6600;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        /* 上传区域 */
+        .upload-card {
+            background: #f8fafd;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.8rem;
+            border: 1px solid #e2edf5;
+        }
+        .drop-zone {
+            background: #fafcff;
+            border: 2px dashed #bdd2ec;
+            border-radius: 1.5rem;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .drop-zone:hover {
+            border-color: #1f6392;
+            background: #f2f8ff;
+        }
+        .drop-zone .icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+        .drop-zone .title {
+            font-weight: 600;
+            color: #1f3a5f;
+            font-size: 1rem;
+        }
+        .drop-zone .sub {
+            font-size: 0.75rem;
+            color: #7a8eaa;
+            margin-top: 4px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 14px;
+        }
+
+        .btn {
+            border: none;
+            padding: 10px 28px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: #1a5d8c;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: #0e466b;
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background: #2a7f6e;
+            color: white;
+        }
+        .btn-success:hover:not(:disabled) {
+            background: #1e6657;
+            transform: translateY(-1px);
+        }
+        .btn-outline {
+            background: #eef3fc;
+            color: #1f4970;
+            border: 1px solid #cde0ee;
+        }
+        .btn-outline:hover {
+            background: #e2ebf5;
+        }
+        .btn-danger {
+            background: #fce4e4;
+            color: #b13b3b;
+            border: 1px solid #f5c2c2;
+        }
+        .btn-danger:hover {
+            background: #fccfcf;
+        }
+        .btn-warning {
+            background: #ffecd6;
+            color: #a1552a;
+            border: 1px solid #ffd5aa;
+        }
+        .btn-copy {
+            background: #4a7a9c;
+            color: white;
+        }
+        .btn-copy:hover:not(:disabled) {
+            background: #1e5a7a;
+            transform: translateY(-1px);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .file-stats {
+            background: #eef2f7;
+            border-radius: 60px;
+            padding: 6px 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.8rem;
+            margin-top: 12px;
+        }
+        .file-list-box {
+            background: #f8fafd;
+            border-radius: 1rem;
+            padding: 12px 16px;
+            margin-top: 12px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .file-tag {
+            background: white;
+            border-radius: 30px;
+            padding: 4px 12px;
+            margin: 4px 6px;
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.7rem;
+            border: 1px solid #d4e2f0;
+        }
+
+        /* Key 输入 */
+        .key-input-row {
+            background: #f1f5f9;
+            border-radius: 1.2rem;
+            padding: 12px 18px;
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            justify-content: space-between;
+        }
+        .key-input-row label {
+            font-weight: 600;
+            color: #1f3a5f;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .key-input-row input {
+            flex: 2;
+            min-width: 200px;
+            padding: 10px 16px;
+            border-radius: 60px;
+            border: 1px solid #cbdde9;
+            font-size: 0.8rem;
+            background: white;
+        }
+        .key-input-row .hint {
+            font-size: 0.7rem;
+            color: #cc6600;
+        }
+
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 16px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 数据表格 */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 1.2rem;
+            border: 1px solid #e3ecf5;
+            background: white;
+            margin-top: 0.5rem;
+            max-height: 450px;
+            overflow-y: auto;
+        }
+        .data-table {
+            width: 100%;
+            font-size: 0.8rem;
+            border-collapse: collapse;
+            min-width: 750px;
+        }
+        .data-table th {
+            background: #f1f6fc;
+            color: #1f3a5f;
+            font-weight: 600;
+            padding: 12px 10px;
+            border-bottom: 2px solid #d3e0ee;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            white-space: nowrap;
+        }
+        .data-table td {
+            padding: 10px 10px;
+            border-bottom: 1px solid #e6edf5;
+            vertical-align: middle;
+        }
+        .data-table tr:hover td {
+            background: #f8fafd;
+        }
+        .data-table .status-ok {
+            color: #2a7f6e;
+            font-weight: 600;
+        }
+        .data-table .status-fail {
+            color: #b13b3b;
+            font-weight: 600;
+        }
+        .data-table .status-pending {
+            color: #b08a3a;
+        }
+        .data-table .status-retry {
+            color: #cc6600;
+            font-weight: 600;
+        }
+
+        .stat-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            padding: 12px 16px;
+            background: #f8fafd;
+            border-radius: 1rem;
+            margin-top: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .stat-item {
+            font-size: 0.8rem;
+            color: #2c3e66;
+        }
+        .stat-item strong {
+            color: #1a5d8c;
+            font-size: 1rem;
+        }
+        .stat-item .success-count {
+            color: #2a7f6e;
+        }
+        .stat-item .fail-count {
+            color: #b13b3b;
+        }
+
+        .log-card {
+            background: #0f1a24;
+            border-radius: 1.2rem;
+            padding: 1rem;
+            margin-top: 1.2rem;
+        }
+        .log-content {
+            color: #c9e1f0;
+            font-family: monospace;
+            font-size: 0.75rem;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .progress-wrap {
+            height: 4px;
+            background: #dce3ec;
+            border-radius: 4px;
+            margin: 12px 0 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #ffaa33;
+            transition: width 0.3s;
+        }
+
+        .template-download {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: #7a8eaa;
+        }
+        .template-download a {
+            color: #1a5d8c;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .template-download a:hover {
+            text-decoration: underline;
+        }
+
+        /* 底部固定下载栏 */
+        .fixed-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #0f2f46, #1a405e);
+            border-top: 3px solid #ffb347;
+            padding: 14px 28px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            z-index: 999;
+            box-shadow: 0 -6px 24px rgba(0,0,0,0.25);
+        }
+        .fixed-bar .info {
+            color: #ffde9c;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .fixed-bar .dl-btn {
+            background: #ffc107;
+            border: none;
+            padding: 10px 32px;
+            border-radius: 60px;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+            color: #1e3a5f;
+        }
+        .fixed-bar .dl-btn:hover:not(:disabled) {
+            background: #ffda6a;
+            transform: scale(1.02);
+        }
+        .fixed-bar .dl-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .fixed-bar .reset-btn {
+            background: rgba(255,255,255,0.15);
+            color: #ffdfb3;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+        .fixed-bar .reset-btn:hover {
+            background: rgba(255,255,255,0.25);
+        }
+        .hidden-bar {
+            display: none !important;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #6c86a3;
+            padding: 1rem 0 0;
+        }
+
+        .copy-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2a7f6e;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-weight: 600;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            z-index: 2000;
+            animation: fadeInDown 0.3s ease;
+            display: none;
+        }
+        .copy-toast.show {
+            display: block;
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .rate-limit-info {
+            background: #fff8e1;
+            border-radius: 1rem;
+            padding: 8px 16px;
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: #8a6d3b;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .rate-limit-info strong {
+            color: #cc6600;
+        }
+    </style>
+</head>
+<body>
+<div id="copyToast" class="copy-toast">✅ 已复制到剪贴板！</div>
+
+<div class="container">
+    <div class="header">
+        <h1>📍 站点地址转经纬度 · 限流优化版</h1>
+        <p>上传Excel文件（包含站点代码、站点名称、站点地址），批量查询经纬度坐标</p>
+        <div class="badge-group">
+            <span class="badge">📁 支持文件导入</span>
+            <span class="badge">🗺️ 高德地理编码</span>
+            <span class="badge">🛑 限流控制 (QPS≤3)</span>
+            <span class="badge">📋 结果可复制</span>
+            <span class="badge limit">⏱️ 自动重试</span>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="upload-card">
+            <div class="drop-zone" id="dropZone">
+                <div class="icon">📂</div>
+                <div class="title">拖拽 Excel 文件 / 文件夹至此，或点击下方按钮</div>
+                <div class="sub">支持 .xlsx, .xls, .csv 格式，需包含列：<strong>站点代码, 站点名称, 站点地址</strong></div>
+                <div class="btn-group">
+                    <label class="btn btn-primary" style="cursor:pointer;">
+                        📁 选择文件夹(批量Excel)
+                        <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;">
+                    </label>
+                    <label class="btn btn-outline" style="cursor:pointer;">
+                        📄 选择Excel文件
+                        <input type="file" id="fileInput" multiple accept=".xlsx, .xls, .csv" style="display:none;">
+                    </label>
+                    <button class="btn btn-warning" id="clearBtn">🗑️ 清空数据</button>
+                </div>
+                <div id="fileStatsArea" class="file-stats" style="display:none;"></div>
+                <div id="fileListBox" class="file-list-box" style="display:none;"></div>
+                <div class="template-download">
+                    📋 下载Excel模板：<a id="downloadTemplateBtn">点击下载 template.xlsx</a>
+                </div>
+            </div>
+
+            <!-- 限流信息 -->
+            <div class="rate-limit-info">
+                <span>🛑 限流设置：</span>
+                <strong>每秒最多 3 次请求</strong>
+                <span>|</span>
+                <span>⏱️ 请求间隔：<strong>350ms</strong></span>
+                <span>|</span>
+                <span>🔄 失败自动重试：<strong>最多 3 次</strong></span>
+            </div>
+
+            <!-- 高德Key -->
+            <div class="key-input-row">
+                <label>🗺️ 高德Web服务Key</label>
+                <input type="text" id="amapKey" placeholder="请输入高德地图Web服务API Key" value="9a5f6a8c2b3d4e5f6a7b8c9d0e1f2a3b">
+                <span class="hint">⚠️ 需开启地理编码权限</span>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="action-bar">
+                <button class="btn btn-success" id="queryBtn" disabled>🔍 批量查询经纬度</button>
+                <button class="btn btn-outline" id="stopBtn" disabled>⛔ 停止查询</button>
+                <button class="btn btn-copy" id="copyResultBtn" disabled>📋 复制全部结果</button>
+                <button class="btn btn-outline" id="exportResultBtn" disabled>📥 导出Excel</button>
+            </div>
+        </div>
+
+        <!-- 数据表格 -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
+            <span style="font-weight:600; color:#1f3a5f;">📊 站点数据列表</span>
+            <span style="font-size:0.75rem; color:#7a8eaa;" id="rowCount">共 0 条</span>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:40px;">#</th>
+                        <th>站点代码</th>
+                        <th>站点名称</th>
+                        <th>站点地址</th>
+                        <th>经度</th>
+                        <th>纬度</th>
+                        <th style="width:100px;">状态</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+
+        <div class="stat-bar">
+            <span class="stat-item">📌 总计：<strong id="totalCount">0</strong> 条</span>
+            <span class="stat-item">✅ 成功：<strong class="success-count" id="successCount">0</span>
+            <span class="stat-item">❌ 失败：<strong class="fail-count" id="failCount">0</span>
+            <span class="stat-item" id="progressText">⏳ 就绪</span>
+        </div>
+
+        <div class="log-card">
+            <div class="log-content" id="logArea">⚙️ 等待操作… 请上传包含站点数据的Excel文件</div>
+        </div>
+
+        <footer>🔒 所有处理在浏览器本地完成，数据安全；限流设置：QPS ≤ 3，失败自动重试</footer>
+    </div>
+</div>
+
+<!-- 底部固定下载栏 -->
+<div id="fixedBar" class="fixed-bar hidden-bar">
+    <span class="info" id="dlStatus">📦 查询完成，可导出结果</span>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+        <button class="dl-btn" id="downloadBtn">⬇️ 下载经纬度结果 (Excel)</button>
+        <button class="reset-btn" id="resetBottomBtn">🔄 重新查询</button>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    //  限流配置
+    // ============================================================
+    const CONFIG = {
+        QPS_LIMIT: 3,              // 每秒最多请求数
+        REQUEST_INTERVAL: 350,      // 每次请求间隔（毫秒），确保 QPS ≤ 3
+        MAX_RETRIES: 3,            // 最大重试次数
+        RETRY_DELAY: 1000,         // 重试等待时间（毫秒）
+        RATE_LIMIT_ERROR: 'CUQPS_HAS_EXCEEDED_THE_LIMIT'  // 限流错误码
+    };
+
+    // ============================================================
+    //  数据模型
+    // ============================================================
+    let dataRows = [];
+    let uploadedFiles = [];
+    let isQuerying = false;
+    let abortFlag = false;
+    let resultBlob = null;
+    let nextId = 1;
+
+    // DOM
+    const tableBody = document.getElementById('tableBody');
+    const rowCount = document.getElementById('rowCount');
+    const totalCount = document.getElementById('totalCount');
+    const successCount = document.getElementById('successCount');
+    const failCount = document.getElementById('failCount');
+    const progressText = document.getElementById('progressText');
+    const progressFill = document.getElementById('progressFill');
+    const logArea = document.getElementById('logArea');
+    const fixedBar = document.getElementById('fixedBar');
+    const dlStatus = document.getElementById('dlStatus');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resetBottomBtn = document.getElementById('resetBottomBtn');
+    const exportResultBtn = document.getElementById('exportResultBtn');
+    const copyResultBtn = document.getElementById('copyResultBtn');
+    const queryBtn = document.getElementById('queryBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const amapKeyInput = document.getElementById('amapKey');
+    const fileInput = document.getElementById('fileInput');
+    const folderInput = document.getElementById('folderInput');
+    const dropZone = document.getElementById('dropZone');
+    const fileStatsArea = document.getElementById('fileStatsArea');
+    const fileListBox = document.getElementById('fileListBox');
+    const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+    const copyToast = document.getElementById('copyToast');
+
+    // ========== 日志 ==========
+    function addLog(msg, isError = false) {
+        const time = new Date().toLocaleTimeString();
+        const prefix = isError ? '❌' : '📌';
+        const color = isError ? '#ffb4a2' : '#b9e0ff';
+        logArea.innerHTML += `<span style="color:${color}">${prefix} [${time}] ${msg}</span><br>`;
+        logArea.scrollTop = logArea.scrollHeight;
+        if (logArea.innerHTML.split('<br>').length > 120) {
+            const lines = logArea.innerHTML.split('<br>');
+            logArea.innerHTML = lines.slice(-80).join('<br>');
+        }
+    }
+
+    // ========== 渲染表格 ==========
+    function renderTable() {
+        let html = '';
+        dataRows.forEach((row, idx) => {
+            let statusClass = 'status-pending';
+            if (row.status === '成功') statusClass = 'status-ok';
+            else if (row.status === '失败') statusClass = 'status-fail';
+            else if (row.status && row.status.includes('重试')) statusClass = 'status-retry';
+            
+            const lngDisplay = row.lng !== null && row.lng !== undefined && row.lng !== '' ? row.lng : '-';
+            const latDisplay = row.lat !== null && row.lat !== undefined && row.lat !== '' ? row.lat : '-';
+            html += `<tr>
+                <td>${idx + 1}</td>
+                <td>${escHtml(row.code)}</td>
+                <td>${escHtml(row.name)}</td>
+                <td style="font-size:12px;">${escHtml(row.addr)}</td>
+                <td>${lngDisplay}</td>
+                <td>${latDisplay}</td>
+                <td class="${statusClass}">${row.status || '待查询'}</td>
+            </tr>`;
+        });
+        tableBody.innerHTML = html || `<tr><td colspan="7" style="text-align:center; color:#a18163; padding:20px;">暂无数据，请上传Excel文件</td></tr>`;
+        rowCount.textContent = `共 ${dataRows.length} 条`;
+        totalCount.textContent = dataRows.length;
+        const succ = dataRows.filter(r => r.status === '成功').length;
+        const fail = dataRows.filter(r => r.status === '失败' || (r.status && r.status.includes('最终失败'))).length;
+        successCount.textContent = succ;
+        failCount.textContent = fail;
+        const hasResult = dataRows.some(r => r.status === '成功' || r.status === '失败' || (r.status && r.status.includes('最终失败')));
+        const hasData = dataRows.length > 0;
+        exportResultBtn.disabled = !hasResult || isQuerying;
+        copyResultBtn.disabled = !hasResult || isQuerying;
+        queryBtn.disabled = !hasData || isQuerying;
+    }
+
+    function escHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m);
+    }
+
+    // ========== 解析Excel ==========
+    async function parseExcelToRows(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+                    if (!rows || rows.length === 0) { resolve([]); return; }
+                    const headers = Object.keys(rows[0]);
+                    const codeCol = headers.find(h => /站点代码|站点编号|code|代码/i.test(h));
+                    const nameCol = headers.find(h => /站点名称|站点名|名称|name/i.test(h));
+                    const addrCol = headers.find(h => /站点地址|地址|addr|详细地址/i.test(h));
+
+                    if (!codeCol || !nameCol || !addrCol) {
+                        addLog(`文件 ${file.name} 缺少必要列！需要: 站点代码, 站点名称, 站点地址`, true);
+                        resolve([]);
+                        return;
+                    }
+
+                    const result = [];
+                    for (let row of rows) {
+                        let code = row[codeCol]?.toString().trim();
+                        let name = row[nameCol]?.toString().trim();
+                        let addr = row[addrCol]?.toString().trim();
+                        if (code && name && addr) {
+                            result.push({ code, name, addr });
+                        }
+                    }
+                    resolve(result);
+                } catch (err) { reject(err); }
+            };
+            reader.onerror = () => reject(new Error(`读取失败 ${file.name}`));
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    // ========== 处理上传文件 ==========
+    async function handleFiles(filesList) {
+        if (isQuerying) { addLog('查询进行中，请等待完成', true); return; }
+        const excelFiles = [];
+        for (let f of filesList) {
+            const ext = f.name.split('.').pop().toLowerCase();
+            if (['xlsx','xls','csv'].includes(ext)) excelFiles.push(f);
+            else addLog(`跳过非Excel: ${f.name}`, false);
+        }
+        if (!excelFiles.length) { addLog('未找到有效Excel文件', true); return; }
+
+        uploadedFiles.push(...excelFiles);
+        updateFileUI();
+
+        let totalAdded = 0;
+        for (let f of excelFiles) {
+            addLog(`解析文件: ${f.name}`);
+            const rows = await parseExcelToRows(f);
+            for (let r of rows) {
+                if (!dataRows.some(d => d.code === r.code && d.addr === r.addr)) {
+                    dataRows.push({
+                        id: nextId++,
+                        code: r.code,
+                        name: r.name,
+                        addr: r.addr,
+                        lng: null,
+                        lat: null,
+                        status: '待查询'
+                    });
+                    totalAdded++;
+                }
+            }
+            addLog(`从 ${f.name} 解析到 ${rows.length} 条记录`);
+        }
+        renderTable();
+        updateDownloadBarVisibility();
+        addLog(`✅ 共加载 ${totalAdded} 条站点数据`, false);
+    }
+
+    // ========== 文件UI ==========
+    function updateFileUI() {
+        const cnt = uploadedFiles.length;
+        if (cnt === 0) {
+            fileStatsArea.style.display = 'none';
+            fileListBox.style.display = 'none';
+            return;
+        }
+        fileStatsArea.style.display = 'inline-flex';
+        fileStatsArea.innerHTML = `📁 已加载 ${cnt} 个Excel文件`;
+        fileListBox.style.display = 'block';
+        fileListBox.innerHTML = `<div style="font-weight:500; margin-bottom:4px;">📋 文件列表</div><div>${uploadedFiles.map(f => `<span class="file-tag">📄 ${f.name}</span>`).join('')}</div>`;
+    }
+
+    // ========== 清空 ==========
+    function clearAll() {
+        if (isQuerying) {
+            abortFlag = true;
+            addLog('正在终止查询...', false);
+            setTimeout(() => doClear(), 400);
+        } else {
+            doClear();
+        }
+    }
+
+    function doClear() {
+        uploadedFiles = [];
+        dataRows = [];
+        nextId = 1;
+        isQuerying = false;
+        abortFlag = false;
+        queryBtn.disabled = true;
+        stopBtn.disabled = true;
+        exportResultBtn.disabled = true;
+        copyResultBtn.disabled = true;
+        hideDownloadBar();
+        renderTable();
+        updateFileUI();
+        progressFill.style.width = '0%';
+        progressText.textContent = '⏳ 就绪';
+        addLog('已清空所有数据', false);
+    }
+
+    // ========== 高德地理编码（含限流和重试） ==========
+    async function geocodeAddressWithRetry(address, key, rowIndex) {
+        let lastError = null;
+        
+        for (let attempt = 1; attempt <= CONFIG.MAX_RETRIES + 1; attempt++) {
+            if (abortFlag) return { lng: null, lat: null, status: 'abort', info: '已终止' };
+            
+            try {
+                const url = `https://restapi.amap.com/v3/geocode/geo?address=${encodeURIComponent(address)}&output=json&key=${key}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                // 检查是否限流
+                if (data.status === '0' && data.info && data.info.includes(CONFIG.RATE_LIMIT_ERROR)) {
+                    // 限流错误，等待后重试
+                    if (attempt <= CONFIG.MAX_RETRIES) {
+                        addLog(`⏳ 地址 "${address}" 触发限流，${attempt}/${CONFIG.MAX_RETRIES} 次重试，等待 ${CONFIG.RETRY_DELAY}ms...`, false);
+                        await new Promise(r => setTimeout(r, CONFIG.RETRY_DELAY));
+                        continue;
+                    } else {
+                        return { lng: null, lat: null, status: 'failed', info: '限流超限，最终失败' };
+                    }
+                }
+                
+                if (data.status === '1' && data.geocodes && data.geocodes.length > 0) {
+                    const location = data.geocodes[0].location;
+                    const [lng, lat] = location.split(',').map(Number);
+                    return { lng, lat, status: 'ok' };
+                } else {
+                    return { lng: null, lat: null, status: 'failed', info: data.info || '无结果' };
+                }
+            } catch (err) {
+                lastError = err;
+                if (attempt <= CONFIG.MAX_RETRIES) {
+                    addLog(`⚠️ 请求异常，${attempt}/${CONFIG.MAX_RETRIES} 次重试...`, false);
+                    await new Promise(r => setTimeout(r, CONFIG.RETRY_DELAY));
+                    continue;
+                }
+                return { lng: null, lat: null, status: 'error', info: err.message };
+            }
+        }
+        return { lng: null, lat: null, status: 'error', info: lastError ? lastError.message : '未知错误' };
+    }
+
+    // ========== 批量查询（限流控制） ==========
+    async function startQuery() {
+        if (isQuerying) { addLog('已有查询进行中', true); return; }
+        if (dataRows.length === 0) { addLog('请先上传包含站点数据的Excel文件', true); return; }
+        const key = amapKeyInput.value.trim();
+        if (!key || key.length < 10) { addLog('请填写有效的高德地图Web服务API Key', true); return; }
+
+        // 重置之前的结果
+        dataRows.forEach(r => {
+            r.lng = null;
+            r.lat = null;
+            r.status = '待查询';
+        });
+        renderTable();
+
+        isQuerying = true;
+        abortFlag = false;
+        queryBtn.disabled = true;
+        stopBtn.disabled = false;
+        exportResultBtn.disabled = true;
+        copyResultBtn.disabled = true;
+        progressFill.style.width = '0%';
+        progressText.textContent = '⏳ 查询中...';
+
+        const total = dataRows.length;
+        let completed = 0;
+        let success = 0;
+        let failed = 0;
+
+        addLog(`🚀 开始查询 ${total} 个地址（限流: QPS ≤ ${CONFIG.QPS_LIMIT}）...`);
+
+        // 请求时间戳队列，用于限流
+        let requestTimestamps = [];
+
+        for (let i = 0; i < dataRows.length; i++) {
+            if (abortFlag) {
+                addLog('⛔ 查询已终止', false);
+                break;
+            }
+
+            // ===== 限流控制 =====
+            const now = Date.now();
+            // 移除1秒前的记录
+            requestTimestamps = requestTimestamps.filter(t => now - t < 1000);
+            
+            // 如果当前秒内请求数已达到限制，等待
+            while (requestTimestamps.length >= CONFIG.QPS_LIMIT) {
+                const oldest = requestTimestamps[0];
+                const waitTime = 1000 - (now - oldest) + 50;
+                if (waitTime > 0 && waitTime < 2000) {
+                    await new Promise(r => setTimeout(r, waitTime));
+                }
+                // 重新计算
+                const newNow = Date.now();
+                requestTimestamps = requestTimestamps.filter(t => newNow - t < 1000);
+                if (requestTimestamps.length < CONFIG.QPS_LIMIT) break;
+            }
+
+            // 记录本次请求
+            requestTimestamps.push(Date.now());
+
+            const row = dataRows[i];
+            try {
+                const result = await geocodeAddressWithRetry(row.addr, key, i);
+                if (result.status === 'ok') {
+                    row.lng = result.lng;
+                    row.lat = result.lat;
+                    row.status = '成功';
+                    success++;
+                } else if (result.status === 'abort') {
+                    row.status = '已终止';
+                    break;
+                } else {
+                    row.status = `失败(${result.info || '未知'})`;
+                    failed++;
+                }
+            } catch (e) {
+                row.status = `失败(${e.message})`;
+                failed++;
+            }
+            
+            completed++;
+            const pct = (completed / total) * 100;
+            progressFill.style.width = `${Math.min(pct, 100)}%`;
+            progressText.textContent = `⏳ ${completed}/${total} (${Math.round(pct)}%) 成功:${success} 失败:${failed}`;
+            
+            if (i % 3 === 0 || i === total - 1) {
+                renderTable();
+            }
+            
+            // 基础间隔（确保不超过限流）
+            if (i < dataRows.length - 1 && !abortFlag) {
+                await new Promise(r => setTimeout(r, CONFIG.REQUEST_INTERVAL));
+            }
+        }
+
+        isQuerying = false;
+        queryBtn.disabled = false;
+        stopBtn.disabled = true;
+        exportResultBtn.disabled = false;
+        copyResultBtn.disabled = false;
+
+        progressFill.style.width = '100%';
+        progressText.textContent = `✅ 完成！成功 ${success} 条，失败 ${failed} 条`;
+        renderTable();
+
+        addLog(`✅ 查询结束，成功 ${success} 条，失败 ${failed} 条`, false);
+
+        generateResultBlob();
+        if (success > 0 || failed > 0) {
+            showDownloadBar(success, failed);
+        }
+    }
+
+    // ========== 停止查询 ==========
+    function stopQuery() {
+        if (isQuerying) {
+            abortFlag = true;
+            addLog('⏹️ 正在停止查询...', false);
+        }
+    }
+
+    // ========== 生成结果Blob ==========
+    function generateResultBlob() {
+        const exportData = dataRows.map(r => ({
+            '站点代码': r.code,
+            '站点名称': r.name,
+            '站点地址': r.addr,
+            '经度': r.lng !== null && r.lng !== undefined ? r.lng : '',
+            '纬度': r.lat !== null && r.lat !== undefined ? r.lat : '',
+            '查询状态': r.status || '待查询'
+        }));
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '经纬度结果');
+        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        resultBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    }
+
+    // ========== 显示/隐藏底部下载栏 ==========
+    function showDownloadBar(success, failed) {
+        fixedBar.classList.remove('hidden-bar');
+        dlStatus.innerHTML = `📦 查询完成！成功 ${success} 条，失败 ${failed} 条，点击下载结果`;
+        downloadBtn.disabled = false;
+    }
+
+    function hideDownloadBar() {
+        fixedBar.classList.add('hidden-bar');
+        if (resultBlob) { resultBlob = null; }
+        downloadBtn.disabled = true;
+    }
+
+    function updateDownloadBarVisibility() {
+        const hasData = dataRows.some(r => r.status === '成功' || r.status === '失败');
+        if (hasData && !isQuerying) {
+            const succ = dataRows.filter(r => r.status === '成功').length;
+            const fail = dataRows.filter(r => r.status === '失败').length;
+            generateResultBlob();
+            showDownloadBar(succ, fail);
+        } else if (!hasData) {
+            hideDownloadBar();
+        }
+    }
+
+    // ========== 下载 ==========
+    function downloadResult() {
+        if (!resultBlob) { addLog('没有可下载的结果，请先查询', true); return; }
+        try {
+            const url = URL.createObjectURL(resultBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `站点经纬度_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 200);
+            addLog('📥 开始下载Excel结果文件', false);
+        } catch (e) {
+            addLog('下载失败: ' + e.message, true);
+        }
+    }
+
+    // ========== 复制结果 ==========
+    function copyResultsToClipboard() {
+        if (!dataRows.length || !dataRows.some(r => r.status === '成功' || r.status === '失败')) {
+            addLog('没有可复制的结果，请先查询', true);
+            return;
+        }
+        const headers = ['站点代码', '站点名称', '站点地址', '经度', '纬度', '查询状态'];
+        let csv = headers.join('\t') + '\n';
+        dataRows.forEach(r => {
+            const lng = r.lng !== null && r.lng !== undefined ? r.lng : '';
+            const lat = r.lat !== null && r.lat !== undefined ? r.lat : '';
+            csv += [r.code, r.name, r.addr, lng, lat, r.status || '待查询'].join('\t') + '\n';
+        });
+
+        navigator.clipboard.writeText(csv).then(() => {
+            showCopyToast('✅ 已复制 ' + dataRows.length + ' 条数据到剪贴板！');
+            addLog(`📋 已复制 ${dataRows.length} 条数据到剪贴板`, false);
+        }).catch(() => {
+            const textarea = document.createElement('textarea');
+            textarea.value = csv;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showCopyToast('✅ 已复制 ' + dataRows.length + ' 条数据到剪贴板！');
+            addLog(`📋 已复制 ${dataRows.length} 条数据到剪贴板`, false);
+        });
+    }
+
+    let toastTimer = null;
+    function showCopyToast(msg) {
+        copyToast.textContent = msg;
+        copyToast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { copyToast.classList.remove('show'); }, 2500);
+    }
+
+    function exportCurrentResult() { downloadResult(); }
+    function resetAll() {
+        if (isQuerying) {
+            abortFlag = true;
+            setTimeout(() => { doClear(); }, 300);
+        } else {
+            doClear();
+        }
+    }
+
+    // ========== 下载模板 ==========
+    function downloadTemplate() {
+        const headers = ['站点代码', '站点名称', '站点地址'];
+        const sampleData = [
+            ['S001', '上海仓库', '上海市浦东新区世纪大道1号'],
+            ['S002', '北京物流中心', '北京市通州区物流园区路4号'],
+            ['S003', '广州分拨中心', '广东省广州市白云区白云大道北1号']
+        ];
+        const wsData = [headers, ...sampleData];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = [{ wch: 14 }, { wch: 20 }, { wch: 40 }];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '站点数据');
+        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '站点数据模板.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        addLog('📥 已下载Excel模板', false);
+    }
+
+    // ========== 文件上传处理（递归） ==========
+    async function getAllFilesFromEntry(entry) {
+        const files = [];
+        if (entry.isFile) {
+            const file = await new Promise(resolve => entry.file(resolve));
+            files.push(file);
+        } else if (entry.isDirectory) {
+            const reader = entry.createReader();
+            const entries = await new Promise((resolve) => {
+                let results = [];
+                function readBatch() {
+                    reader.readEntries(async (batch) => {
+                        if (batch.length === 0) resolve(results);
+                        else { results.push(...batch); readBatch(); }
+                    });
+                }
+                readBatch();
+            });
+            for (let sub of entries) {
+                const subFiles = await getAllFilesFromEntry(sub);
+                files.push(...subFiles);
+            }
+        }
+        return files;
+    }
+
+    // ========== 事件绑定 ==========
+    folderInput.addEventListener('change', async (e) => {
+        if (e.target.files.length) {
+            await handleFiles(Array.from(e.target.files));
+        }
+        folderInput.value = '';
+    });
+    fileInput.addEventListener('change', async (e) => {
+        if (e.target.files.length) await handleFiles(Array.from(e.target.files));
+        fileInput.value = '';
+    });
+    clearBtn.addEventListener('click', clearAll);
+    queryBtn.addEventListener('click', startQuery);
+    stopBtn.addEventListener('click', stopQuery);
+    downloadBtn.addEventListener('click', downloadResult);
+    resetBottomBtn.addEventListener('click', resetAll);
+    exportResultBtn.addEventListener('click', exportCurrentResult);
+    copyResultBtn.addEventListener('click', copyResultsToClipboard);
+    downloadTemplateBtn.addEventListener('click', (e) => { e.preventDefault(); downloadTemplate(); });
+
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#1f6392'; });
+    dropZone.addEventListener('dragleave', () => dropZone.style.borderColor = '#bdd2ec');
+    dropZone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#bdd2ec';
+        const items = e.dataTransfer.items;
+        let allFiles = [];
+        for (let i=0; i<items.length; i++) {
+            const entry = items[i].webkitGetAsEntry();
+            if (entry) {
+                const files = await getAllFilesFromEntry(entry);
+                allFiles.push(...files);
+            } else if (items[i].kind === 'file') {
+                allFiles.push(items[i].getAsFile());
+            }
+        }
+        if (allFiles.length) await handleFiles(allFiles);
+        else addLog("未获取到文件", true);
+    });
+
+    // 初始化
+    renderTable();
+    hideDownloadBar();
+    updateFileUI();
+    addLog(`📋 限流设置：每秒最多 ${CONFIG.QPS_LIMIT} 次请求，失败自动重试 ${CONFIG.MAX_RETRIES} 次`, false);
+    addLog('📋 请上传包含「站点代码、站点名称、站点地址」的Excel文件', false);
+</script>
+</body>
+</html>
