@@ -1,11 +1,21 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<script>
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    // 页面加载时检查登录状态
+    window.addEventListener('load', function() {
+        // 如果未登录，跳转到登录页（index.html）
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'index.html';
+        }
+    });
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>物流工具箱 - 登录</title>
+    <title>物流工具箱 - 主页导航</title>
     <style>
-        /* ========== 全局重置 & 基础 ========== */
         * {
             margin: 0;
             padding: 0;
@@ -19,127 +29,10 @@
             overflow: hidden;
         }
 
-        /* ========== 登录页面 ========== */
-        .login-page {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            width: 100vw;
-            background: linear-gradient(135deg, #e9eef3 0%, #dce3ec 100%);
-            position: relative;
-            z-index: 100;
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
-        .login-page.hidden {
-            opacity: 0;
-            transform: scale(0.95);
-            pointer-events: none;
-        }
-
-        .login-box {
-            background: white;
-            border-radius: 2rem;
-            padding: 48px 40px 40px;
-            width: 400px;
-            max-width: 92vw;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
-            text-align: center;
-        }
-        .login-box .logo {
-            font-size: 56px;
-            margin-bottom: 8px;
-        }
-        .login-box h1 {
-            font-size: 24px;
-            color: #1f3a5f;
-            margin-bottom: 4px;
-        }
-        .login-box .subtitle {
-            color: #7a8eaa;
-            font-size: 14px;
-            margin-bottom: 28px;
-        }
-
-        .login-box .form-group {
-            text-align: left;
-            margin-bottom: 18px;
-        }
-        .login-box .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #1f3a5f;
-            margin-bottom: 5px;
-        }
-        .login-box .form-group input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #cbdde9;
-            border-radius: 60px;
-            font-size: 14px;
-            background: #f8fafd;
-            transition: 0.2s;
-            outline: none;
-        }
-        .login-box .form-group input:focus {
-            border-color: #1a5d8c;
-            box-shadow: 0 0 0 3px rgba(26, 93, 140, 0.15);
-            background: white;
-        }
-
-        .login-box .form-options {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 13px;
-            color: #5f7f9e;
-            margin: 6px 0 20px;
-        }
-        .login-box .form-options a {
-            color: #1a5d8c;
-            text-decoration: none;
-        }
-        .login-box .form-options a:hover {
-            text-decoration: underline;
-        }
-
-        .login-box .btn-login {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 60px;
-            background: linear-gradient(135deg, #1a5d8c, #0f2b44);
-            color: white;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 4px 12px rgba(26, 93, 140, 0.3);
-        }
-        .login-box .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(26, 93, 140, 0.4);
-        }
-        .login-box .btn-login:active {
-            transform: translateY(0);
-        }
-
-        .login-box .error-msg {
-            color: #b13b3b;
-            font-size: 13px;
-            margin-top: 12px;
-            min-height: 20px;
-        }
-
-        /* ========== 应用容器（登录后显示） ========== */
         .app-container {
-            display: none;
+            display: flex;
             height: 100vh;
             width: 100%;
-        }
-        .app-container.visible {
-            display: flex;
         }
 
         /* ===== 左侧导航 ===== */
@@ -174,27 +67,6 @@
             opacity: 0.6;
             margin-top: 4px;
             letter-spacing: 1px;
-        }
-        .sidebar-brand .user-info {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .sidebar-brand .user-info .logout-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: #e0eefa;
-            padding: 2px 12px;
-            border-radius: 30px;
-            font-size: 11px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .sidebar-brand .user-info .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
         }
 
         .sidebar-nav {
@@ -313,22 +185,6 @@
         .content-header .breadcrumb span {
             color: #1a5d8c;
         }
-        .content-header .logout-top {
-            background: rgba(26, 93, 140, 0.08);
-            border: 1px solid #cbdde9;
-            padding: 6px 18px;
-            border-radius: 30px;
-            font-size: 13px;
-            color: #1a5d8c;
-            cursor: pointer;
-            transition: 0.2s;
-            font-weight: 500;
-        }
-        .content-header .logout-top:hover {
-            background: #1a5d8c;
-            color: white;
-            border-color: #1a5d8c;
-        }
 
         .content-body {
             flex: 1;
@@ -417,7 +273,7 @@
             margin-top: 2px;
         }
 
-        /* ===== 加载错误 ===== */
+        /* ===== 加载失败/占位 ===== */
         .tool-error {
             display: flex;
             flex-direction: column;
@@ -438,6 +294,10 @@
         .tool-error h3 {
             color: #1f3a5f;
             margin-bottom: 8px;
+        }
+        .tool-error p {
+            max-width: 400px;
+            line-height: 1.6;
         }
         .tool-error .btn-open {
             margin-top: 16px;
@@ -475,9 +335,6 @@
                 min-width: 140px;
                 padding: 12px 16px;
             }
-            .login-box {
-                padding: 32px 24px;
-            }
         }
         @media (max-width: 600px) {
             .sidebar {
@@ -510,55 +367,17 @@
             .content-header h2 {
                 font-size: 15px;
             }
-            .content-header .logout-top {
-                font-size: 12px;
-                padding: 4px 14px;
-            }
         }
     </style>
 </head>
 <body>
 
-<!-- ============================================================
-     登录页面
-     ============================================================ -->
-<div class="login-page" id="loginPage">
-    <div class="login-box">
-        <div class="logo">📦</div>
-        <h1>物流工具箱</h1>
-        <p class="subtitle">请登录以访问工具箱</p>
-
-        <div class="form-group">
-            <label for="username">用户名</label>
-            <input type="text" id="username" placeholder="请输入用户名" value="" autofocus>
-        </div>
-        <div class="form-group">
-            <label for="password">密码</label>
-            <input type="password" id="password" placeholder="请输入密码" value="">
-        </div>
-
-        <div class="form-options">
-            <a href="#" onclick="alert('请联系管理员重置密码')">忘记密码？</a>
-        </div>
-
-        <button class="btn-login" id="loginBtn">登 录</button>
-        <div class="error-msg" id="loginError"></div>
-    </div>
-</div>
-
-<!-- ============================================================
-     应用容器（登录后显示）
-     ============================================================ -->
-<div class="app-container" id="appContainer">
-    <!-- 左侧导航 -->
+<div class="app-container">
+    <!-- ===== 左侧导航 ===== -->
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <h1><span>📦</span> 物流工具箱</h1>
             <p>Logistics Toolbox</p>
-            <div class="user-info">
-                <span id="displayUser">👤 admin</span>
-                <button class="logout-btn" id="logoutBtn">退出</button>
-            </div>
         </div>
 
         <div class="sidebar-nav" id="sidebarNav">
@@ -570,12 +389,11 @@
         </div>
     </nav>
 
-    <!-- 右侧内容区 -->
+    <!-- ===== 右侧内容区 ===== -->
     <main class="main-content">
         <header class="content-header">
             <h2 id="pageTitle">📦 物流工具箱</h2>
             <span class="breadcrumb" id="breadcrumb">首页 / <span id="breadcrumbCurrent">欢迎</span></span>
-            <button class="logout-top" id="logoutTopBtn">🚪 退出登录</button>
         </header>
 
         <div class="content-body" id="contentBody">
@@ -632,99 +450,6 @@
     ];
 
     // ============================================================
-    //  DOM 引用
-    // ============================================================
-    const loginPage = document.getElementById('loginPage');
-    const appContainer = document.getElementById('appContainer');
-    const loginBtn = document.getElementById('loginBtn');
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-    const loginError = document.getElementById('loginError');
-    const displayUser = document.getElementById('displayUser');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const logoutTopBtn = document.getElementById('logoutTopBtn');
-
-    // ============================================================
-    //  登录逻辑（强制每次访问都登录，不保存任何状态）
-    // ============================================================
-    function handleLogin() {
-        const username = usernameInput.value.trim();
-        const password = passwordInput.value.trim();
-
-        if (!username || !password) {
-            loginError.textContent = '⚠️ 请输入用户名和密码';
-            return;
-        }
-
-        // 简单验证
-        if (username === 'admin' && password === 'admin123') {
-            loginError.textContent = '';
-            doLogin(username);
-        } else {
-            loginError.textContent = '❌ 用户名或密码错误，请重试';
-        }
-    }
-
-    // 登录成功 - 不保存任何状态到 localStorage/sessionStorage
-    function doLogin(username) {
-        // 显示首页
-        loginPage.classList.add('hidden');
-        appContainer.classList.add('visible');
-        displayUser.textContent = '👤 ' + username;
-
-        // 初始化导航和欢迎页
-        renderNav();
-        // 直接渲染欢迎页内容
-        showWelcomePage();
-    }
-
-    // ============================================================
-    //  显示欢迎页（直接渲染，不依赖外部文件）
-    // ============================================================
-    function showWelcomePage() {
-        const body = document.getElementById('contentBody');
-        body.innerHTML = `
-            <div class="welcome-content">
-                <div class="logo-big">📦</div>
-                <h2>物流工具箱</h2>
-                <p>欢迎使用物流工具箱 · 集成了地理编码、路线规划、聚类分析等核心工具</p>
-                <div class="tool-grid">
-                    ${TOOLS.filter(t => !t.isWelcome).map(t => `
-                        <div class="card" onclick="loadTool('${t.id}')">
-                            <div class="icon">${t.icon}</div>
-                            <div class="name">${t.label}</div>
-                            <div class="desc">${t.desc || ''}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-        document.getElementById('pageTitle').textContent = '🏠 物流工具箱';
-        document.getElementById('breadcrumbCurrent').textContent = '欢迎';
-    }
-
-    // ============================================================
-    //  退出登录
-    // ============================================================
-    function doLogout() {
-        loginPage.classList.remove('hidden');
-        appContainer.classList.remove('visible');
-        usernameInput.value = '';
-        passwordInput.value = '';
-        loginError.textContent = '';
-        usernameInput.focus();
-    }
-
-    // ============================================================
-    //  页面加载时 - 始终显示登录页
-    // ============================================================
-    function checkLoginState() {
-        loginPage.classList.remove('hidden');
-        appContainer.classList.remove('visible');
-        usernameInput.focus();
-    }
-
-    // ============================================================
     //  渲染导航树
     // ============================================================
     function renderNav() {
@@ -763,10 +488,6 @@
             isFirst = false;
         }
         nav.innerHTML = html;
-        
-        // 高亮首页
-        const welcomeItem = document.querySelector('.nav-item[data-id="welcome"]');
-        if (welcomeItem) welcomeItem.classList.add('active');
     }
 
     // ============================================================
@@ -787,28 +508,45 @@
     }
 
     // ============================================================
-    //  加载工具（点击导航卡片时调用）
+    //  加载工具（支持 iframe 内嵌）
     // ============================================================
     function loadTool(toolId) {
         const tool = TOOLS.find(t => t.id === toolId);
         if (!tool) return;
 
+        // 更新导航高亮
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         const navItem = document.querySelector(`.nav-item[data-id="${toolId}"]`);
         if (navItem) navItem.classList.add('active');
 
+        // 更新标题和面包屑
         document.getElementById('pageTitle').textContent = tool.icon + ' ' + tool.label;
         document.getElementById('breadcrumbCurrent').textContent = tool.label;
 
         const body = document.getElementById('contentBody');
 
-        // 如果是首页，显示欢迎页
+        // --- 欢迎页 ---
         if (tool.isWelcome) {
-            showWelcomePage();
+            body.innerHTML = `
+                <div class="welcome-content">
+                    <div class="logo-big">📦</div>
+                    <h2>物流工具箱</h2>
+                    <p>欢迎使用物流工具箱 · 集成了地理编码、路线规划、聚类分析等核心工具</p>
+                    <div class="tool-grid">
+                        ${TOOLS.filter(t => !t.isWelcome).map(t => `
+                            <div class="card" onclick="loadTool('${t.id}')">
+                                <div class="icon">${t.icon}</div>
+                                <div class="name">${t.label}</div>
+                                <div class="desc">${t.desc || ''}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
             return;
         }
 
-        // 其他工具通过 iframe 加载
+        // --- 检查是否有对应的 HTML 文件 ---
         const filePath = tool.file;
         if (!filePath) {
             body.innerHTML = `
@@ -821,32 +559,71 @@
             return;
         }
 
+        // --- 使用 iframe 加载工具页面 ---
         body.innerHTML = `
-            <div class="iframe-wrapper">
-                <iframe src="${filePath}" allow="geolocation"></iframe>
+            <div class="iframe-wrapper" id="iframeWrapper">
+                <iframe id="toolIframe" src="${filePath}" allow="geolocation" onerror="handleIframeError()"></iframe>
+            </div>
+        `;
+
+        // 监听 iframe 加载失败（通过超时检测）
+        const iframe = document.getElementById('toolIframe');
+        let loadTimeout = setTimeout(() => {
+            // 检查 iframe 是否成功加载
+            try {
+                const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                if (!doc || doc.body.innerHTML.trim() === '' || doc.body.innerHTML.includes('404')) {
+                    showIframeError(filePath);
+                }
+            } catch (e) {
+                // 跨域无法访问，假设加载成功
+            }
+        }, 3000);
+
+        iframe.onload = function() {
+            clearTimeout(loadTimeout);
+            // 检查是否加载了错误页面
+            try {
+                const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                if (doc && doc.body && doc.body.innerHTML.includes('404') || doc.body.innerHTML.includes('找不到')) {
+                    showIframeError(filePath);
+                }
+            } catch (e) {
+                // 跨域无法访问，假设加载成功
+            }
+        };
+    }
+
+    // ============================================================
+    //  显示 iframe 加载错误
+    // ============================================================
+    function showIframeError(filePath) {
+        const body = document.getElementById('contentBody');
+        body.innerHTML = `
+            <div class="tool-error">
+                <div class="icon-big">📄</div>
+                <h3>工具页面加载失败</h3>
+                <p>无法加载文件：<strong>${filePath}</strong></p>
+                <p style="font-size:13px;margin-top:4px;">请确保该文件与主页放在同一目录下。</p>
+                <button class="btn-open" onclick="window.open('${filePath}','_blank')">在新窗口中打开</button>
             </div>
         `;
     }
 
     // ============================================================
-    //  事件绑定
+    //  全局错误处理
     // ============================================================
-    loginBtn.addEventListener('click', handleLogin);
-    logoutBtn.addEventListener('click', doLogout);
-    logoutTopBtn.addEventListener('click', doLogout);
-
-    passwordInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleLogin();
-    });
-    usernameInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') passwordInput.focus();
-    });
+    function handleIframeError() {
+        // 由 onerror 触发，但可能不会捕获所有错误
+    }
 
     // ============================================================
     //  初始化
     // ============================================================
-    checkLoginState();
+    renderNav();
+    loadTool('welcome');
 
+    // 窗口大小变化时，重新计算折叠高度
     window.addEventListener('resize', () => {
         document.querySelectorAll('.nav-items').forEach(el => {
             if (!el.classList.contains('collapsed')) {
