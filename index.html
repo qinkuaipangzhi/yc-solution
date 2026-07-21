@@ -1,20 +1,9 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<script>
-<meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    // 页面加载时检查登录状态
-    window.addEventListener('load', function() {
-        // 如果未登录，跳转到登录页（index.html）
-        if (localStorage.getItem('isLoggedIn') !== 'true') {
-            window.location.href = 'index.html';
-        }
-    });
-</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>物流工具箱 - 主页导航</title>
+    <title>物流工具箱 - 登录</title>
     <style>
         * {
             margin: 0;
@@ -24,612 +13,184 @@
         }
 
         body {
-            background: #f0f3f7;
+            background: linear-gradient(135deg, #e9eef3 0%, #dce3ec 100%);
             height: 100vh;
-            overflow: hidden;
-        }
-
-        .app-container {
             display: flex;
-            height: 100vh;
-            width: 100%;
-        }
-
-        /* ===== 左侧导航 ===== */
-        .sidebar {
-            width: 280px;
-            min-width: 280px;
-            background: linear-gradient(180deg, #1e3a5f 0%, #0f2b44 100%);
-            color: #e0eefa;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 2px 0 16px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
-            position: relative;
-            z-index: 10;
-        }
-
-        .sidebar-brand {
-            padding: 20px 20px 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            flex-shrink: 0;
-        }
-        .sidebar-brand h1 {
-            font-size: 20px;
-            font-weight: 700;
-            color: #f9e0a8;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .sidebar-brand p {
-            font-size: 12px;
-            opacity: 0.6;
-            margin-top: 4px;
-            letter-spacing: 1px;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px 0 20px;
-        }
-        .sidebar-nav::-webkit-scrollbar {
-            width: 4px;
-        }
-        .sidebar-nav::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-        }
-        .sidebar-nav::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .nav-section {
-            margin-bottom: 6px;
-        }
-        .nav-section-title {
-            padding: 8px 20px 6px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: rgba(255, 255, 255, 0.35);
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .nav-section-title .arrow {
-            font-size: 10px;
-            transition: transform 0.2s;
-        }
-        .nav-section-title .arrow.collapsed {
-            transform: rotate(-90deg);
-        }
-
-        .nav-items {
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-        .nav-items.collapsed {
-            max-height: 0 !important;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 9px 20px 9px 32px;
-            cursor: pointer;
-            transition: 0.15s;
-            border-left: 3px solid transparent;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-        }
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.06);
-            color: #fff;
-        }
-        .nav-item.active {
-            background: rgba(255, 255, 255, 0.10);
-            border-left-color: #ffb347;
-            color: #fff;
-        }
-        .nav-item .icon {
-            font-size: 16px;
-            width: 22px;
-            text-align: center;
-            flex-shrink: 0;
-        }
-
-        .sidebar-footer {
-            padding: 14px 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.25);
-            text-align: center;
-            flex-shrink: 0;
-        }
-
-        /* ===== 右侧内容区 ===== */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: #f0f3f7;
-            overflow: hidden;
-        }
-
-        .content-header {
-            background: white;
-            padding: 16px 28px;
-            border-bottom: 1px solid #e2edf5;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-            min-height: 64px;
-        }
-        .content-header h2 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1f3a5f;
-        }
-        .content-header .breadcrumb {
-            font-size: 13px;
-            color: #7a8eaa;
-        }
-        .content-header .breadcrumb span {
-            color: #1a5d8c;
-        }
-
-        .content-body {
-            flex: 1;
-            overflow: hidden;
-            padding: 16px 20px 20px;
-            background: #f0f3f7;
-        }
-
-        .iframe-wrapper {
-            width: 100%;
-            height: 100%;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-            border: 1px solid #e2edf5;
-        }
-        .iframe-wrapper iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-        }
-
-        /* ===== 欢迎页 ===== */
-        .welcome-content {
-            display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%;
-            text-align: center;
-            padding: 40px;
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e2edf5;
-        }
-        .welcome-content .logo-big {
-            font-size: 72px;
-            margin-bottom: 20px;
-        }
-        .welcome-content h2 {
-            font-size: 28px;
-            color: #1f3a5f;
-            margin-bottom: 10px;
-        }
-        .welcome-content p {
-            color: #7a8eaa;
-            font-size: 16px;
-            max-width: 480px;
-            line-height: 1.7;
-        }
-        .welcome-content .tool-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 14px;
-            margin-top: 28px;
-            justify-content: center;
-        }
-        .welcome-content .tool-grid .card {
-            background: #f8fafd;
-            border: 1px solid #e2edf5;
-            border-radius: 12px;
-            padding: 16px 24px;
-            cursor: pointer;
-            transition: 0.2s;
-            text-align: left;
-            min-width: 180px;
-        }
-        .welcome-content .tool-grid .card:hover {
-            border-color: #1a5d8c;
-            background: #f1f6fc;
-            transform: translateY(-2px);
-        }
-        .welcome-content .tool-grid .card .icon {
-            font-size: 24px;
-        }
-        .welcome-content .tool-grid .card .name {
-            font-weight: 600;
-            color: #1f3a5f;
-            margin-top: 4px;
-        }
-        .welcome-content .tool-grid .card .desc {
-            font-size: 12px;
-            color: #7a8eaa;
-            margin-top: 2px;
         }
 
-        /* ===== 加载失败/占位 ===== */
-        .tool-error {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
+        .login-box {
             background: white;
-            border-radius: 12px;
-            border: 1px solid #e2edf5;
-            padding: 40px;
+            border-radius: 2rem;
+            padding: 48px 40px 40px;
+            width: 400px;
+            max-width: 92vw;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
             text-align: center;
-            color: #7a8eaa;
         }
-        .tool-error .icon-big {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-        .tool-error h3 {
-            color: #1f3a5f;
+
+        .login-box .logo {
+            font-size: 56px;
             margin-bottom: 8px;
         }
-        .tool-error p {
-            max-width: 400px;
-            line-height: 1.6;
-        }
-        .tool-error .btn-open {
-            margin-top: 16px;
-            padding: 10px 32px;
-            border-radius: 60px;
-            border: none;
-            background: #1a5d8c;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .tool-error .btn-open:hover {
-            background: #0e466b;
-            transform: translateY(-1px);
+
+        .login-box h1 {
+            font-size: 24px;
+            color: #1f3a5f;
+            margin-bottom: 4px;
         }
 
-        /* ===== 响应式 ===== */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 200px;
-                min-width: 200px;
-            }
-            .nav-item {
-                font-size: 13px;
-                padding: 8px 16px 8px 24px;
-            }
-            .content-header {
-                padding: 12px 16px;
-            }
-            .content-body {
-                padding: 12px;
-            }
-            .welcome-content .tool-grid .card {
-                min-width: 140px;
-                padding: 12px 16px;
-            }
+        .login-box .subtitle {
+            color: #7a8eaa;
+            font-size: 14px;
+            margin-bottom: 28px;
         }
-        @media (max-width: 600px) {
-            .sidebar {
-                width: 56px;
-                min-width: 56px;
-            }
-            .sidebar-brand h1 {
-                font-size: 0;
-            }
-            .sidebar-brand h1 span {
-                font-size: 24px;
-            }
-            .sidebar-brand p,
-            .nav-item .label,
-            .nav-section-title,
-            .sidebar-footer {
-                display: none;
-            }
-            .nav-item {
-                padding: 12px 16px;
-                justify-content: center;
-            }
-            .nav-item .icon {
-                font-size: 20px;
-                width: auto;
-            }
-            .nav-section-title .arrow {
-                display: none;
-            }
-            .content-header h2 {
-                font-size: 15px;
+
+        .login-box .form-group {
+            text-align: left;
+            margin-bottom: 18px;
+        }
+
+        .login-box .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f3a5f;
+            margin-bottom: 5px;
+        }
+
+        .login-box .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #cbdde9;
+            border-radius: 60px;
+            font-size: 14px;
+            background: #f8fafd;
+            transition: 0.2s;
+            outline: none;
+        }
+
+        .login-box .form-group input:focus {
+            border-color: #1a5d8c;
+            box-shadow: 0 0 0 3px rgba(26, 93, 140, 0.15);
+            background: white;
+        }
+
+        .login-box .btn-login {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 60px;
+            background: linear-gradient(135deg, #1a5d8c, #0f2b44);
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(26, 93, 140, 0.3);
+        }
+
+        .login-box .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 93, 140, 0.4);
+        }
+
+        .login-box .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .login-box .error-msg {
+            color: #b13b3b;
+            font-size: 13px;
+            margin-top: 12px;
+            min-height: 20px;
+        }
+
+        .login-box .form-options {
+            display: flex;
+            justify-content: flex-end;
+            font-size: 13px;
+            color: #5f7f9e;
+            margin: 6px 0 20px;
+        }
+
+        .login-box .form-options a {
+            color: #1a5d8c;
+            text-decoration: none;
+        }
+
+        .login-box .form-options a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 480px) {
+            .login-box {
+                padding: 32px 24px;
             }
         }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <!-- ===== 左侧导航 ===== -->
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <h1><span>📦</span> 物流工具箱</h1>
-            <p>Logistics Toolbox</p>
-        </div>
+<div class="login-box">
+    <div class="logo">📦</div>
+    <h1>物流工具箱</h1>
+    <p class="subtitle">请登录以访问工具箱</p>
 
-        <div class="sidebar-nav" id="sidebarNav">
-            <!-- 导航树由 JS 动态渲染 -->
-        </div>
+    <div class="form-group">
+        <label for="username">用户名</label>
+        <input type="text" id="username" placeholder="请输入用户名" value="admin" autofocus>
+    </div>
 
-        <div class="sidebar-footer">
-            v2.0 · 本地工具集
-        </div>
-    </nav>
+    <div class="form-group">
+        <label for="password">密码</label>
+        <input type="password" id="password" placeholder="请输入密码" value="admin123">
+    </div>
 
-    <!-- ===== 右侧内容区 ===== -->
-    <main class="main-content">
-        <header class="content-header">
-            <h2 id="pageTitle">📦 物流工具箱</h2>
-            <span class="breadcrumb" id="breadcrumb">首页 / <span id="breadcrumbCurrent">欢迎</span></span>
-        </header>
+    <div class="form-options">
+        <a href="#" onclick="alert('请联系管理员重置密码')">忘记密码？</a>
+    </div>
 
-        <div class="content-body" id="contentBody">
-            <!-- 默认显示欢迎页，由 JS 渲染 -->
-        </div>
-    </main>
+    <button class="btn-login" id="loginBtn">登 录</button>
+    <div class="error-msg" id="loginError"></div>
 </div>
 
 <script>
     // ============================================================
-    //  工具导航树配置
+    //  登录逻辑
     // ============================================================
-    const TOOLS = [
-        {
-            id: 'welcome',
-            icon: '🏠',
-            label: '首页',
-            section: '导航',
-            desc: '工具箱主页',
-            isWelcome: true
-        },
-        {
-            id: 'address-geocode',
-            icon: '📍',
-            label: '地址转经纬度',
-            section: '地理编码',
-            desc: '批量地址→经纬度',
-            file: 'address-geocode.html'
-        },
-        {
-            id: 'route-distance',
-            icon: '🗺️',
-            label: '线路排程·距离计算',
-            section: '路线规划',
-            desc: '站点排序+距离+轨迹',
-            file: 'route-distance.html'
-        },
-        {
-            id: 'od-distance',
-            icon: '📏',
-            label: '起终点距离测算',
-            section: '路线规划',
-            desc: '批量OD距离计算',
-            file: 'od-distance.html'
-        },
-        {
-            id: 'kmeans-cluster',
-            icon: '🧠',
-            label: 'K-Means聚类规划',
-            section: '智能规划',
-            desc: '容量约束聚类',
-            file: 'kmeans-cluster.html'
+    const loginBtn = document.getElementById('loginBtn');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const loginError = document.getElementById('loginError');
+
+    function handleLogin() {
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!username || !password) {
+            loginError.textContent = '⚠️ 请输入用户名和密码';
+            return;
         }
-    ];
 
-    // ============================================================
-    //  渲染导航树
-    // ============================================================
-    function renderNav() {
-        const nav = document.getElementById('sidebarNav');
-        const sections = {};
-        
-        TOOLS.forEach(t => {
-            if (!sections[t.section]) sections[t.section] = [];
-            sections[t.section].push(t);
-        });
-
-        let html = '';
-        let isFirst = true;
-        for (const [section, items] of Object.entries(sections)) {
-            const collapsedClass = isFirst ? '' : 'collapsed';
-            const arrowClass = isFirst ? '' : 'collapsed';
-            html += `
-                <div class="nav-section">
-                    <div class="nav-section-title" onclick="toggleSection(this)">
-                        ${section}
-                        <span class="arrow ${arrowClass}">▼</span>
-                    </div>
-                    <div class="nav-items ${collapsedClass}" style="max-height:${isFirst ? '999px' : '0'}">
-            `;
-            items.forEach(t => {
-                const active = t.isWelcome ? 'active' : '';
-                html += `
-                    <a class="nav-item ${active}" href="#" data-id="${t.id}" onclick="loadTool('${t.id}')">
-                        <span class="icon">${t.icon}</span>
-                        <span class="label">${t.label}</span>
-                        ${t.desc ? `<span class="badge" style="margin-left:auto;background:rgba(255,255,255,0.12);padding:1px 10px;border-radius:30px;font-size:10px;color:rgba(255,255,255,0.5);">${t.desc}</span>` : ''}
-                    </a>
-                `;
-            });
-            html += `</div></div>`;
-            isFirst = false;
-        }
-        nav.innerHTML = html;
-    }
-
-    // ============================================================
-    //  折叠/展开
-    // ============================================================
-    function toggleSection(el) {
-        const items = el.nextElementSibling;
-        const arrow = el.querySelector('.arrow');
-        if (items.classList.contains('collapsed')) {
-            items.classList.remove('collapsed');
-            items.style.maxHeight = items.scrollHeight + 'px';
-            arrow.classList.remove('collapsed');
+        // 验证账号密码
+        if (username === 'admin' && password === '123456') {
+            loginError.textContent = '';
+            // 登录成功，跳转到首页
+            window.location.href = 'index.html';
         } else {
-            items.classList.add('collapsed');
-            items.style.maxHeight = '0';
-            arrow.classList.add('collapsed');
+            loginError.textContent = '❌ 用户名或密码错误，请重试';
         }
     }
 
-    // ============================================================
-    //  加载工具（支持 iframe 内嵌）
-    // ============================================================
-    function loadTool(toolId) {
-        const tool = TOOLS.find(t => t.id === toolId);
-        if (!tool) return;
-
-        // 更新导航高亮
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        const navItem = document.querySelector(`.nav-item[data-id="${toolId}"]`);
-        if (navItem) navItem.classList.add('active');
-
-        // 更新标题和面包屑
-        document.getElementById('pageTitle').textContent = tool.icon + ' ' + tool.label;
-        document.getElementById('breadcrumbCurrent').textContent = tool.label;
-
-        const body = document.getElementById('contentBody');
-
-        // --- 欢迎页 ---
-        if (tool.isWelcome) {
-            body.innerHTML = `
-                <div class="welcome-content">
-                    <div class="logo-big">📦</div>
-                    <h2>物流工具箱</h2>
-                    <p>欢迎使用物流工具箱 · 集成了地理编码、路线规划、聚类分析等核心工具</p>
-                    <div class="tool-grid">
-                        ${TOOLS.filter(t => !t.isWelcome).map(t => `
-                            <div class="card" onclick="loadTool('${t.id}')">
-                                <div class="icon">${t.icon}</div>
-                                <div class="name">${t.label}</div>
-                                <div class="desc">${t.desc || ''}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-            return;
-        }
-
-        // --- 检查是否有对应的 HTML 文件 ---
-        const filePath = tool.file;
-        if (!filePath) {
-            body.innerHTML = `
-                <div class="tool-error">
-                    <div class="icon-big">🔧</div>
-                    <h3>${tool.label}</h3>
-                    <p>此工具配置错误，未指定文件路径。</p>
-                </div>
-            `;
-            return;
-        }
-
-        // --- 使用 iframe 加载工具页面 ---
-        body.innerHTML = `
-            <div class="iframe-wrapper" id="iframeWrapper">
-                <iframe id="toolIframe" src="${filePath}" allow="geolocation" onerror="handleIframeError()"></iframe>
-            </div>
-        `;
-
-        // 监听 iframe 加载失败（通过超时检测）
-        const iframe = document.getElementById('toolIframe');
-        let loadTimeout = setTimeout(() => {
-            // 检查 iframe 是否成功加载
-            try {
-                const doc = iframe.contentDocument || iframe.contentWindow?.document;
-                if (!doc || doc.body.innerHTML.trim() === '' || doc.body.innerHTML.includes('404')) {
-                    showIframeError(filePath);
-                }
-            } catch (e) {
-                // 跨域无法访问，假设加载成功
-            }
-        }, 3000);
-
-        iframe.onload = function() {
-            clearTimeout(loadTimeout);
-            // 检查是否加载了错误页面
-            try {
-                const doc = iframe.contentDocument || iframe.contentWindow?.document;
-                if (doc && doc.body && doc.body.innerHTML.includes('404') || doc.body.innerHTML.includes('找不到')) {
-                    showIframeError(filePath);
-                }
-            } catch (e) {
-                // 跨域无法访问，假设加载成功
-            }
-        };
-    }
-
-    // ============================================================
-    //  显示 iframe 加载错误
-    // ============================================================
-    function showIframeError(filePath) {
-        const body = document.getElementById('contentBody');
-        body.innerHTML = `
-            <div class="tool-error">
-                <div class="icon-big">📄</div>
-                <h3>工具页面加载失败</h3>
-                <p>无法加载文件：<strong>${filePath}</strong></p>
-                <p style="font-size:13px;margin-top:4px;">请确保该文件与主页放在同一目录下。</p>
-                <button class="btn-open" onclick="window.open('${filePath}','_blank')">在新窗口中打开</button>
-            </div>
-        `;
-    }
-
-    // ============================================================
-    //  全局错误处理
-    // ============================================================
-    function handleIframeError() {
-        // 由 onerror 触发，但可能不会捕获所有错误
-    }
-
-    // ============================================================
-    //  初始化
-    // ============================================================
-    renderNav();
-    loadTool('welcome');
-
-    // 窗口大小变化时，重新计算折叠高度
-    window.addEventListener('resize', () => {
-        document.querySelectorAll('.nav-items').forEach(el => {
-            if (!el.classList.contains('collapsed')) {
-                el.style.maxHeight = el.scrollHeight + 'px';
-            }
-        });
+    // 回车键触发登录
+    loginBtn.addEventListener('click', handleLogin);
+    passwordInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
+    usernameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') passwordInput.focus();
     });
 </script>
 </body>
