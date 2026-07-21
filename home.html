@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>物流工具箱 - 登录</title>
+    <title>物流工具箱 - 首页</title>
     <style>
         /* ========== 全局重置 & 基础 ========== */
         * {
@@ -19,139 +19,10 @@
             overflow: hidden;
         }
 
-        /* ========== 登录页面 ========== */
-        .login-page {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            width: 100vw;
-            background: linear-gradient(135deg, #e9eef3 0%, #dce3ec 100%);
-            position: relative;
-            z-index: 100;
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
-        .login-page.hidden {
-            opacity: 0;
-            transform: scale(0.95);
-            pointer-events: none;
-        }
-
-        .login-box {
-            background: white;
-            border-radius: 2rem;
-            padding: 48px 40px 40px;
-            width: 400px;
-            max-width: 92vw;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
-            text-align: center;
-        }
-        .login-box .logo {
-            font-size: 56px;
-            margin-bottom: 8px;
-        }
-        .login-box h1 {
-            font-size: 24px;
-            color: #1f3a5f;
-            margin-bottom: 4px;
-        }
-        .login-box .subtitle {
-            color: #7a8eaa;
-            font-size: 14px;
-            margin-bottom: 28px;
-        }
-
-        .login-box .form-group {
-            text-align: left;
-            margin-bottom: 18px;
-        }
-        .login-box .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: #1f3a5f;
-            margin-bottom: 5px;
-        }
-        .login-box .form-group input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #cbdde9;
-            border-radius: 60px;
-            font-size: 14px;
-            background: #f8fafd;
-            transition: 0.2s;
-            outline: none;
-        }
-        .login-box .form-group input:focus {
-            border-color: #1a5d8c;
-            box-shadow: 0 0 0 3px rgba(26, 93, 140, 0.15);
-            background: white;
-        }
-
-        .login-box .form-options {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 13px;
-            color: #5f7f9e;
-            margin: 6px 0 20px;
-        }
-        .login-box .form-options label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-        }
-        .login-box .form-options a {
-            color: #1a5d8c;
-            text-decoration: none;
-        }
-        .login-box .form-options a:hover {
-            text-decoration: underline;
-        }
-
-        .login-box .btn-login {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 60px;
-            background: linear-gradient(135deg, #1a5d8c, #0f2b44);
-            color: white;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 4px 12px rgba(26, 93, 140, 0.3);
-        }
-        .login-box .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(26, 93, 140, 0.4);
-        }
-        .login-box .btn-login:active {
-            transform: translateY(0);
-        }
-
-        .login-box .error-msg {
-            color: #b13b3b;
-            font-size: 13px;
-            margin-top: 12px;
-            min-height: 20px;
-        }
-
-        .login-box .footer-text {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #a0b8cc;
-        }
-
-        /* ========== 应用容器（登录后显示） ========== */
         .app-container {
-            display: none;
+            display: flex;
             height: 100vh;
             width: 100%;
-        }
-        .app-container.visible {
-            display: flex;
         }
 
         /* ===== 左侧导航 ===== */
@@ -186,27 +57,6 @@
             opacity: 0.6;
             margin-top: 4px;
             letter-spacing: 1px;
-        }
-        .sidebar-brand .user-info {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .sidebar-brand .user-info .logout-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: #e0eefa;
-            padding: 2px 12px;
-            border-radius: 30px;
-            font-size: 11px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .sidebar-brand .user-info .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
         }
 
         .sidebar-nav {
@@ -283,6 +133,14 @@
             width: 22px;
             text-align: center;
             flex-shrink: 0;
+        }
+        .nav-item .badge {
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.12);
+            padding: 1px 10px;
+            border-radius: 30px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .sidebar-footer {
@@ -487,9 +345,6 @@
                 min-width: 140px;
                 padding: 12px 16px;
             }
-            .login-box {
-                padding: 32px 24px;
-            }
         }
         @media (max-width: 600px) {
             .sidebar {
@@ -531,51 +386,13 @@
 </head>
 <body>
 
-<!-- ============================================================
-     登录页面
-     ============================================================ -->
-<div class="login-page" id="loginPage">
-    <div class="login-box">
-        <div class="logo">📦</div>
-        <h1>物流工具箱</h1>
-        <p class="subtitle">请登录以访问工具箱</p>
-
-        <div class="form-group">
-            <label for="username">用户名</label>
-            <input type="text" id="username" placeholder="请输入用户名" value="admin" autofocus>
-        </div>
-        <div class="form-group">
-            <label for="password">密码</label>
-            <input type="password" id="password" placeholder="请输入密码" value="admin123">
-        </div>
-
-        <div class="form-options">
-            <label>
-                <input type="checkbox" id="rememberMe" checked> 记住我
-            </label>
-            <a href="#" onclick="alert('请联系管理员重置密码')">忘记密码？</a>
-        </div>
-
-        <button class="btn-login" id="loginBtn">登 录</button>
-        <div class="error-msg" id="loginError"></div>
-
-        <div class="footer-text">默认账号: admin / 密码: admin123</div>
-    </div>
-</div>
-
-<!-- ============================================================
-     应用容器（登录后显示）
-     ============================================================ -->
-<div class="app-container" id="appContainer">
+<!-- ===== 应用容器 ===== -->
+<div class="app-container">
     <!-- 左侧导航 -->
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <h1><span>📦</span> 物流工具箱</h1>
             <p>Logistics Toolbox</p>
-            <div class="user-info">
-                <span id="displayUser">👤 admin</span>
-                <button class="logout-btn" id="logoutBtn">退出</button>
-            </div>
         </div>
 
         <div class="sidebar-nav" id="sidebarNav">
@@ -651,84 +468,13 @@
     // ============================================================
     //  DOM 引用
     // ============================================================
-    const loginPage = document.getElementById('loginPage');
-    const appContainer = document.getElementById('appContainer');
-    const loginBtn = document.getElementById('loginBtn');
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-    const rememberMe = document.getElementById('rememberMe');
-    const loginError = document.getElementById('loginError');
-    const displayUser = document.getElementById('displayUser');
-    const logoutBtn = document.getElementById('logoutBtn');
     const logoutTopBtn = document.getElementById('logoutTopBtn');
 
     // ============================================================
-    //  登录逻辑
+    //  退出登录 - 跳转到登录页
     // ============================================================
-    function handleLogin() {
-        const username = usernameInput.value.trim();
-        const password = passwordInput.value.trim();
-
-        if (!username || !password) {
-            loginError.textContent = '⚠️ 请输入用户名和密码';
-            return;
-        }
-
-        if (username === 'admin' && password === 'admin123') {
-            loginError.textContent = '';
-            doLogin(username);
-        } else {
-            loginError.textContent = '❌ 用户名或密码错误，请重试';
-        }
-    }
-
-    function doLogin(username) {
-        if (rememberMe.checked) {
-            localStorage.setItem('toolbox_user', username);
-            localStorage.setItem('toolbox_logged_in', 'true');
-        } else {
-            sessionStorage.setItem('toolbox_user', username);
-            sessionStorage.setItem('toolbox_logged_in', 'true');
-        }
-
-        loginPage.classList.add('hidden');
-        appContainer.classList.add('visible');
-        displayUser.textContent = '👤 ' + username;
-
-        renderNav();
-        loadTool('welcome');
-    }
-
     function doLogout() {
-        localStorage.removeItem('toolbox_user');
-        localStorage.removeItem('toolbox_logged_in');
-        sessionStorage.removeItem('toolbox_user');
-        sessionStorage.removeItem('toolbox_logged_in');
-
-        loginPage.classList.remove('hidden');
-        appContainer.classList.remove('visible');
-        usernameInput.value = 'admin';
-        passwordInput.value = 'admin123';
-        loginError.textContent = '';
-        usernameInput.focus();
-    }
-
-    // ============================================================
-    //  检查登录状态
-    // ============================================================
-    function checkLoginState() {
-        const loggedIn = localStorage.getItem('toolbox_logged_in') === 'true' ||
-                         sessionStorage.getItem('toolbox_logged_in') === 'true';
-        const user = localStorage.getItem('toolbox_user') ||
-                     sessionStorage.getItem('toolbox_user');
-
-        if (loggedIn && user) {
-            doLogin(user);
-        } else {
-            loginPage.classList.remove('hidden');
-            appContainer.classList.remove('visible');
-            usernameInput.focus();
-        }
+        window.location.href = 'login.html';
     }
 
     // ============================================================
@@ -762,7 +508,7 @@
                     <a class="nav-item ${active}" href="#" data-id="${t.id}" onclick="loadTool('${t.id}')">
                         <span class="icon">${t.icon}</span>
                         <span class="label">${t.label}</span>
-                        ${t.desc ? `<span class="badge" style="margin-left:auto;background:rgba(255,255,255,0.12);padding:1px 10px;border-radius:30px;font-size:10px;color:rgba(255,255,255,0.5);">${t.desc}</span>` : ''}
+                        ${t.desc ? `<span class="badge">${t.desc}</span>` : ''}
                     </a>
                 `;
             });
@@ -805,6 +551,7 @@
 
         const body = document.getElementById('contentBody');
 
+        // 欢迎页
         if (tool.isWelcome) {
             body.innerHTML = `
                 <div class="welcome-content">
@@ -825,6 +572,7 @@
             return;
         }
 
+        // 检查是否有对应的HTML文件
         const filePath = tool.file;
         if (!filePath) {
             body.innerHTML = `
@@ -837,6 +585,7 @@
             return;
         }
 
+        // 使用 iframe 加载
         body.innerHTML = `
             <div class="iframe-wrapper">
                 <iframe src="${filePath}" allow="geolocation"></iframe>
@@ -847,21 +596,13 @@
     // ============================================================
     //  事件绑定
     // ============================================================
-    loginBtn.addEventListener('click', handleLogin);
-    logoutBtn.addEventListener('click', doLogout);
     logoutTopBtn.addEventListener('click', doLogout);
-
-    passwordInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleLogin();
-    });
-    usernameInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') passwordInput.focus();
-    });
 
     // ============================================================
     //  初始化
     // ============================================================
-    checkLoginState();
+    renderNav();
+    loadTool('welcome');
 
     window.addEventListener('resize', () => {
         document.querySelectorAll('.nav-items').forEach(el => {
