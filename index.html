@@ -3,151 +3,848 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>工具集登录</title>
+    <title>物流工具箱 - 登录</title>
     <style>
+        /* ========== 全局重置 & 基础 ========== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
         }
 
         body {
+            background: #f0f3f7;
             height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #f0f4f8;
+            overflow: hidden;
         }
 
-        .login-card {
+        /* ========== 登录页面 ========== */
+        .login-page {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+            background: linear-gradient(135deg, #e9eef3 0%, #dce3ec 100%);
+            position: relative;
+            z-index: 100;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .login-page.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+
+        .login-box {
             background: white;
-            padding: 2.5rem 2rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-            width: 100%;
-            max-width: 380px;
+            border-radius: 2rem;
+            padding: 48px 40px 40px;
+            width: 400px;
+            max-width: 92vw;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
             text-align: center;
         }
-
-        .login-card h1 {
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #1a202c;
+        .login-box .logo {
+            font-size: 56px;
+            margin-bottom: 8px;
+        }
+        .login-box h1 {
+            font-size: 24px;
+            color: #1f3a5f;
+            margin-bottom: 4px;
+        }
+        .login-box .subtitle {
+            color: #7a8eaa;
+            font-size: 14px;
+            margin-bottom: 28px;
         }
 
-        .login-card p {
-            color: #718096;
-            font-size: 0.95rem;
-            margin-bottom: 1.8rem;
-        }
-
-        .input-group {
-            margin-bottom: 1.2rem;
+        .login-box .form-group {
             text-align: left;
+            margin-bottom: 18px;
         }
-
-        .input-group label {
+        .login-box .form-group label {
             display: block;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: #4a5568;
-            margin-bottom: 0.3rem;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f3a5f;
+            margin-bottom: 5px;
         }
-
-        .input-group input {
+        .login-box .form-group input {
             width: 100%;
-            padding: 0.7rem 1rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.15s ease;
-        }
-
-        .input-group input:focus {
+            padding: 12px 16px;
+            border: 1px solid #cbdde9;
+            border-radius: 60px;
+            font-size: 14px;
+            background: #f8fafd;
+            transition: 0.2s;
             outline: none;
-            border-color: #4299e1;
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+        }
+        .login-box .form-group input:focus {
+            border-color: #1a5d8c;
+            box-shadow: 0 0 0 3px rgba(26, 93, 140, 0.15);
+            background: white;
         }
 
-        .login-btn {
-            width: 100%;
-            padding: 0.7rem;
-            background: #4299e1;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
+        .login-box .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #5f7f9e;
+            margin: 6px 0 20px;
+        }
+        .login-box .form-options label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             cursor: pointer;
-            transition: background 0.2s ease;
+        }
+        .login-box .form-options a {
+            color: #1a5d8c;
+            text-decoration: none;
+        }
+        .login-box .form-options a:hover {
+            text-decoration: underline;
         }
 
-        .login-btn:hover {
-            background: #3182ce;
+        .login-box .btn-login {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 60px;
+            background: linear-gradient(135deg, #1a5d8c, #0f2b44);
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(26, 93, 140, 0.3);
+        }
+        .login-box .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 93, 140, 0.4);
+        }
+        .login-box .btn-login:active {
+            transform: translateY(0);
         }
 
-        .error-msg {
-            color: #e53e3e;
-            font-size: 0.9rem;
-            margin-top: 1rem;
-            min-height: 1.5rem;
+        .login-box .error-msg {
+            color: #b13b3b;
+            font-size: 13px;
+            margin-top: 12px;
+            min-height: 20px;
+        }
+
+        /* ========== 应用容器（登录后显示） ========== */
+        .app-container {
+            display: none;
+            height: 100vh;
+            width: 100%;
+        }
+        .app-container.visible {
+            display: flex;
+        }
+
+        /* ===== 左侧导航 ===== */
+        .sidebar {
+            width: 280px;
+            min-width: 280px;
+            background: linear-gradient(180deg, #1e3a5f 0%, #0f2b44 100%);
+            color: #e0eefa;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 16px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+        }
+
+        .sidebar-brand {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+        .sidebar-brand h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #f9e0a8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-brand p {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+        .sidebar-brand .user-info {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sidebar-brand .user-info .logout-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #e0eefa;
+            padding: 2px 12px;
+            border-radius: 30px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .sidebar-brand .user-info .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 0 20px;
+        }
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .nav-section {
+            margin-bottom: 6px;
+        }
+        .nav-section-title {
+            padding: 8px 20px 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: rgba(255, 255, 255, 0.35);
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-section-title .arrow {
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+        .nav-section-title .arrow.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .nav-items {
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .nav-items.collapsed {
+            max-height: 0 !important;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 20px 9px 32px;
+            cursor: pointer;
+            transition: 0.15s;
+            border-left: 3px solid transparent;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+        }
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+        }
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.10);
+            border-left-color: #ffb347;
+            color: #fff;
+        }
+        .nav-item .icon {
+            font-size: 16px;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-footer {
+            padding: 14px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.25);
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        /* ===== 右侧内容区 ===== */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f0f3f7;
+            overflow: hidden;
+        }
+
+        .content-header {
+            background: white;
+            padding: 16px 28px;
+            border-bottom: 1px solid #e2edf5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            min-height: 64px;
+        }
+        .content-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f3a5f;
+        }
+        .content-header .breadcrumb {
+            font-size: 13px;
+            color: #7a8eaa;
+        }
+        .content-header .breadcrumb span {
+            color: #1a5d8c;
+        }
+        .content-header .logout-top {
+            background: rgba(26, 93, 140, 0.08);
+            border: 1px solid #cbdde9;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-size: 13px;
+            color: #1a5d8c;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+        .content-header .logout-top:hover {
+            background: #1a5d8c;
+            color: white;
+            border-color: #1a5d8c;
+        }
+
+        .content-body {
+            flex: 1;
+            overflow: hidden;
+            padding: 16px 20px 20px;
+            background: #f0f3f7;
+        }
+
+        .iframe-wrapper {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2edf5;
+        }
+        .iframe-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* ===== 欢迎页 ===== */
+        .welcome-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2edf5;
+        }
+        .welcome-content .logo-big {
+            font-size: 72px;
+            margin-bottom: 20px;
+        }
+        .welcome-content h2 {
+            font-size: 28px;
+            color: #1f3a5f;
+            margin-bottom: 10px;
+        }
+        .welcome-content p {
+            color: #7a8eaa;
+            font-size: 16px;
+            max-width: 480px;
+            line-height: 1.7;
+        }
+        .welcome-content .tool-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 28px;
+            justify-content: center;
+        }
+        .welcome-content .tool-grid .card {
+            background: #f8fafd;
+            border: 1px solid #e2edf5;
+            border-radius: 12px;
+            padding: 16px 24px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: left;
+            min-width: 180px;
+        }
+        .welcome-content .tool-grid .card:hover {
+            border-color: #1a5d8c;
+            background: #f1f6fc;
+            transform: translateY(-2px);
+        }
+        .welcome-content .tool-grid .card .icon {
+            font-size: 24px;
+        }
+        .welcome-content .tool-grid .card .name {
+            font-weight: 600;
+            color: #1f3a5f;
+            margin-top: 4px;
+        }
+        .welcome-content .tool-grid .card .desc {
+            font-size: 12px;
+            color: #7a8eaa;
+            margin-top: 2px;
+        }
+
+        /* ===== 加载错误 ===== */
+        .tool-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2edf5;
+            padding: 40px;
+            text-align: center;
+            color: #7a8eaa;
+        }
+        .tool-error .icon-big {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .tool-error h3 {
+            color: #1f3a5f;
+            margin-bottom: 8px;
+        }
+        .tool-error .btn-open {
+            margin-top: 16px;
+            padding: 10px 32px;
+            border-radius: 60px;
+            border: none;
+            background: #1a5d8c;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tool-error .btn-open:hover {
+            background: #0e466b;
+            transform: translateY(-1px);
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+                min-width: 200px;
+            }
+            .nav-item {
+                font-size: 13px;
+                padding: 8px 16px 8px 24px;
+            }
+            .content-header {
+                padding: 12px 16px;
+            }
+            .content-body {
+                padding: 12px;
+            }
+            .welcome-content .tool-grid .card {
+                min-width: 140px;
+                padding: 12px 16px;
+            }
+            .login-box {
+                padding: 32px 24px;
+            }
+        }
+        @media (max-width: 600px) {
+            .sidebar {
+                width: 56px;
+                min-width: 56px;
+            }
+            .sidebar-brand h1 {
+                font-size: 0;
+            }
+            .sidebar-brand h1 span {
+                font-size: 24px;
+            }
+            .sidebar-brand p,
+            .nav-item .label,
+            .nav-section-title,
+            .sidebar-footer {
+                display: none;
+            }
+            .nav-item {
+                padding: 12px 16px;
+                justify-content: center;
+            }
+            .nav-item .icon {
+                font-size: 20px;
+                width: auto;
+            }
+            .nav-section-title .arrow {
+                display: none;
+            }
+            .content-header h2 {
+                font-size: 15px;
+            }
+            .content-header .logout-top {
+                font-size: 12px;
+                padding: 4px 14px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="login-card">
-        <h1>🔐 工具集</h1>
-        <p>请输入凭证以继续访问</p>
+<!-- ============================================================
+     登录页面
+     ============================================================ -->
+<div class="login-page" id="loginPage">
+    <div class="login-box">
+        <div class="logo">📦</div>
+        <h1>物流工具箱</h1>
+        <p class="subtitle">请登录以访问工具箱</p>
 
-        <form id="loginForm" onsubmit="return handleLogin(event)">
-            <div class="input-group">
-                <label for="username">用户名</label>
-                <input type="text" id="username" placeholder="请输入用户名" required>
-            </div>
-            <div class="input-group">
-                <label for="password">密码</label>
-                <input type="password" id="password" placeholder="请输入密码" required>
-            </div>
+        <div class="form-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" placeholder="请输入用户名" value="" autofocus>
+        </div>
+        <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" placeholder="请输入密码" value="">
+        </div>
 
-            <button type="submit" class="login-btn">登 录</button>
-            <div id="errorMsg" class="error-msg"></div>
-        </form>
+        <div class="form-options">
+            <label style="display:none;">
+                <input type="checkbox" id="rememberMe"> 记住我
+            </label>
+            <a href="#" onclick="alert('请联系管理员重置密码')">忘记密码？</a>
+        </div>
+
+        <button class="btn-login" id="loginBtn">登 录</button>
+        <div class="error-msg" id="loginError"></div>
     </div>
+</div>
 
-    <script>
-        function handleLogin(event) {
-            event.preventDefault();
+<!-- ============================================================
+     应用容器（登录后显示）
+     ============================================================ -->
+<div class="app-container" id="appContainer">
+    <!-- 左侧导航 -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <h1><span>📦</span> 物流工具箱</h1>
+            <p>Logistics Toolbox</p>
+            <div class="user-info">
+                <span id="displayUser">👤 admin</span>
+                <button class="logout-btn" id="logoutBtn">退出</button>
+            </div>
+        </div>
 
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const errorMsg = document.getElementById('errorMsg');
+        <div class="sidebar-nav" id="sidebarNav">
+            <!-- 导航树由 JS 动态渲染 -->
+        </div>
 
-            const VALID_USERNAME = 'admin';
-            const VALID_PASSWORD = '123456';
+        <div class="sidebar-footer">
+            v2.0 · 本地工具集
+        </div>
+    </nav>
 
-            errorMsg.textContent = '';
+    <!-- 右侧内容区 -->
+    <main class="main-content">
+        <header class="content-header">
+            <h2 id="pageTitle">📦 物流工具箱</h2>
+            <span class="breadcrumb" id="breadcrumb">首页 / <span id="breadcrumbCurrent">欢迎</span></span>
+            <button class="logout-top" id="logoutTopBtn">🚪 退出登录</button>
+        </header>
 
-            if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-                localStorage.setItem('isLoggedIn', 'true');
-                // ⭐ 跳转到原主页（现在叫 home.html）
-                window.location.href = 'home.html';
-            } else {
-                errorMsg.textContent = '❌ 用户名或密码错误，请重试';
-                document.getElementById('password').value = '';
-                document.getElementById('password').focus();
-            }
+        <div class="content-body" id="contentBody">
+            <!-- 默认显示欢迎页，由 JS 渲染 -->
+        </div>
+    </main>
+</div>
+
+<script>
+    // ============================================================
+    //  工具导航树配置
+    // ============================================================
+    const TOOLS = [
+        {
+            id: 'welcome',
+            icon: '🏠',
+            label: '首页',
+            section: '导航',
+            desc: '工具箱主页',
+            isWelcome: true
+        },
+        {
+            id: 'address-geocode',
+            icon: '📍',
+            label: '地址转经纬度',
+            section: '地理编码',
+            desc: '批量地址→经纬度',
+            file: 'address-geocode.html'
+        },
+        {
+            id: 'route-distance',
+            icon: '🗺️',
+            label: '线路排程·距离计算',
+            section: '路线规划',
+            desc: '站点排序+距离+轨迹',
+            file: 'route-distance.html'
+        },
+        {
+            id: 'od-distance',
+            icon: '📏',
+            label: '起终点距离测算',
+            section: '路线规划',
+            desc: '批量OD距离计算',
+            file: 'od-distance.html'
+        },
+        {
+            id: 'kmeans-cluster',
+            icon: '🧠',
+            label: 'K-Means聚类规划',
+            section: '智能规划',
+            desc: '容量约束聚类',
+            file: 'kmeans-cluster.html'
+        }
+    ];
+
+    // ============================================================
+    //  DOM 引用
+    // ============================================================
+    const loginPage = document.getElementById('loginPage');
+    const appContainer = document.getElementById('appContainer');
+    const loginBtn = document.getElementById('loginBtn');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const loginError = document.getElementById('loginError');
+    const displayUser = document.getElementById('displayUser');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutTopBtn = document.getElementById('logoutTopBtn');
+
+    // ============================================================
+    //  登录逻辑（强制每次访问都登录，不保存任何状态）
+    // ============================================================
+    function handleLogin() {
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!username || !password) {
+            loginError.textContent = '⚠️ 请输入用户名和密码';
+            return;
         }
 
-        // 如果已登录，直接跳转到 home.html
-        window.addEventListener('load', function() {
-            if (localStorage.getItem('isLoggedIn') === 'true') {
-                window.location.href = 'home.html';
+        // 简单验证
+        if (username === 'admin' && password === '123456') {
+            loginError.textContent = '';
+            doLogin(username);
+        } else {
+            loginError.textContent = '❌ 用户名或密码错误，请重试';
+        }
+    }
+
+    // 登录成功 - 不保存任何状态到 localStorage/sessionStorage
+    function doLogin(username) {
+        // 直接显示首页，不保存登录状态
+        loginPage.classList.add('hidden');
+        appContainer.classList.add('visible');
+        displayUser.textContent = '👤 ' + username;
+
+        // 初始化导航并加载欢迎页
+        renderNav();
+        loadTool('welcome');
+    }
+
+    // 退出登录 - 直接回到登录页，清空输入框
+    function doLogout() {
+        loginPage.classList.remove('hidden');
+        appContainer.classList.remove('visible');
+        usernameInput.value = '';
+        passwordInput.value = '';
+        loginError.textContent = '';
+        usernameInput.focus();
+    }
+
+    // ============================================================
+    //  页面加载时 - 始终显示登录页
+    // ============================================================
+    function checkLoginState() {
+        // 始终显示登录页，不自动登录
+        loginPage.classList.remove('hidden');
+        appContainer.classList.remove('visible');
+        usernameInput.focus();
+    }
+
+    // ============================================================
+    //  渲染导航树
+    // ============================================================
+    function renderNav() {
+        const nav = document.getElementById('sidebarNav');
+        const sections = {};
+        
+        TOOLS.forEach(t => {
+            if (!sections[t.section]) sections[t.section] = [];
+            sections[t.section].push(t);
+        });
+
+        let html = '';
+        let isFirst = true;
+        for (const [section, items] of Object.entries(sections)) {
+            const collapsedClass = isFirst ? '' : 'collapsed';
+            const arrowClass = isFirst ? '' : 'collapsed';
+            html += `
+                <div class="nav-section">
+                    <div class="nav-section-title" onclick="toggleSection(this)">
+                        ${section}
+                        <span class="arrow ${arrowClass}">▼</span>
+                    </div>
+                    <div class="nav-items ${collapsedClass}" style="max-height:${isFirst ? '999px' : '0'}">
+            `;
+            items.forEach(t => {
+                const active = t.isWelcome ? 'active' : '';
+                html += `
+                    <a class="nav-item ${active}" href="#" data-id="${t.id}" onclick="loadTool('${t.id}')">
+                        <span class="icon">${t.icon}</span>
+                        <span class="label">${t.label}</span>
+                        ${t.desc ? `<span class="badge" style="margin-left:auto;background:rgba(255,255,255,0.12);padding:1px 10px;border-radius:30px;font-size:10px;color:rgba(255,255,255,0.5);">${t.desc}</span>` : ''}
+                    </a>
+                `;
+            });
+            html += `</div></div>`;
+            isFirst = false;
+        }
+        nav.innerHTML = html;
+    }
+
+    // ============================================================
+    //  折叠/展开
+    // ============================================================
+    function toggleSection(el) {
+        const items = el.nextElementSibling;
+        const arrow = el.querySelector('.arrow');
+        if (items.classList.contains('collapsed')) {
+            items.classList.remove('collapsed');
+            items.style.maxHeight = items.scrollHeight + 'px';
+            arrow.classList.remove('collapsed');
+        } else {
+            items.classList.add('collapsed');
+            items.style.maxHeight = '0';
+            arrow.classList.add('collapsed');
+        }
+    }
+
+    // ============================================================
+    //  加载工具
+    // ============================================================
+    function loadTool(toolId) {
+        const tool = TOOLS.find(t => t.id === toolId);
+        if (!tool) return;
+
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        const navItem = document.querySelector(`.nav-item[data-id="${toolId}"]`);
+        if (navItem) navItem.classList.add('active');
+
+        document.getElementById('pageTitle').textContent = tool.icon + ' ' + tool.label;
+        document.getElementById('breadcrumbCurrent').textContent = tool.label;
+
+        const body = document.getElementById('contentBody');
+
+        if (tool.isWelcome) {
+            body.innerHTML = `
+                <div class="welcome-content">
+                    <div class="logo-big">📦</div>
+                    <h2>物流工具箱</h2>
+                    <p>欢迎使用物流工具箱 · 集成了地理编码、路线规划、聚类分析等核心工具</p>
+                    <div class="tool-grid">
+                        ${TOOLS.filter(t => !t.isWelcome).map(t => `
+                            <div class="card" onclick="loadTool('${t.id}')">
+                                <div class="icon">${t.icon}</div>
+                                <div class="name">${t.label}</div>
+                                <div class="desc">${t.desc || ''}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        const filePath = tool.file;
+        if (!filePath) {
+            body.innerHTML = `
+                <div class="tool-error">
+                    <div class="icon-big">🔧</div>
+                    <h3>${tool.label}</h3>
+                    <p>此工具配置错误，未指定文件路径。</p>
+                </div>
+            `;
+            return;
+        }
+
+        body.innerHTML = `
+            <div class="iframe-wrapper">
+                <iframe src="${filePath}" allow="geolocation"></iframe>
+            </div>
+        `;
+    }
+
+    // ============================================================
+    //  事件绑定
+    // ============================================================
+    loginBtn.addEventListener('click', handleLogin);
+    logoutBtn.addEventListener('click', doLogout);
+    logoutTopBtn.addEventListener('click', doLogout);
+
+    passwordInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
+    usernameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') passwordInput.focus();
+    });
+
+    // ============================================================
+    //  初始化
+    // ============================================================
+    checkLoginState();
+
+    window.addEventListener('resize', () => {
+        document.querySelectorAll('.nav-items').forEach(el => {
+            if (!el.classList.contains('collapsed')) {
+                el.style.maxHeight = el.scrollHeight + 'px';
             }
         });
-    </script>
-
+    });
+</script>
 </body>
 </html>
