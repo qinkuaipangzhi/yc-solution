@@ -107,23 +107,6 @@
             min-height: 20px;
         }
 
-        .login-box .form-options {
-            display: flex;
-            justify-content: flex-end;
-            font-size: 13px;
-            color: #5f7f9e;
-            margin: 6px 0 20px;
-        }
-
-        .login-box .form-options a {
-            color: #1a5d8c;
-            text-decoration: none;
-        }
-
-        .login-box .form-options a:hover {
-            text-decoration: underline;
-        }
-
         @media (max-width: 480px) {
             .login-box {
                 padding: 32px 24px;
@@ -145,11 +128,7 @@
 
     <div class="form-group">
         <label for="password">密码</label>
-        <input type="password" id="password" placeholder="请输入密码" value="admin123">
-    </div>
-
-    <div class="form-options">
-        <a href="#" onclick="alert('请联系管理员重置密码')">忘记密码？</a>
+        <input type="password" id="password" placeholder="请输入密码" value="123456">
     </div>
 
     <button class="btn-login" id="loginBtn">登 录</button>
@@ -165,6 +144,11 @@
     const passwordInput = document.getElementById('password');
     const loginError = document.getElementById('loginError');
 
+    // 🔧 重要：修改为您实际首页的文件名
+    // 如果首页是 index.html，保持下面不变
+    // 如果首页是 home.html，将 'index.html' 改为 'home.html'
+    const HOME_PAGE = 'home.html';
+
     function handleLogin() {
         const username = usernameInput.value.trim();
         const password = passwordInput.value.trim();
@@ -178,7 +162,7 @@
         if (username === 'admin' && password === '123456') {
             loginError.textContent = '';
             // 登录成功，跳转到首页
-            window.location.href = 'home.html';
+            window.location.href = HOME_PAGE;
         } else {
             loginError.textContent = '❌ 用户名或密码错误，请重试';
         }
