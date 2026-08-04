@@ -5,70 +5,388 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>物流工具箱 - 首页</title>
     <style>
-        /* ========== 样式（与之前相同，略） ========== */
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif; }
-        body { background: #f0f3f7; height: 100vh; overflow: hidden; }
-        .app-container { display: flex; height: 100vh; width: 100%; }
-        
+        /* ========== 全局重置 & 基础 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+        }
+
+        body {
+            background: #f0f3f7;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
         /* ===== 左侧导航 ===== */
-        .sidebar { width: 280px; min-width: 280px; background: linear-gradient(180deg, #1e3a5f 0%, #0f2b44 100%); color: #e0eefa; display: flex; flex-direction: column; box-shadow: 2px 0 16px rgba(0,0,0,0.15); overflow: hidden; position: relative; z-index: 10; }
-        .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
-        .sidebar-brand h1 { font-size: 20px; font-weight: 700; color: #f9e0a8; display: flex; align-items: center; gap: 10px; }
-        .sidebar-brand p { font-size: 12px; opacity: 0.6; margin-top: 4px; letter-spacing: 1px; }
-        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0 20px; }
-        .sidebar-nav::-webkit-scrollbar { width: 4px; }
-        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
-        .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
-        .nav-section { margin-bottom: 6px; }
-        .nav-section-title { padding: 8px 20px 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.35); cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
-        .nav-section-title .arrow { font-size: 10px; transition: transform 0.2s; }
-        .nav-section-title .arrow.collapsed { transform: rotate(-90deg); }
-        .nav-items { overflow: hidden; transition: max-height 0.3s ease; }
-        .nav-items.collapsed { max-height: 0 !important; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 9px 20px 9px 32px; cursor: pointer; transition: 0.15s; border-left: 3px solid transparent; font-size: 14px; color: rgba(255,255,255,0.7); text-decoration: none; }
-        .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
-        .nav-item.active { background: rgba(255,255,255,0.10); border-left-color: #ffb347; color: #fff; }
-        .nav-item .icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
-        .nav-item .badge { margin-left: auto; background: rgba(255,255,255,0.12); padding: 1px 10px; border-radius: 30px; font-size: 10px; color: rgba(255,255,255,0.5); }
-        .sidebar-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 11px; color: rgba(255,255,255,0.25); text-align: center; flex-shrink: 0; }
-        
+        .sidebar {
+            width: 280px;
+            min-width: 280px;
+            background: linear-gradient(180deg, #1e3a5f 0%, #0f2b44 100%);
+            color: #e0eefa;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 16px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            position: relative;
+            z-index: 10;
+        }
+
+        .sidebar-brand {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+        .sidebar-brand h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #f9e0a8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-brand p {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 0 20px;
+        }
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .nav-section {
+            margin-bottom: 6px;
+        }
+        .nav-section-title {
+            padding: 8px 20px 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: rgba(255, 255, 255, 0.35);
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-section-title .arrow {
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+        .nav-section-title .arrow.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .nav-items {
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .nav-items.collapsed {
+            max-height: 0 !important;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 20px 9px 32px;
+            cursor: pointer;
+            transition: 0.15s;
+            border-left: 3px solid transparent;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+        }
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+        }
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.10);
+            border-left-color: #ffb347;
+            color: #fff;
+        }
+        .nav-item .icon {
+            font-size: 16px;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .nav-item .badge {
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.12);
+            padding: 1px 10px;
+            border-radius: 30px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .sidebar-footer {
+            padding: 14px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.25);
+            text-align: center;
+            flex-shrink: 0;
+        }
+
         /* ===== 右侧内容区 ===== */
-        .main-content { flex: 1; display: flex; flex-direction: column; background: #f0f3f7; overflow: hidden; }
-        .content-header { background: white; padding: 16px 28px; border-bottom: 1px solid #e2edf5; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; min-height: 64px; }
-        .content-header h2 { font-size: 18px; font-weight: 600; color: #1f3a5f; }
-        .content-header .breadcrumb { font-size: 13px; color: #7a8eaa; }
-        .content-header .breadcrumb span { color: #1a5d8c; }
-        .content-header .logout-top { background: rgba(26,93,140,0.08); border: 1px solid #cbdde9; padding: 6px 18px; border-radius: 30px; font-size: 13px; color: #1a5d8c; cursor: pointer; transition: 0.2s; font-weight: 500; }
-        .content-header .logout-top:hover { background: #1a5d8c; color: white; border-color: #1a5d8c; }
-        .content-body { flex: 1; overflow: hidden; padding: 16px 20px 20px; background: #f0f3f7; }
-        .iframe-wrapper { width: 100%; height: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid #e2edf5; }
-        .iframe-wrapper iframe { width: 100%; height: 100%; border: none; display: block; }
-        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f0f3f7;
+            overflow: hidden;
+        }
+
+        .content-header {
+            background: white;
+            padding: 16px 28px;
+            border-bottom: 1px solid #e2edf5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            min-height: 64px;
+        }
+        .content-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f3a5f;
+        }
+        .content-header .breadcrumb {
+            font-size: 13px;
+            color: #7a8eaa;
+        }
+        .content-header .breadcrumb span {
+            color: #1a5d8c;
+        }
+        .content-header .logout-top {
+            background: rgba(26, 93, 140, 0.08);
+            border: 1px solid #cbdde9;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-size: 13px;
+            color: #1a5d8c;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+        .content-header .logout-top:hover {
+            background: #1a5d8c;
+            color: white;
+            border-color: #1a5d8c;
+        }
+
+        .content-body {
+            flex: 1;
+            overflow: hidden;
+            padding: 16px 20px 20px;
+            background: #f0f3f7;
+        }
+
+        .iframe-wrapper {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2edf5;
+        }
+        .iframe-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
         /* ===== 欢迎页 ===== */
-        .welcome-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 40px; background: white; border-radius: 12px; border: 1px solid #e2edf5; }
-        .welcome-content .logo-big { font-size: 72px; margin-bottom: 20px; }
-        .welcome-content h2 { font-size: 28px; color: #1f3a5f; margin-bottom: 10px; }
-        .welcome-content p { color: #7a8eaa; font-size: 16px; max-width: 480px; line-height: 1.7; }
-        .welcome-content .tool-grid { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; justify-content: center; }
-        .welcome-content .tool-grid .card { background: #f8fafd; border: 1px solid #e2edf5; border-radius: 12px; padding: 16px 24px; cursor: pointer; transition: 0.2s; text-align: left; min-width: 180px; }
-        .welcome-content .tool-grid .card:hover { border-color: #1a5d8c; background: #f1f6fc; transform: translateY(-2px); }
-        .welcome-content .tool-grid .card .icon { font-size: 24px; }
-        .welcome-content .tool-grid .card .name { font-weight: 600; color: #1f3a5f; margin-top: 4px; }
-        .welcome-content .tool-grid .card .desc { font-size: 12px; color: #7a8eaa; margin-top: 2px; }
-        
+        .welcome-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2edf5;
+        }
+        .welcome-content .logo-big {
+            font-size: 72px;
+            margin-bottom: 20px;
+        }
+        .welcome-content h2 {
+            font-size: 28px;
+            color: #1f3a5f;
+            margin-bottom: 10px;
+        }
+        .welcome-content p {
+            color: #7a8eaa;
+            font-size: 16px;
+            max-width: 480px;
+            line-height: 1.7;
+        }
+        .welcome-content .tool-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 28px;
+            justify-content: center;
+        }
+        .welcome-content .tool-grid .card {
+            background: #f8fafd;
+            border: 1px solid #e2edf5;
+            border-radius: 12px;
+            padding: 16px 24px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: left;
+            min-width: 180px;
+        }
+        .welcome-content .tool-grid .card:hover {
+            border-color: #1a5d8c;
+            background: #f1f6fc;
+            transform: translateY(-2px);
+        }
+        .welcome-content .tool-grid .card .icon {
+            font-size: 24px;
+        }
+        .welcome-content .tool-grid .card .name {
+            font-weight: 600;
+            color: #1f3a5f;
+            margin-top: 4px;
+        }
+        .welcome-content .tool-grid .card .desc {
+            font-size: 12px;
+            color: #7a8eaa;
+            margin-top: 2px;
+        }
+
         /* ===== 加载错误 ===== */
-        .tool-error { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: white; border-radius: 12px; border: 1px solid #e2edf5; padding: 40px; text-align: center; color: #7a8eaa; }
-        .tool-error .icon-big { font-size: 48px; margin-bottom: 16px; }
-        .tool-error h3 { color: #1f3a5f; margin-bottom: 8px; }
-        .tool-error .btn-open { margin-top: 16px; padding: 10px 32px; border-radius: 60px; border: none; background: #1a5d8c; color: white; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .tool-error .btn-open:hover { background: #0e466b; transform: translateY(-1px); }
-        
-        @media (max-width: 768px) { .sidebar { width: 200px; min-width: 200px; } .nav-item { font-size: 13px; padding: 8px 16px 8px 24px; } .content-header { padding: 12px 16px; } .content-body { padding: 12px; } .welcome-content .tool-grid .card { min-width: 140px; padding: 12px 16px; } }
-        @media (max-width: 600px) { .sidebar { width: 56px; min-width: 56px; } .sidebar-brand h1 { font-size: 0; } .sidebar-brand h1 span { font-size: 24px; } .sidebar-brand p, .nav-item .label, .nav-section-title, .sidebar-footer { display: none; } .nav-item { padding: 12px 16px; justify-content: center; } .nav-item .icon { font-size: 20px; width: auto; } .nav-section-title .arrow { display: none; } .content-header h2 { font-size: 15px; } .content-header .logout-top { font-size: 12px; padding: 4px 14px; } }
+        .tool-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2edf5;
+            padding: 40px;
+            text-align: center;
+            color: #7a8eaa;
+        }
+        .tool-error .icon-big {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .tool-error h3 {
+            color: #1f3a5f;
+            margin-bottom: 8px;
+        }
+        .tool-error .btn-open {
+            margin-top: 16px;
+            padding: 10px 32px;
+            border-radius: 60px;
+            border: none;
+            background: #1a5d8c;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tool-error .btn-open:hover {
+            background: #0e466b;
+            transform: translateY(-1px);
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+                min-width: 200px;
+            }
+            .nav-item {
+                font-size: 13px;
+                padding: 8px 16px 8px 24px;
+            }
+            .content-header {
+                padding: 12px 16px;
+            }
+            .content-body {
+                padding: 12px;
+            }
+            .welcome-content .tool-grid .card {
+                min-width: 140px;
+                padding: 12px 16px;
+            }
+        }
+        @media (max-width: 600px) {
+            .sidebar {
+                width: 56px;
+                min-width: 56px;
+            }
+            .sidebar-brand h1 {
+                font-size: 0;
+            }
+            .sidebar-brand h1 span {
+                font-size: 24px;
+            }
+            .sidebar-brand p,
+            .nav-item .label,
+            .nav-section-title,
+            .sidebar-footer {
+                display: none;
+            }
+            .nav-item {
+                padding: 12px 16px;
+                justify-content: center;
+            }
+            .nav-item .icon {
+                font-size: 20px;
+                width: auto;
+            }
+            .nav-section-title .arrow {
+                display: none;
+            }
+            .content-header h2 {
+                font-size: 15px;
+            }
+            .content-header .logout-top {
+                font-size: 12px;
+                padding: 4px 14px;
+            }
+        }
     </style>
 </head>
 <body>
 
+<!-- ===== 应用容器 ===== -->
 <div class="app-container">
     <!-- 左侧导航 -->
     <nav class="sidebar" id="sidebar">
@@ -76,8 +394,14 @@
             <h1><span>📦</span> 物流工具箱</h1>
             <p>Logistics Toolbox</p>
         </div>
-        <div class="sidebar-nav" id="sidebarNav"></div>
-        <div class="sidebar-footer">v2.0 · 本地工具集</div>
+
+        <div class="sidebar-nav" id="sidebarNav">
+            <!-- 导航树由 JS 动态渲染 -->
+        </div>
+
+        <div class="sidebar-footer">
+            v2.0 · 本地工具集
+        </div>
     </nav>
 
     <!-- 右侧内容区 -->
@@ -87,36 +411,66 @@
             <span class="breadcrumb" id="breadcrumb">首页 / <span id="breadcrumbCurrent">欢迎</span></span>
             <button class="logout-top" id="logoutTopBtn">🚪 退出登录</button>
         </header>
-        <div class="content-body" id="contentBody"></div>
+
+        <div class="content-body" id="contentBody">
+            <!-- 默认显示欢迎页，由 JS 渲染 -->
+        </div>
     </main>
 </div>
 
 <script>
     // ============================================================
-    //  🔐 登录验证 - 检查是否已登录（必须放在最前面）
-    // ============================================================
-    function checkLogin() {
-        // 检查 sessionStorage 中是否有登录标记
-        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
-        
-        // 如果没有登录标记，跳转到登录页
-        if (!isLoggedIn || isLoggedIn !== 'true') {
-            window.location.href = 'index.html';
-        }
-    }
-
-    // 页面加载时立即执行验证
-    checkLogin();
-
-    // ============================================================
     //  工具导航树配置
     // ============================================================
     const TOOLS = [
-        { id: 'welcome', icon: '🏠', label: '首页', section: '导航', desc: '工具箱主页', isWelcome: true },
-        { id: 'address-geocode', icon: '📍', label: '地址转经纬度', section: '地理编码', desc: '批量地址→经纬度', file: 'address-geocode.html' },
-        { id: 'route-distance', icon: '🗺️', label: '线路排程·距离计算', section: '路线规划', desc: '站点排序+距离+轨迹', file: 'route-distance.html' },
-        { id: 'od-distance', icon: '📏', label: '起终点距离测算', section: '路线规划', desc: '批量OD距离计算', file: 'od-distance.html' },
-        { id: 'kmeans-cluster', icon: '🧠', label: 'K-Means聚类规划', section: '智能规划', desc: '容量约束聚类', file: 'kmeans-cluster.html' }
+        {
+            id: 'welcome',
+            icon: '🏠',
+            label: '首页',
+            section: '导航',
+            desc: '工具箱主页',
+            isWelcome: true
+        },
+        {
+            id: 'excel-merge-sheets',
+            icon: '📊',
+            label: '多Sheet并表工具',
+            section: 'Excel工具',
+            desc: '合并多Sheet为一个',
+            file: 'excel-merge-sheets.html'
+        },
+        {
+            id: 'address-geocode',
+            icon: '📍',
+            label: '地址转经纬度',
+            section: '地理编码',
+            desc: '批量地址→经纬度',
+            file: 'address-geocode.html'
+        },
+        {
+            id: 'route-distance',
+            icon: '🗺️',
+            label: '线路排程·距离计算',
+            section: '路线规划',
+            desc: '站点排序+距离+轨迹',
+            file: 'route-distance.html'
+        },
+        {
+            id: 'od-distance',
+            icon: '📏',
+            label: '起终点距离测算',
+            section: '路线规划',
+            desc: '批量OD距离计算',
+            file: 'od-distance.html'
+        },
+        {
+            id: 'kmeans-cluster',
+            icon: '🧠',
+            label: 'K-Means聚类规划',
+            section: '智能规划',
+            desc: '容量约束聚类',
+            file: 'kmeans-cluster.html'
+        }
     ];
 
     // ============================================================
@@ -128,12 +482,9 @@
     //  退出登录
     // ============================================================
     function doLogout() {
-        // 🔑 清除登录标记
         sessionStorage.removeItem('isLoggedIn');
         sessionStorage.removeItem('username');
-        
-        // 跳转到登录页
-        window.location.href = 'index.html';
+        window.location.href = 'login.html';
     }
 
     // ============================================================
@@ -210,12 +561,13 @@
 
         const body = document.getElementById('contentBody');
 
+        // 欢迎页
         if (tool.isWelcome) {
             body.innerHTML = `
                 <div class="welcome-content">
                     <div class="logo-big">📦</div>
                     <h2>物流工具箱</h2>
-                    <p>欢迎使用物流工具箱 · 集成了地理编码、路线规划、聚类分析等核心工具</p>
+                    <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析等核心工具</p>
                     <div class="tool-grid">
                         ${TOOLS.filter(t => !t.isWelcome).map(t => `
                             <div class="card" onclick="loadTool('${t.id}')">
@@ -230,6 +582,7 @@
             return;
         }
 
+        // 检查是否有对应的HTML文件
         const filePath = tool.file;
         if (!filePath) {
             body.innerHTML = `
@@ -242,6 +595,7 @@
             return;
         }
 
+        // 使用 iframe 加载
         body.innerHTML = `
             <div class="iframe-wrapper">
                 <iframe src="${filePath}" allow="geolocation"></iframe>
