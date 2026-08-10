@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>3D车厢装载可视化工具 - 带堆叠层数限制</title>
+    <title>3D车厢装载可视化工具 - 堆叠层数限制 + 导出</title>
     <!-- SheetJS 核心库 -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <!-- Three.js 核心库 -->
@@ -45,6 +45,8 @@
         .btn-danger { background: #fce4e4; color: #b13b3b; border: 1px solid #f5c2c2; }
         .btn-danger:hover { background: #fccfcf; }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-export { background: #4a7a9c; color: white; }
+        .btn-export:hover:not(:disabled) { background: #1e5a7a; transform: translateY(-1px); }
 
         .action-bar { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 16px; align-items: center; justify-content: center; }
         .template-download { text-align: center; margin-top: 8px; font-size: 0.7rem; color: #7a8eaa; }
@@ -88,18 +90,24 @@
         .package-label-2d .code { color: #ffcc66; font-weight: 700; }
         .package-label-2d .size { color: #88ddff; font-weight: 600; }
         .package-label-2d .separator { color: rgba(255, 255, 255, 0.4); margin: 0 4px; }
+
+        .copy-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2a7f6e; color: white; padding: 12px 28px; border-radius: 60px; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,0.2); z-index: 2000; animation: fadeInDown 0.3s ease; display: none; }
+        .copy-toast.show { display: block; }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
     </style>
 </head>
 <body>
+<div id="copyToast" class="copy-toast">✅ 已复制到剪贴板！</div>
+
 <div class="container">
     <div class="header">
-        <h1>📦 3D车厢装载可视化工具 - 堆叠层数限制</h1>
-        <p>导入车型尺寸和循环包装箱数据（含数量、堆叠层数限制），自动计算最优堆叠方案，3D展示装载效果</p>
+        <h1>📦 3D车厢装载可视化工具 - 堆叠层数限制 + 导出</h1>
+        <p>导入车型尺寸和循环包装箱数据（含数量、堆叠层数限制），自动计算最优堆叠方案，3D展示装载效果，结果可导出</p>
         <div class="badge-group">
             <span class="badge">📁 车型 + 包装数据</span>
             <span class="badge">🧊 3D堆叠渲染</span>
             <span class="badge">📐 层数限制控制</span>
-            <span class="badge">📋 结果列表展示</span>
+            <span class="badge">📋 结果可导出</span>
         </div>
     </div>
 
@@ -134,6 +142,7 @@
         <!-- 操作按钮 -->
         <div class="action-bar">
             <button class="btn btn-success" id="runBtn" disabled>🧊 执行装载计算 & 3D渲染</button>
+            <button class="btn btn-export" id="exportBtn" disabled>📥 导出配载结果 (Excel)</button>
             <button class="btn btn-outline" id="clearBtn">🗑️ 清空数据</button>
         </div>
 
@@ -200,6 +209,8 @@
     let packageData = [];
     let loadedVehicleFile = null;
     let loadedPackageFile = null;
+    let currentResults = [];      // 存储当前装载结果（用于导出）
+    let currentVehicleUsed = null;
 
     // 3D 相关
     let scene, camera, renderer, labelRenderer, controls;
@@ -230,6 +241,7 @@
     const packageFileTags = document.getElementById('packageFileTags');
     const runBtn = document.getElementById('runBtn');
     const clearBtn = document.getElementById('clearBtn');
+    const exportBtn = document.getElementById('exportBtn');
     const tableBody = document.getElementById('tableBody');
     const rowCount = document.getElementById('rowCount');
     const vehicleCount = document.getElementById('vehicleCount');
@@ -246,6 +258,7 @@
     const legendUtilization = document.getElementById('legendUtilization');
     const downloadVehicleTemplate = document.getElementById('downloadVehicleTemplate');
     const downloadPackageTemplate = document.getElementById('downloadPackageTemplate');
+    const copyToast = document.getElementById('copyToast');
 
     // ============================================================
     //  日志
@@ -396,6 +409,7 @@
         vehicleCount.textContent = vehicleData.length;
         const totalQty = packageData.reduce((sum, p) => sum + p.quantity, 0);
         packageCount.textContent = totalQty;
+        exportBtn.disabled = !(currentResults && currentResults.length > 0);
     }
 
     function getColorForCode(code) {
@@ -595,7 +609,6 @@
     //  装载算法（支持堆叠层数限制）
     // ============================================================
     function calculateLoading(vehicle, packages) {
-        // 展开包装箱，记录每个箱子的层数限制
         let expandedPackages = [];
         for (let p of packages) {
             for (let i = 0; i < p.quantity; i++) {
@@ -606,13 +619,12 @@
                     pwidth: p.pwidth,
                     pheight: p.pheight,
                     quantity: 1,
-                    layerLimit: p.layerLimit,  // 堆叠层数限制，null表示无限制
+                    layerLimit: p.layerLimit,
                     stackCount: 0
                 });
             }
         }
 
-        // 按体积从大到小排序
         const sorted = expandedPackages.sort((a, b) => {
             const volA = a.plength * a.pwidth * a.pheight;
             const volB = b.plength * b.pwidth * b.pheight;
@@ -625,7 +637,6 @@
         const vH = vehicle.height;
         const placedBoxes = [];
 
-        // 检查箱子是否可以放在指定位置
         function canPlaceAt(box, x, y, z, placedBoxes) {
             const overlap = placedBoxes.some(other => {
                 const xOverlap = !(other.posX + other.plength <= x || other.posX >= x + box.plength);
@@ -636,17 +647,13 @@
             return !overlap;
         }
 
-        // 检查箱子是否可以堆叠在指定箱子顶部
         function canStackOn(box, belowBox, placedBoxes) {
-            // 检查层数限制
             if (belowBox.stackCount >= belowBox.layerLimit) return false;
-            // 检查尺寸兼容（堆叠时上下箱子尺寸需一致）
             if (box.plength !== belowBox.plength || box.pwidth !== belowBox.pwidth) return false;
             
             const topZ = belowBox.posZ + belowBox.pheight;
             if (topZ + box.pheight > vH) return false;
             
-            // 检查水平位置重叠
             const overlap = placedBoxes.some(other => {
                 if (other === belowBox) return false;
                 const xOverlap = !(other.posX + other.plength <= belowBox.posX || other.posX >= belowBox.posX + belowBox.plength);
@@ -657,14 +664,12 @@
             return !overlap;
         }
 
-        // 在地面放置箱子
         function placeOnFloor(box, placedBoxes) {
             const orientations = [
                 { w: box.plength, d: box.pwidth, h: box.pheight },
                 { w: box.pwidth, d: box.plength, h: box.pheight }
             ];
             
-            // 按面积从大到小尝试，优先使用大面
             for (let ori of orientations) {
                 const boxW = ori.w;
                 const boxD = ori.d;
@@ -685,12 +690,9 @@
         for (let pkg of sorted) {
             let placed = false;
 
-            // 1. 尝试在已有箱子顶部堆叠
             for (let belowBox of placedBoxes) {
                 if (placed) break;
-                // 检查层数限制
                 if (belowBox.layerLimit !== null && belowBox.stackCount >= belowBox.layerLimit) continue;
-                // 尺寸必须一致才能堆叠
                 if (pkg.plength !== belowBox.plength || pkg.pwidth !== belowBox.pwidth) continue;
                 
                 const topZ = belowBox.posZ + belowBox.pheight;
@@ -728,7 +730,6 @@
                 }
             }
 
-            // 2. 在地面放置
             if (!placed) {
                 const floorPlace = placeOnFloor(pkg, placedBoxes);
                 if (floorPlace) {
@@ -819,7 +820,6 @@
             const centerY = vH / 2;
             const centerZ = vW / 2;
 
-            // 车厢
             const boxGeo = new THREE.BoxGeometry(vL, vH, vW);
             const boxMat = new THREE.MeshPhysicalMaterial({
                 color: 0x4488cc,
@@ -950,6 +950,11 @@
             vehicleUsed = v;
         }
 
+        // 保存当前结果用于导出
+        currentResults = allResults;
+        currentVehicleUsed = vehicleUsed;
+        exportBtn.disabled = false;
+
         renderTable(allResults);
 
         const firstVehicle = vehicleData.find(v => packageMap.has(v.code));
@@ -964,6 +969,7 @@
         const util = vehicleUsed ? (totalVol / (vehicleUsed.length*vehicleUsed.width*vehicleUsed.height))*100 : 0;
 
         addLog(`✅ 装载计算完成！共 ${totalQty} 个包装箱，成功装载 ${loadedCount} 个，利用率 ${util.toFixed(1)}%`, false);
+        updateUI();
     }
 
     // ============================================================
@@ -1007,6 +1013,128 @@
     function escHtml(str) {
         if (!str) return '';
         return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m);
+    }
+
+    // ============================================================
+    //  ★★★ 导出配载结果 (Excel) - 精简版 ★★★
+    // ============================================================
+    function exportResults() {
+        if (!currentResults || currentResults.length === 0) {
+            addLog('没有可导出的配载结果，请先执行装载计算', true);
+            return;
+        }
+
+        try {
+            // 获取已装载的包装箱
+            const loadedItems = currentResults.filter(r => !r.notLoaded);
+            
+            // 按包装代码分组汇总（合并相同代码的包装）
+            const groupMap = new Map();
+            loadedItems.forEach(r => {
+                const key = r.code;
+                if (!groupMap.has(key)) {
+                    groupMap.set(key, {
+                        code: r.code,
+                        plength: r.plength,
+                        pwidth: r.pwidth,
+                        pheight: r.pheight,
+                        quantity: 0,
+                        totalVolume: 0
+                    });
+                }
+                const item = groupMap.get(key);
+                item.quantity += r.quantity || 1;
+                item.totalVolume += (r.plength * r.pwidth * r.pheight) / 1000000000; // 转换为m³
+            });
+
+            // 准备导出数据
+            const exportData = [];
+            let grandTotalQty = 0;
+            let grandTotalVolume = 0;
+
+            groupMap.forEach((item) => {
+                const singleVolume = (item.plength * item.pwidth * item.pheight) / 1000000000;
+                grandTotalQty += item.quantity;
+                grandTotalVolume += item.totalVolume;
+                exportData.push({
+                    '包装代码': item.code,
+                    '包装数量': item.quantity,
+                    '包装长(mm)': item.plength,
+                    '包装宽(mm)': item.pwidth,
+                    '包装高(mm)': item.pheight,
+                    '单包装体积(m³)': singleVolume.toFixed(4),
+                    '合计体积(m³)': item.totalVolume.toFixed(4)
+                });
+            });
+
+            // 添加汇总行
+            exportData.push({
+                '包装代码': '【合计】',
+                '包装数量': grandTotalQty,
+                '包装长(mm)': '',
+                '包装宽(mm)': '',
+                '包装高(mm)': '',
+                '单包装体积(m³)': '',
+                '合计体积(m³)': grandTotalVolume.toFixed(4)
+            });
+
+            // 创建Excel
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            ws['!cols'] = [
+                { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 18 }
+            ];
+            
+            // 设置汇总行样式（加粗）
+            ws['!rows'] = exportData.map((row, idx) => {
+                if (row['包装代码'] === '【合计】') {
+                    return { hpx: 28, bold: true };
+                }
+                return {};
+            });
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '配载清单');
+
+            // 添加车型信息页
+            if (currentVehicleUsed) {
+                const vehicleInfo = [{
+                    '车型代码': currentVehicleUsed.code,
+                    '车型长(mm)': currentVehicleUsed.length,
+                    '车型宽(mm)': currentVehicleUsed.width,
+                    '车型高(mm)': currentVehicleUsed.height,
+                    '车型核载体积(m³)': (currentVehicleUsed.length * currentVehicleUsed.width * currentVehicleUsed.height / 1000000000).toFixed(2),
+                    '已装载箱数': loadedItems.length,
+                    '已装载总体积(m³)': grandTotalVolume.toFixed(4),
+                    '空间利用率(%)': (grandTotalVolume / (currentVehicleUsed.length * currentVehicleUsed.width * currentVehicleUsed.height / 1000000000) * 100).toFixed(1)
+                }];
+                const ws2 = XLSX.utils.json_to_sheet(vehicleInfo);
+                ws2['!cols'] = [{ wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 20 }, { wch: 16 }, { wch: 20 }, { wch: 18 }];
+                XLSX.utils.book_append_sheet(wb, ws2, '车型信息');
+            }
+
+            const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `配载结果_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            addLog(`📥 配载结果导出成功！共 ${groupMap.size} 种包装，合计 ${grandTotalQty} 个，总体积 ${grandTotalVolume.toFixed(4)} m³`, false);
+            showCopyToast('✅ 配载结果已导出！');
+        } catch (err) {
+            addLog(`导出失败: ${err.message}`, true);
+        }
+    }
+
+    function showCopyToast(msg) {
+        copyToast.textContent = msg;
+        copyToast.classList.add('show');
+        setTimeout(() => { copyToast.classList.remove('show'); }, 2500);
     }
 
     // ============================================================
@@ -1064,6 +1192,8 @@
     function clearAll() {
         vehicleData = [];
         packageData = [];
+        currentResults = [];
+        currentVehicleUsed = null;
         loadedVehicleFile = null;
         loadedPackageFile = null;
         vehicleFileTags.innerHTML = '';
@@ -1088,6 +1218,7 @@
         emptyState.style.display = 'flex';
         sceneControls.style.display = 'none';
         legendArea.style.display = 'none';
+        exportBtn.disabled = true;
         updateUI();
         addLog('已清空所有数据', false);
     }
@@ -1177,6 +1308,7 @@
     });
 
     runBtn.addEventListener('click', runLoading);
+    exportBtn.addEventListener('click', exportResults);
     clearBtn.addEventListener('click', clearAll);
 
     document.getElementById('resetViewBtn').addEventListener('click', resetView);
@@ -1191,6 +1323,7 @@
     updateUI();
     addLog('📋 请上传车型尺寸和包装箱数据，然后点击「执行装载计算」', false);
     addLog('📌 堆叠层数限制：填写数字表示该包装箱最多堆叠层数，留空表示无限制（受车厢高度限制）', false);
+    addLog('📥 计算完成后可点击「导出配载结果」按钮导出精简版Excel', false);
 
     setTimeout(() => { initScene(); }, 100);
 </script>
