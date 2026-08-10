@@ -470,6 +470,14 @@
             section: '智能规划',
             desc: '容量约束聚类',
             file: 'kmeans-cluster.html'
+        },
+        {
+            id: 'cargo-loading-3d',
+            icon: '📦',
+            label: '3D车厢装载可视化',
+            section: '3D可视化',
+            desc: '堆叠层数限制',
+            file: 'cargo-loading-3d.html'
         }
     ];
 
@@ -567,7 +575,7 @@
                 <div class="welcome-content">
                     <div class="logo-big">📦</div>
                     <h2>物流工具箱</h2>
-                    <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析等核心工具</p>
+                    <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析、3D装载可视化等核心工具</p>
                     <div class="tool-grid">
                         ${TOOLS.filter(t => !t.isWelcome).map(t => `
                             <div class="card" onclick="loadTool('${t.id}')">
