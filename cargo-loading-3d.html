@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>3D车厢装载可视化工具 - 带堆叠层数限制</title>
+    <!-- SheetJS 核心库 -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <!-- Three.js 核心库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- CSS2DRenderer 用于标签 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif; }
+        body { background: linear-gradient(145deg, #eef2f9 0%, #e0e8f2 100%); min-height: 100vh; padding: 1.5rem 1.5rem 2rem; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #1e3a5f, #0f2b44); border-radius: 2rem; padding: 1.8rem 2rem; color: white; margin-bottom: 1.8rem; box-shadow: 0 12px 28px -10px rgba(0,0,0,0.25); }
+        .header h1 { font-size: 1.9rem; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+        .header p { opacity: 0.85; margin-top: 8px; font-size: 0.95rem; }
+        .badge-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+        .badge { background: #2c6288; padding: 4px 16px; border-radius: 40px; font-size: 0.7rem; }
+
+        .upload-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.8rem; }
+        @media (max-width: 900px) { .upload-section { grid-template-columns: 1fr; } }
+
+        .upload-card { background: #f8fafd; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid #e2edf5; }
+        .upload-card h3 { color: #1f3a5f; font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .drop-zone { background: #fafcff; border: 2px dashed #bdd2ec; border-radius: 1.2rem; padding: 1.5rem 1rem; text-align: center; cursor: pointer; transition: 0.2s; }
+        .drop-zone:hover { border-color: #1f6392; background: #f2f8ff; }
+        .drop-zone .icon { font-size: 2rem; }
+        .drop-zone .title { font-weight: 600; color: #1f3a5f; font-size: 0.9rem; }
+        .drop-zone .sub { font-size: 0.7rem; color: #7a8eaa; margin-top: 2px; }
+        .file-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .file-tag { background: white; border-radius: 30px; padding: 2px 12px; font-size: 0.7rem; border: 1px solid #d4e2f0; }
+
+        .btn { border: none; padding: 10px 28px; border-radius: 60px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: #1a5d8c; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .btn-primary:hover:not(:disabled) { background: #0e466b; transform: translateY(-1px); }
+        .btn-success { background: #2a7f6e; color: white; }
+        .btn-success:hover:not(:disabled) { background: #1e6657; transform: translateY(-1px); }
+        .btn-outline { background: #eef3fc; color: #1f4970; border: 1px solid #cde0ee; }
+        .btn-outline:hover { background: #e2ebf5; }
+        .btn-danger { background: #fce4e4; color: #b13b3b; border: 1px solid #f5c2c2; }
+        .btn-danger:hover { background: #fccfcf; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .action-bar { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 16px; align-items: center; justify-content: center; }
+        .template-download { text-align: center; margin-top: 8px; font-size: 0.7rem; color: #7a8eaa; }
+        .template-download a { color: #1a5d8c; cursor: pointer; font-weight: 600; text-decoration: none; }
+        .template-download a:hover { text-decoration: underline; }
+
+        .scene-container { background: #ffffff; border-radius: 1.5rem; border: 1px solid #e2edf5; overflow: hidden; margin-top: 1.2rem; position: relative; min-height: 560px; }
+        #threeCanvas { width: 100%; height: 560px; display: block; background: #ffffff; position: relative; }
+
+        .scene-controls { position: absolute; bottom: 20px; left: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 20; }
+        .scene-controls .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .scene-controls button { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.15); color: white; padding: 8px 16px; border-radius: 30px; cursor: pointer; font-size: 0.75rem; transition: 0.2s; font-weight: 500; white-space: nowrap; }
+        .scene-controls button:hover { background: rgba(26, 93, 140, 0.8); transform: translateY(-1px); }
+        .scene-controls .info { color: rgba(255, 255, 255, 0.6); font-size: 0.65rem; padding: 4px 8px; }
+
+        .table-wrap { overflow-x: auto; border-radius: 1.2rem; border: 1px solid #e3ecf5; background: white; margin-top: 1rem; max-height: 400px; overflow-y: auto; }
+        .data-table { width: 100%; font-size: 0.78rem; border-collapse: collapse; min-width: 850px; }
+        .data-table th { background: #f1f6fc; color: #1f3a5f; font-weight: 600; padding: 10px 8px; border-bottom: 2px solid #d3e0ee; position: sticky; top: 0; z-index: 5; white-space: nowrap; }
+        .data-table td { padding: 8px 8px; border-bottom: 1px solid #e6edf5; vertical-align: middle; }
+        .data-table tr:hover td { background: #f8fafd; }
+
+        .stat-bar { display: flex; flex-wrap: wrap; gap: 18px; padding: 12px 16px; background: #f8fafd; border-radius: 1rem; margin-top: 12px; align-items: center; justify-content: space-between; }
+        .stat-item { font-size: 0.8rem; color: #2c3e66; }
+        .stat-item strong { color: #1a5d8c; }
+
+        .log-card { background: #0f1a24; border-radius: 1.2rem; padding: 1rem; margin-top: 1.2rem; }
+        .log-content { color: #c9e1f0; font-family: monospace; font-size: 0.75rem; max-height: 100px; overflow-y: auto; }
+
+        .legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 8px 16px; background: #f8fafd; border-radius: 1rem; margin-top: 8px; font-size: 0.7rem; color: #4a627a; }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-color { width: 20px; height: 20px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); }
+
+        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 560px; color: #7a8eaa; background: #ffffff; }
+        .empty-state .icon-big { font-size: 4rem; margin-bottom: 16px; opacity: 0.3; }
+        .empty-state h3 { color: #1f3a5f; margin-bottom: 4px; }
+        .empty-state p { color: #7a8eaa; }
+
+        footer { text-align: center; font-size: 0.7rem; color: #6c86a3; padding: 1rem 0 0; }
+
+        .package-label-2d { background: rgba(0, 0, 0, 0.85); color: #ffffff; padding: 6px 16px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); font-size: 13px; font-weight: 600; font-family: 'Segoe UI', sans-serif; white-space: nowrap; pointer-events: none; user-select: none; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); letter-spacing: 0.3px; }
+        .package-label-2d .code { color: #ffcc66; font-weight: 700; }
+        .package-label-2d .size { color: #88ddff; font-weight: 600; }
+        .package-label-2d .separator { color: rgba(255, 255, 255, 0.4); margin: 0 4px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📦 3D车厢装载可视化工具 - 堆叠层数限制</h1>
+        <p>导入车型尺寸和循环包装箱数据（含数量、堆叠层数限制），自动计算最优堆叠方案，3D展示装载效果</p>
+        <div class="badge-group">
+            <span class="badge">📁 车型 + 包装数据</span>
+            <span class="badge">🧊 3D堆叠渲染</span>
+            <span class="badge">📐 层数限制控制</span>
+            <span class="badge">📋 结果列表展示</span>
+        </div>
+    </div>
+
+    <div class="content">
+        <!-- 上传区域 -->
+        <div class="upload-section">
+            <div class="upload-card">
+                <h3>🚛 车型尺寸数据</h3>
+                <div class="drop-zone" id="vehicleDropZone">
+                    <div class="icon">📂</div>
+                    <div class="title">拖拽或点击上传车型Excel</div>
+                    <div class="sub">需包含：车型代码, 车型长(mm), 车型宽(mm), 车型高(mm)</div>
+                    <input type="file" id="vehicleFileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+                    <div class="file-tags" id="vehicleFileTags"></div>
+                </div>
+                <div class="template-download"><a id="downloadVehicleTemplate">📋 下载车型模板</a></div>
+            </div>
+
+            <div class="upload-card">
+                <h3>📦 循环包装箱数据</h3>
+                <div class="drop-zone" id="packageDropZone">
+                    <div class="icon">📂</div>
+                    <div class="title">拖拽或点击上传包装箱Excel</div>
+                    <div class="sub">需包含：包装代码, 包装长(mm), 包装宽(mm), 包装高(mm), 包装数量, 堆叠层数限制, 车型代码</div>
+                    <input type="file" id="packageFileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+                    <div class="file-tags" id="packageFileTags"></div>
+                </div>
+                <div class="template-download"><a id="downloadPackageTemplate">📋 下载包装箱模板</a></div>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="action-bar">
+            <button class="btn btn-success" id="runBtn" disabled>🧊 执行装载计算 & 3D渲染</button>
+            <button class="btn btn-outline" id="clearBtn">🗑️ 清空数据</button>
+        </div>
+
+        <!-- 3D 场景 -->
+        <div class="scene-container">
+            <div id="threeCanvas">
+                <div class="empty-state" id="emptyState">
+                    <div class="icon-big">📦</div>
+                    <h3>等待数据加载</h3>
+                    <p>请上传车型尺寸和包装箱数据，点击「执行装载计算」</p>
+                </div>
+            </div>
+            <div class="scene-controls" id="sceneControls" style="display:none;">
+                <div class="btn-group">
+                    <button id="resetViewBtn">🔄 重置视角</button>
+                    <button id="topViewBtn">🔽 俯视图</button>
+                    <button id="frontViewBtn">▶️ 正视图</button>
+                    <button id="sideViewBtn">➡️ 侧视图</button>
+                </div>
+                <span class="info">🖱️ 拖拽旋转 · 滚轮缩放 · 点击箱子显示标签</span>
+            </div>
+        </div>
+
+        <!-- 图例 -->
+        <div class="legend" id="legendArea" style="display:none;">
+            <span style="font-weight:600;">图例：</span>
+            <div class="legend-item"><span class="legend-color" style="background:rgba(100,180,255,0.3);border-color:#64b4ff;"></span><span>车厢边界</span></div>
+            <div class="legend-item" id="legendPackageCount"><span>📦 包装箱总数: 0</span></div>
+            <div class="legend-item" id="legendLoadedCount"><span>✅ 已装载: 0</span></div>
+            <div class="legend-item" id="legendUtilization"><span>📐 空间利用率: 0%</span></div>
+        </div>
+
+        <!-- 结果表格 -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:16px;">
+            <span style="font-weight:600; color:#1f3a5f;">📊 装载结果列表</span>
+            <span style="font-size:0.75rem; color:#7a8eaa;" id="rowCount">共 0 条</span>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>序号</th><th>包装代码</th><th>车型代码</th><th>长(mm)</th><th>宽(mm)</th><th>高(mm)</th><th>数量</th><th>层数限制</th><th>实际堆叠层</th><th>位置X</th><th>位置Y</th><th>位置Z</th><th>旋转</th><th>状态</th></tr></thead>
+                <tbody id="tableBody"><tr><td colspan="14" style="text-align:center; color:#a18163; padding:30px;">请上传数据并执行装载计算</td></tr></tbody>
+            </table>
+        </div>
+
+        <!-- 统计栏 -->
+        <div class="stat-bar">
+            <span class="stat-item">📌 车型数：<strong id="vehicleCount">0</strong></span>
+            <span class="stat-item">📦 包装箱总数：<strong id="packageCount">0</strong></span>
+            <span class="stat-item">✅ 已装载：<strong id="loadedCount">0</strong></span>
+            <span class="stat-item">📐 空间利用率：<strong id="utilizationDisplay">0%</strong></span>
+            <span class="stat-item" id="statusText">⏳ 就绪</span>
+        </div>
+
+        <div class="log-card"><div class="log-content" id="logArea">⚙️ 等待操作… 请上传车型尺寸和包装箱数据</div></div>
+        <footer>🔒 所有处理在浏览器本地完成 | 基于Three.js 3D渲染</footer>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    //  全局状态
+    // ============================================================
+    let vehicleData = [];
+    let packageData = [];
+    let loadedVehicleFile = null;
+    let loadedPackageFile = null;
+
+    // 3D 相关
+    let scene, camera, renderer, labelRenderer, controls;
+    let containerRef = document.getElementById('threeCanvas');
+    let allMeshes = [];
+    let vehicleBox = null;
+    let isSceneInitialized = false;
+    let rendererReady = false;
+    let gridHelper = null;
+    let ambientLight, dirLight, backLight, fillLight;
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2();
+    let currentHighlight = null;
+    let currentLabel = null;
+    let isRendering = false;
+
+    // 颜色映射
+    const colorPalette = [0x4A9EFF, 0xFF6B6B, 0x2ED573, 0xFF9F43, 0xA29BFE, 0x48DBFB, 0xFF6B81, 0x7BED9F, 0xFECA57, 0x5F27CD, 0x0ABDE3, 0xEE5A24, 0x10AC84, 0x341F97, 0xF368E0, 0x54A0FF, 0x5F6CAF, 0xFF6348, 0xECCC68, 0x778BEB, 0xFD79A8, 0x00D2D3, 0x01A3A4, 0xF8A5C2, 0x74B9FF, 0xA3CB38, 0xEB4D4B, 0xF9CA24, 0x6C5CE7, 0x00B894];
+    let colorMap = {};
+    let colorIndex = 0;
+
+    // DOM
+    const vehicleDropZone = document.getElementById('vehicleDropZone');
+    const packageDropZone = document.getElementById('packageDropZone');
+    const vehicleFileInput = document.getElementById('vehicleFileInput');
+    const packageFileInput = document.getElementById('packageFileInput');
+    const vehicleFileTags = document.getElementById('vehicleFileTags');
+    const packageFileTags = document.getElementById('packageFileTags');
+    const runBtn = document.getElementById('runBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const tableBody = document.getElementById('tableBody');
+    const rowCount = document.getElementById('rowCount');
+    const vehicleCount = document.getElementById('vehicleCount');
+    const packageCount = document.getElementById('packageCount');
+    const loadedCountDisplay = document.getElementById('loadedCount');
+    const utilizationDisplay = document.getElementById('utilizationDisplay');
+    const statusText = document.getElementById('statusText');
+    const logArea = document.getElementById('logArea');
+    const emptyState = document.getElementById('emptyState');
+    const sceneControls = document.getElementById('sceneControls');
+    const legendArea = document.getElementById('legendArea');
+    const legendPackageCount = document.getElementById('legendPackageCount');
+    const legendLoadedCount = document.getElementById('legendLoadedCount');
+    const legendUtilization = document.getElementById('legendUtilization');
+    const downloadVehicleTemplate = document.getElementById('downloadVehicleTemplate');
+    const downloadPackageTemplate = document.getElementById('downloadPackageTemplate');
+
+    // ============================================================
+    //  日志
+    // ============================================================
+    function addLog(msg, isError = false) {
+        const time = new Date().toLocaleTimeString();
+        const prefix = isError ? '❌' : '📌';
+        const color = isError ? '#ffb4a2' : '#b9e0ff';
+        logArea.innerHTML += `<span style="color:${color}">${prefix} [${time}] ${msg}</span><br>`;
+        logArea.scrollTop = logArea.scrollHeight;
+        if (logArea.innerHTML.split('<br>').length > 100) {
+            const lines = logArea.innerHTML.split('<br>');
+            logArea.innerHTML = lines.slice(-70).join('<br>');
+        }
+        updateStatus(msg, isError);
+    }
+
+    function updateStatus(msg, isError = false) {
+        statusText.textContent = msg;
+        statusText.style.color = isError ? '#b13b3b' : '#2c3e66';
+    }
+
+    // ============================================================
+    //  解析Excel
+    // ============================================================
+    function parseExcel(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+                    resolve(rows);
+                } catch (err) { reject(err); }
+            };
+            reader.onerror = () => reject(new Error(`读取失败 ${file.name}`));
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    // ============================================================
+    //  加载车型数据
+    // ============================================================
+    async function loadVehicleData(file) {
+        try {
+            const rows = await parseExcel(file);
+            const headers = Object.keys(rows[0] || {});
+            const codeCol = headers.find(h => /车型代码|车型|code/i.test(h));
+            const lenCol = headers.find(h => /车型长|长|length|l/i.test(h));
+            const widCol = headers.find(h => /车型宽|宽|width|w/i.test(h));
+            const heiCol = headers.find(h => /车型高|高|height|h/i.test(h));
+
+            if (!codeCol || !lenCol || !widCol || !heiCol) {
+                addLog('车型数据缺少必要列！需要: 车型代码, 车型长, 车型宽, 车型高', true);
+                return false;
+            }
+
+            vehicleData = [];
+            for (let row of rows) {
+                let code = row[codeCol]?.toString().trim();
+                let length = parseFloat(row[lenCol]);
+                let width = parseFloat(row[widCol]);
+                let height = parseFloat(row[heiCol]);
+                if (code && !isNaN(length) && !isNaN(width) && !isNaN(height) && length > 0 && width > 0 && height > 0) {
+                    vehicleData.push({ code, length, width, height });
+                }
+            }
+
+            if (vehicleData.length === 0) { addLog('未解析到有效车型数据', true); return false; }
+            addLog(`✅ 加载 ${vehicleData.length} 种车型`, false);
+            return true;
+        } catch (err) { addLog(`解析车型数据失败: ${err.message}`, true); return false; }
+    }
+
+    // ============================================================
+    //  加载包装箱数据（含堆叠层数限制）
+    // ============================================================
+    async function loadPackageData(file) {
+        try {
+            const rows = await parseExcel(file);
+            const headers = Object.keys(rows[0] || {});
+            const codeCol = headers.find(h => /包装代码|代码|code/i.test(h));
+            const lenCol = headers.find(h => /包装长|长|length|l/i.test(h));
+            const widCol = headers.find(h => /包装宽|宽|width|w/i.test(h));
+            const heiCol = headers.find(h => /包装高|高|height|h/i.test(h));
+            const qtyCol = headers.find(h => /包装数量|数量|qty|quantity/i.test(h));
+            const layerCol = headers.find(h => /堆叠层数限制|层数限制|层数|layer|stack/i.test(h));
+            const vehCol = headers.find(h => /车型代码|车型|vehicle/i.test(h));
+
+            if (!codeCol || !lenCol || !widCol || !heiCol || !qtyCol || !vehCol) {
+                addLog('包装箱数据缺少必要列！需要: 包装代码, 包装长, 包装宽, 包装高, 包装数量, 车型代码', true);
+                return false;
+            }
+
+            packageData = [];
+            for (let row of rows) {
+                let code = row[codeCol]?.toString().trim();
+                let plength = parseFloat(row[lenCol]);
+                let pwidth = parseFloat(row[widCol]);
+                let pheight = parseFloat(row[heiCol]);
+                let quantity = parseInt(row[qtyCol]) || 1;
+                let layerLimit = null;
+                if (layerCol) {
+                    let val = parseFloat(row[layerCol]);
+                    if (!isNaN(val) && val > 0) layerLimit = Math.floor(val);
+                }
+                let vehicleCode = row[vehCol]?.toString().trim();
+                if (code && !isNaN(plength) && !isNaN(pwidth) && !isNaN(pheight) && vehicleCode && plength > 0 && pwidth > 0 && pheight > 0 && quantity > 0) {
+                    packageData.push({ code, plength, pwidth, pheight, quantity, layerLimit, vehicleCode });
+                }
+            }
+
+            if (packageData.length === 0) { addLog('未解析到有效包装箱数据', true); return false; }
+
+            const totalQty = packageData.reduce((sum, p) => sum + p.quantity, 0);
+            addLog(`✅ 加载 ${packageData.length} 种包装箱，共 ${totalQty} 个，${packageData.filter(p => p.layerLimit !== null).length} 种有限制`, false);
+            return true;
+        } catch (err) { addLog(`解析包装箱数据失败: ${err.message}`, true); return false; }
+    }
+
+    // ============================================================
+    //  文件上传处理
+    // ============================================================
+    async function handleVehicleFile(file) {
+        if (!file) return;
+        const ok = await loadVehicleData(file);
+        if (ok) {
+            loadedVehicleFile = file;
+            vehicleFileTags.innerHTML = `<span class="file-tag">📄 ${file.name} (${vehicleData.length}种)</span>`;
+            updateUI();
+        }
+    }
+
+    async function handlePackageFile(file) {
+        if (!file) return;
+        const ok = await loadPackageData(file);
+        if (ok) {
+            loadedPackageFile = file;
+            packageFileTags.innerHTML = `<span class="file-tag">📄 ${file.name} (${packageData.length}种)</span>`;
+            updateUI();
+        }
+    }
+
+    function updateUI() {
+        runBtn.disabled = !(vehicleData.length > 0 && packageData.length > 0);
+        vehicleCount.textContent = vehicleData.length;
+        const totalQty = packageData.reduce((sum, p) => sum + p.quantity, 0);
+        packageCount.textContent = totalQty;
+    }
+
+    function getColorForCode(code) {
+        if (!colorMap[code]) {
+            if (colorIndex < colorPalette.length) {
+                colorMap[code] = colorPalette[colorIndex++];
+            } else {
+                const hue = Math.random();
+                const color = new THREE.Color().setHSL(hue, 0.8, 0.5);
+                colorMap[code] = color.getHex();
+            }
+        }
+        return colorMap[code];
+    }
+
+    function createLabel2D(code, plength, pwidth, pheight) {
+        const div = document.createElement('div');
+        div.className = 'package-label-2d';
+        div.innerHTML = `<span class="code">${code}</span><span class="separator"> - </span><span class="size">${plength}×${pwidth}×${pheight}</span>`;
+        const label = new THREE.CSS2DObject(div);
+        label.frustumCulled = false;
+        return label;
+    }
+
+    // ============================================================
+    //  3D 场景初始化
+    // ============================================================
+    function initScene() {
+        if (isSceneInitialized && rendererReady) return;
+
+        const container = containerRef;
+        const rect = container.getBoundingClientRect();
+        const width = rect.width || container.clientWidth || 1200;
+        const height = rect.height || container.clientHeight || 560;
+        const finalWidth = Math.max(width, 400);
+        const finalHeight = Math.max(height, 400);
+
+        container.style.width = '100%';
+        container.style.height = finalHeight + 'px';
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffffff);
+
+        camera = new THREE.PerspectiveCamera(45, finalWidth / finalHeight, 0.1, 1000000);
+        camera.position.set(1500, 1200, 1800);
+        camera.lookAt(0, 0, 0);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(finalWidth, finalHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.setClearColor(0xffffff, 1);
+        renderer.localClippingEnabled = false;
+
+        labelRenderer = new THREE.CSS2DRenderer();
+        labelRenderer.setSize(finalWidth, finalHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        labelRenderer.domElement.style.zIndex = '10';
+
+        while (container.firstChild) { container.removeChild(container.firstChild); }
+        container.appendChild(renderer.domElement);
+        container.appendChild(labelRenderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.target.set(0, 0, 0);
+        controls.update();
+
+        ambientLight = new THREE.AmbientLight(0x606080, 0.5);
+        scene.add(ambientLight);
+        dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(1000, 2000, 1000);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+        backLight = new THREE.DirectionalLight(0x8888cc, 0.3);
+        backLight.position.set(-500, 500, -1000);
+        scene.add(backLight);
+        fillLight = new THREE.DirectionalLight(0xffdd88, 0.2);
+        fillLight.position.set(-500, 500, 1000);
+        scene.add(fillLight);
+
+        gridHelper = new THREE.GridHelper(2000, 20, 0x8899bb, 0x667799);
+        gridHelper.position.y = -0.5;
+        scene.add(gridHelper);
+
+        isSceneInitialized = true;
+        rendererReady = true;
+
+        window.addEventListener('resize', onResize);
+        animate();
+
+        renderer.domElement.addEventListener('click', onBoxClick);
+        renderer.domElement.style.cursor = 'pointer';
+
+        sceneControls.style.display = 'block';
+        emptyState.style.display = 'none';
+        legendArea.style.display = 'flex';
+
+        if (renderer && scene && camera) { renderer.render(scene, camera); }
+        if (labelRenderer && scene && camera) { labelRenderer.render(scene, camera); }
+
+        addLog('🎨 3D场景初始化完成', false);
+    }
+
+    function onResize() {
+        if (!containerRef || !renderer || !camera) return;
+        const width = containerRef.clientWidth || 1200;
+        const height = containerRef.clientHeight || 560;
+        const finalWidth = Math.max(width, 400);
+        const finalHeight = Math.max(height, 400);
+        camera.aspect = finalWidth / finalHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(finalWidth, finalHeight);
+        if (labelRenderer) { labelRenderer.setSize(finalWidth, finalHeight); }
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        if (controls) controls.update();
+        if (renderer && scene && camera) { renderer.render(scene, camera); }
+        if (labelRenderer && scene && camera) { labelRenderer.render(scene, camera); }
+    }
+
+    function onBoxClick(event) {
+        if (!renderer || !scene || !camera) return;
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+
+        const allObjects = [];
+        scene.traverse(function(obj) {
+            if (obj.isMesh && obj.userData && obj.userData.isPackage) { allObjects.push(obj); }
+        });
+
+        const intersects = raycaster.intersectObjects(allObjects);
+
+        if (currentLabel) { scene.remove(currentLabel); currentLabel = null; }
+        if (currentHighlight) {
+            currentHighlight.material.emissive.setHex(0x000000);
+            currentHighlight.material.emissiveIntensity = 0;
+            currentHighlight = null;
+        }
+
+        if (intersects.length > 0) {
+            const hit = intersects[0].object;
+            const data = hit.userData;
+            if (data && data.code && data.plength && data.pwidth && data.pheight) {
+                currentLabel = createLabel2D(data.code, data.plength, data.pwidth, data.pheight);
+                const pos = hit.position.clone();
+                pos.y += data.pheight / 2 + 40;
+                currentLabel.position.copy(pos);
+                scene.add(currentLabel);
+                hit.material.emissive.setHex(0x446688);
+                hit.material.emissiveIntensity = 0.4;
+                currentHighlight = hit;
+                addLog(`📍 点击: ${data.code} - ${data.plength}×${data.pwidth}×${data.pheight}`, false);
+            }
+        }
+    }
+
+    // ============================================================
+    //  清除3D场景
+    // ============================================================
+    function clearScene() {
+        if (!scene) return;
+        for (let mesh of allMeshes) {
+            scene.remove(mesh);
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) mesh.material.dispose();
+        }
+        allMeshes = [];
+        if (currentLabel) { scene.remove(currentLabel); currentLabel = null; }
+        if (currentHighlight) {
+            currentHighlight.material.emissive.setHex(0x000000);
+            currentHighlight.material.emissiveIntensity = 0;
+            currentHighlight = null;
+        }
+        if (vehicleBox) { scene.remove(vehicleBox); vehicleBox = null; }
+        if (gridHelper && !scene.children.includes(gridHelper)) { scene.add(gridHelper); }
+        if (ambientLight && !scene.children.includes(ambientLight)) { scene.add(ambientLight); }
+        if (dirLight && !scene.children.includes(dirLight)) { scene.add(dirLight); }
+        if (backLight && !scene.children.includes(backLight)) { scene.add(backLight); }
+        if (fillLight && !scene.children.includes(fillLight)) { scene.add(fillLight); }
+        if (renderer && scene && camera) { renderer.render(scene, camera); }
+        if (labelRenderer && scene && camera) { labelRenderer.render(scene, camera); }
+    }
+
+    // ============================================================
+    //  装载算法（支持堆叠层数限制）
+    // ============================================================
+    function calculateLoading(vehicle, packages) {
+        // 展开包装箱，记录每个箱子的层数限制
+        let expandedPackages = [];
+        for (let p of packages) {
+            for (let i = 0; i < p.quantity; i++) {
+                expandedPackages.push({
+                    code: p.code,
+                    vehicleCode: p.vehicleCode,
+                    plength: p.plength,
+                    pwidth: p.pwidth,
+                    pheight: p.pheight,
+                    quantity: 1,
+                    layerLimit: p.layerLimit,  // 堆叠层数限制，null表示无限制
+                    stackCount: 0
+                });
+            }
+        }
+
+        // 按体积从大到小排序
+        const sorted = expandedPackages.sort((a, b) => {
+            const volA = a.plength * a.pwidth * a.pheight;
+            const volB = b.plength * b.pwidth * b.pheight;
+            return volB - volA;
+        });
+
+        const results = [];
+        const vL = vehicle.length;
+        const vW = vehicle.width;
+        const vH = vehicle.height;
+        const placedBoxes = [];
+
+        // 检查箱子是否可以放在指定位置
+        function canPlaceAt(box, x, y, z, placedBoxes) {
+            const overlap = placedBoxes.some(other => {
+                const xOverlap = !(other.posX + other.plength <= x || other.posX >= x + box.plength);
+                const yOverlap = !(other.posY + other.pwidth <= y || other.posY >= y + box.pwidth);
+                const zOverlap = !(other.posZ + other.pheight <= z || other.posZ >= z + box.pheight);
+                return xOverlap && yOverlap && zOverlap;
+            });
+            return !overlap;
+        }
+
+        // 检查箱子是否可以堆叠在指定箱子顶部
+        function canStackOn(box, belowBox, placedBoxes) {
+            // 检查层数限制
+            if (belowBox.stackCount >= belowBox.layerLimit) return false;
+            // 检查尺寸兼容（堆叠时上下箱子尺寸需一致）
+            if (box.plength !== belowBox.plength || box.pwidth !== belowBox.pwidth) return false;
+            
+            const topZ = belowBox.posZ + belowBox.pheight;
+            if (topZ + box.pheight > vH) return false;
+            
+            // 检查水平位置重叠
+            const overlap = placedBoxes.some(other => {
+                if (other === belowBox) return false;
+                const xOverlap = !(other.posX + other.plength <= belowBox.posX || other.posX >= belowBox.posX + belowBox.plength);
+                const yOverlap = !(other.posY + other.pwidth <= belowBox.posY || other.posY >= belowBox.posY + belowBox.pwidth);
+                const zOverlap = !(other.posZ + other.pheight <= topZ || other.posZ >= topZ + box.pheight);
+                return xOverlap && yOverlap && zOverlap;
+            });
+            return !overlap;
+        }
+
+        // 在地面放置箱子
+        function placeOnFloor(box, placedBoxes) {
+            const orientations = [
+                { w: box.plength, d: box.pwidth, h: box.pheight },
+                { w: box.pwidth, d: box.plength, h: box.pheight }
+            ];
+            
+            // 按面积从大到小尝试，优先使用大面
+            for (let ori of orientations) {
+                const boxW = ori.w;
+                const boxD = ori.d;
+                const boxH = ori.h;
+                if (boxW > vL || boxD > vW || boxH > vH) continue;
+
+                for (let tryX = 0; tryX <= vL - boxW; tryX += 10) {
+                    for (let tryY = 0; tryY <= vW - boxD; tryY += 10) {
+                        if (canPlaceAt({ plength: boxW, pwidth: boxD, pheight: boxH }, tryX, tryY, 0, placedBoxes)) {
+                            return { posX: tryX, posY: tryY, posZ: 0, rot: ori.w === box.plength ? 0 : 90, plength: boxW, pwidth: boxD, pheight: boxH };
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        for (let pkg of sorted) {
+            let placed = false;
+
+            // 1. 尝试在已有箱子顶部堆叠
+            for (let belowBox of placedBoxes) {
+                if (placed) break;
+                // 检查层数限制
+                if (belowBox.layerLimit !== null && belowBox.stackCount >= belowBox.layerLimit) continue;
+                // 尺寸必须一致才能堆叠
+                if (pkg.plength !== belowBox.plength || pkg.pwidth !== belowBox.pwidth) continue;
+                
+                const topZ = belowBox.posZ + belowBox.pheight;
+                if (topZ + pkg.pheight > vH) continue;
+                
+                if (canPlaceAt(pkg, belowBox.posX, belowBox.posY, topZ, placedBoxes)) {
+                    results.push({
+                        code: pkg.code,
+                        vehicleCode: pkg.vehicleCode,
+                        plength: pkg.plength,
+                        pwidth: pkg.pwidth,
+                        pheight: pkg.pheight,
+                        quantity: 1,
+                        layerLimit: pkg.layerLimit,
+                        stackCount: belowBox.stackCount + 1,
+                        posX: belowBox.posX,
+                        posY: belowBox.posY,
+                        posZ: topZ,
+                        rot: 0,
+                        notLoaded: false
+                    });
+                    placedBoxes.push({
+                        code: pkg.code,
+                        plength: pkg.plength,
+                        pwidth: pkg.pwidth,
+                        pheight: pkg.pheight,
+                        posX: belowBox.posX,
+                        posY: belowBox.posY,
+                        posZ: topZ,
+                        stackCount: belowBox.stackCount + 1,
+                        layerLimit: pkg.layerLimit
+                    });
+                    placed = true;
+                    break;
+                }
+            }
+
+            // 2. 在地面放置
+            if (!placed) {
+                const floorPlace = placeOnFloor(pkg, placedBoxes);
+                if (floorPlace) {
+                    results.push({
+                        code: pkg.code,
+                        vehicleCode: pkg.vehicleCode,
+                        plength: floorPlace.plength,
+                        pwidth: floorPlace.pwidth,
+                        pheight: floorPlace.pheight,
+                        quantity: 1,
+                        layerLimit: pkg.layerLimit,
+                        stackCount: 1,
+                        posX: floorPlace.posX,
+                        posY: floorPlace.posY,
+                        posZ: 0,
+                        rot: floorPlace.rot,
+                        notLoaded: false
+                    });
+                    placedBoxes.push({
+                        code: pkg.code,
+                        plength: floorPlace.plength,
+                        pwidth: floorPlace.pwidth,
+                        pheight: floorPlace.pheight,
+                        posX: floorPlace.posX,
+                        posY: floorPlace.posY,
+                        posZ: 0,
+                        stackCount: 1,
+                        layerLimit: pkg.layerLimit
+                    });
+                    placed = true;
+                }
+            }
+
+            if (!placed) {
+                results.push({
+                    code: pkg.code,
+                    vehicleCode: pkg.vehicleCode,
+                    plength: pkg.plength,
+                    pwidth: pkg.pwidth,
+                    pheight: pkg.pheight,
+                    quantity: 1,
+                    layerLimit: pkg.layerLimit,
+                    stackCount: 0,
+                    posX: -1,
+                    posY: -1,
+                    posZ: -1,
+                    rot: 0,
+                    notLoaded: true
+                });
+            }
+        }
+
+        let totalPackageVol = results.filter(r => !r.notLoaded).reduce((sum, r) => sum + r.plength * r.pwidth * r.pheight, 0);
+        let vehicleVol = vL * vW * vH;
+        let utilization = vehicleVol > 0 ? (totalPackageVol / vehicleVol) * 100 : 0;
+
+        return { results, utilization };
+    }
+
+    // ============================================================
+    //  渲染3D装载结果
+    // ============================================================
+    function renderLoading(vehicle, results) {
+        if (isRendering) return;
+        isRendering = true;
+
+        try {
+            initScene();
+
+            for (let mesh of allMeshes) {
+                scene.remove(mesh);
+                if (mesh.geometry) mesh.geometry.dispose();
+                if (mesh.material) mesh.material.dispose();
+            }
+            allMeshes = [];
+            if (currentLabel) { scene.remove(currentLabel); currentLabel = null; }
+            if (currentHighlight) {
+                currentHighlight.material.emissive.setHex(0x000000);
+                currentHighlight.material.emissiveIntensity = 0;
+                currentHighlight = null;
+            }
+            if (vehicleBox) { scene.remove(vehicleBox); vehicleBox = null; }
+
+            const vL = vehicle.length;
+            const vW = vehicle.width;
+            const vH = vehicle.height;
+            const centerX = vL / 2;
+            const centerY = vH / 2;
+            const centerZ = vW / 2;
+
+            // 车厢
+            const boxGeo = new THREE.BoxGeometry(vL, vH, vW);
+            const boxMat = new THREE.MeshPhysicalMaterial({
+                color: 0x4488cc,
+                transparent: true,
+                opacity: 0.08,
+                wireframe: false,
+                roughness: 0.1,
+                metalness: 0.0,
+                side: THREE.DoubleSide
+            });
+            const boxMesh = new THREE.Mesh(boxGeo, boxMat);
+            boxMesh.position.set(centerX, centerY, centerZ);
+            boxMesh.frustumCulled = false;
+            scene.add(boxMesh);
+            allMeshes.push(boxMesh);
+
+            const edges = new THREE.EdgesGeometry(boxGeo);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x4488cc, opacity: 0.5, transparent: true });
+            const wireframe = new THREE.LineSegments(edges, lineMat);
+            wireframe.position.set(centerX, centerY, centerZ);
+            wireframe.frustumCulled = false;
+            scene.add(wireframe);
+            vehicleBox = wireframe;
+
+            const loadedPackages = results.filter(r => !r.notLoaded);
+            colorMap = {};
+            colorIndex = 0;
+
+            loadedPackages.forEach((r, idx) => {
+                const color = getColorForCode(r.code);
+                const geo = new THREE.BoxGeometry(r.plength, r.pheight, r.pwidth);
+                const mat = new THREE.MeshPhysicalMaterial({
+                    color: color,
+                    roughness: 0.3,
+                    metalness: 0.1,
+                    clearcoat: 0.05,
+                    transparent: true,
+                    opacity: 0.92,
+                    emissive: 0x000000,
+                    emissiveIntensity: 0
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(r.posX + r.plength/2, r.posZ + r.pheight/2, r.posY + r.pwidth/2);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                mesh.frustumCulled = false;
+                mesh.userData = {
+                    isPackage: true,
+                    code: r.code,
+                    plength: r.plength,
+                    pwidth: r.pwidth,
+                    pheight: r.pheight,
+                    index: idx,
+                    stackCount: r.stackCount || 0,
+                    layerLimit: r.layerLimit
+                };
+                scene.add(mesh);
+                allMeshes.push(mesh);
+
+                const edgeGeo = new THREE.EdgesGeometry(geo);
+                const edgeMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.12 });
+                const edgeLine = new THREE.LineSegments(edgeGeo, edgeMat);
+                edgeLine.position.copy(mesh.position);
+                edgeLine.frustumCulled = false;
+                scene.add(edgeLine);
+                allMeshes.push(edgeLine);
+            });
+
+            controls.target.set(centerX, centerY, centerZ);
+            const maxDim = Math.max(vL, vW, vH);
+            const distance = maxDim * 2.2;
+            camera.position.set(centerX + distance * 0.7, centerY + distance * 0.6, centerZ + distance * 0.8);
+            controls.update();
+
+            if (renderer && scene && camera) { renderer.render(scene, camera); }
+            if (labelRenderer && scene && camera) { labelRenderer.render(scene, camera); }
+
+            const totalQty = results.length;
+            const loadedQty = loadedPackages.length;
+            const totalVol = loadedPackages.reduce((s, r) => s + r.plength*r.pwidth*r.pheight, 0);
+            const util = (totalVol / (vL*vW*vH)) * 100;
+
+            legendPackageCount.innerHTML = `📦 包装箱总数: ${totalQty}`;
+            legendLoadedCount.innerHTML = `✅ 已装载: ${loadedQty}`;
+            legendUtilization.innerHTML = `📐 空间利用率: ${util.toFixed(1)}%`;
+            loadedCountDisplay.textContent = loadedQty;
+            utilizationDisplay.textContent = util.toFixed(1) + '%';
+        } finally {
+            isRendering = false;
+        }
+    }
+
+    // ============================================================
+    //  执行装载计算
+    // ============================================================
+    function runLoading() {
+        if (vehicleData.length === 0 || packageData.length === 0) {
+            addLog('请先上传车型数据和包装箱数据', true);
+            return;
+        }
+
+        const packageMap = new Map();
+        for (let p of packageData) {
+            if (!packageMap.has(p.vehicleCode)) packageMap.set(p.vehicleCode, []);
+            packageMap.get(p.vehicleCode).push(p);
+        }
+
+        let allResults = [];
+        let totalPackages = 0;
+        let totalLoaded = 0;
+        let vehicleUsed = null;
+
+        for (let v of vehicleData) {
+            const packages = packageMap.get(v.code) || [];
+            if (packages.length === 0) continue;
+
+            const result = calculateLoading(v, packages);
+            result.results.forEach(r => {
+                r.vehicleCode = v.code;
+                r.vehicleLength = v.length;
+                r.vehicleWidth = v.width;
+                r.vehicleHeight = v.height;
+            });
+            allResults = allResults.concat(result.results);
+            const qty = packages.reduce((s, p) => s + p.quantity, 0);
+            totalPackages += qty;
+            totalLoaded += result.results.filter(r => !r.notLoaded).length;
+            vehicleUsed = v;
+        }
+
+        renderTable(allResults);
+
+        const firstVehicle = vehicleData.find(v => packageMap.has(v.code));
+        if (firstVehicle) {
+            const firstResult = allResults.filter(r => r.vehicleCode === firstVehicle.code);
+            renderLoading(firstVehicle, firstResult);
+        }
+
+        const loadedCount = allResults.filter(r => !r.notLoaded).length;
+        const totalQty = allResults.length;
+        const totalVol = allResults.filter(r => !r.notLoaded).reduce((s, r) => s + r.plength*r.pwidth*r.pheight, 0);
+        const util = vehicleUsed ? (totalVol / (vehicleUsed.length*vehicleUsed.width*vehicleUsed.height))*100 : 0;
+
+        addLog(`✅ 装载计算完成！共 ${totalQty} 个包装箱，成功装载 ${loadedCount} 个，利用率 ${util.toFixed(1)}%`, false);
+    }
+
+    // ============================================================
+    //  渲染表格
+    // ============================================================
+    function renderTable(results) {
+        if (results.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#a18163; padding:20px;">无装载结果</td></tr>`;
+            rowCount.textContent = '共 0 条';
+            return;
+        }
+
+        let html = '';
+        let idx = 1;
+        results.forEach(r => {
+            const status = r.notLoaded ? '⚠️ 未装载' : '✅ 已装载';
+            const color = r.notLoaded ? '#b13b3b' : '#2a7f6e';
+            const layerDisplay = r.layerLimit !== null && r.layerLimit !== undefined ? r.layerLimit : '无限制';
+            const actualLayer = r.stackCount || (r.notLoaded ? 0 : 1);
+            html += `<tr style="${r.notLoaded ? 'background:#fff5f5;' : ''}">
+                <td>${idx++}</td>
+                <td>${escHtml(r.code)}</td>
+                <td>${escHtml(r.vehicleCode)}</td>
+                <td>${r.plength}</td>
+                <td>${r.pwidth}</td>
+                <td>${r.pheight}</td>
+                <td>${r.quantity || 1}</td>
+                <td>${layerDisplay}</td>
+                <td>${actualLayer}</td>
+                <td>${r.notLoaded ? '-' : r.posX}</td>
+                <td>${r.notLoaded ? '-' : r.posY}</td>
+                <td>${r.notLoaded ? '-' : r.posZ}</td>
+                <td>${r.notLoaded ? '-' : (r.rot || 0) + '°'}</td>
+                <td style="color:${color};font-weight:600;">${status}</td>
+            </tr>`;
+        });
+        tableBody.innerHTML = html;
+        rowCount.textContent = `共 ${results.length} 条`;
+    }
+
+    function escHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m);
+    }
+
+    // ============================================================
+    //  模板下载
+    // ============================================================
+    function downloadVehicleTemplateFile() {
+        const headers = ['车型代码', '车型长(mm)', '车型宽(mm)', '车型高(mm)'];
+        const sample = [['V001', 4200, 2000, 2000], ['V002', 6800, 2400, 2400], ['V003', 9600, 2500, 2600]];
+        const wsData = [headers, ...sample];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = [{ wch: 12 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '车型数据');
+        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        downloadFile(blob, '车型尺寸模板.xlsx');
+    }
+
+    function downloadPackageTemplateFile() {
+        const headers = ['包装代码', '包装长(mm)', '包装宽(mm)', '包装高(mm)', '包装数量', '堆叠层数限制', '车型代码'];
+        const sample = [
+            ['P001', 400, 300, 200, 4, 3, 'V001'],
+            ['P002', 500, 400, 300, 3, '', 'V001'],
+            ['P003', 600, 400, 400, 2, 2, 'V002'],
+            ['P004', 800, 600, 500, 2, '', 'V002'],
+            ['P005', 1000, 800, 600, 1, 1, 'V003']
+        ];
+        const wsData = [headers, ...sample];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 12 }];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '包装箱数据');
+        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        downloadFile(blob, '包装箱模板.xlsx');
+    }
+
+    function downloadFile(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 200);
+        addLog(`📥 开始下载 ${filename}`, false);
+    }
+
+    // ============================================================
+    //  清空
+    // ============================================================
+    function clearAll() {
+        vehicleData = [];
+        packageData = [];
+        loadedVehicleFile = null;
+        loadedPackageFile = null;
+        vehicleFileTags.innerHTML = '';
+        packageFileTags.innerHTML = '';
+        clearScene();
+        if (scene) {
+            for (let mesh of allMeshes) { scene.remove(mesh); }
+            allMeshes = [];
+            if (vehicleBox) { scene.remove(vehicleBox); vehicleBox = null; }
+            if (renderer && scene && camera) { renderer.render(scene, camera); }
+            if (labelRenderer && scene && camera) { labelRenderer.render(scene, camera); }
+        }
+        tableBody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#a18163; padding:30px;">请上传数据并执行装载计算</td></tr>`;
+        rowCount.textContent = '共 0 条';
+        vehicleCount.textContent = '0';
+        packageCount.textContent = '0';
+        loadedCountDisplay.textContent = '0';
+        utilizationDisplay.textContent = '0%';
+        legendPackageCount.innerHTML = '📦 包装箱总数: 0';
+        legendLoadedCount.innerHTML = '✅ 已装载: 0';
+        legendUtilization.innerHTML = '📐 空间利用率: 0%';
+        emptyState.style.display = 'flex';
+        sceneControls.style.display = 'none';
+        legendArea.style.display = 'none';
+        updateUI();
+        addLog('已清空所有数据', false);
+    }
+
+    // ============================================================
+    //  视图控制
+    // ============================================================
+    function resetView() {
+        if (!controls || !camera) return;
+        const vL = vehicleData.length > 0 ? vehicleData[0].length : 1000;
+        const vW = vehicleData.length > 0 ? vehicleData[0].width : 1000;
+        const vH = vehicleData.length > 0 ? vehicleData[0].height : 1000;
+        const maxDim = Math.max(vL, vW, vH);
+        const distance = maxDim * 2.2;
+        const cx = vL/2, cy = vH/2, cz = vW/2;
+        camera.position.set(cx + distance * 0.7, cy + distance * 0.6, cz + distance * 0.8);
+        controls.target.set(cx, cy, cz);
+        controls.update();
+        if (renderer && scene && camera) renderer.render(scene, camera);
+        if (labelRenderer && scene && camera) labelRenderer.render(scene, camera);
+    }
+
+    function topView() {
+        if (!controls || !camera) return;
+        const vL = vehicleData.length > 0 ? vehicleData[0].length : 1000;
+        const vH = vehicleData.length > 0 ? vehicleData[0].height : 1000;
+        const cx = vL/2, cy = vH/2;
+        camera.position.set(cx, cy + vH * 2.5, 0);
+        controls.target.set(cx, cy, 0);
+        controls.update();
+        if (renderer && scene && camera) renderer.render(scene, camera);
+        if (labelRenderer && scene && camera) labelRenderer.render(scene, camera);
+    }
+
+    function frontView() {
+        if (!controls || !camera) return;
+        const vL = vehicleData.length > 0 ? vehicleData[0].length : 1000;
+        const vW = vehicleData.length > 0 ? vehicleData[0].width : 1000;
+        const vH = vehicleData.length > 0 ? vehicleData[0].height : 1000;
+        const cx = vL/2, cy = vH/2, cz = vW/2;
+        camera.position.set(cx, cy, cz + vW * 2.5);
+        controls.target.set(cx, cy, cz);
+        controls.update();
+        if (renderer && scene && camera) renderer.render(scene, camera);
+        if (labelRenderer && scene && camera) labelRenderer.render(scene, camera);
+    }
+
+    function sideView() {
+        if (!controls || !camera) return;
+        const vL = vehicleData.length > 0 ? vehicleData[0].length : 1000;
+        const vH = vehicleData.length > 0 ? vehicleData[0].height : 1000;
+        const cx = vL/2, cy = vH/2;
+        camera.position.set(cx + vL * 2.5, cy, 0);
+        controls.target.set(cx, cy, 0);
+        controls.update();
+        if (renderer && scene && camera) renderer.render(scene, camera);
+        if (labelRenderer && scene && camera) labelRenderer.render(scene, camera);
+    }
+
+    // ============================================================
+    //  事件绑定
+    // ============================================================
+    vehicleDropZone.addEventListener('click', () => vehicleFileInput.click());
+    vehicleDropZone.addEventListener('dragover', (e) => { e.preventDefault(); vehicleDropZone.style.borderColor = '#1f6392'; });
+    vehicleDropZone.addEventListener('dragleave', () => vehicleDropZone.style.borderColor = '#bdd2ec');
+    vehicleDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        vehicleDropZone.style.borderColor = '#bdd2ec';
+        if (e.dataTransfer.files.length > 0) { handleVehicleFile(e.dataTransfer.files[0]); }
+    });
+    vehicleFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) { handleVehicleFile(e.target.files[0]); }
+        vehicleFileInput.value = '';
+    });
+
+    packageDropZone.addEventListener('click', () => packageFileInput.click());
+    packageDropZone.addEventListener('dragover', (e) => { e.preventDefault(); packageDropZone.style.borderColor = '#1f6392'; });
+    packageDropZone.addEventListener('dragleave', () => packageDropZone.style.borderColor = '#bdd2ec');
+    packageDropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        packageDropZone.style.borderColor = '#bdd2ec';
+        if (e.dataTransfer.files.length > 0) { handlePackageFile(e.dataTransfer.files[0]); }
+    });
+    packageFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) { handlePackageFile(e.target.files[0]); }
+        packageFileInput.value = '';
+    });
+
+    runBtn.addEventListener('click', runLoading);
+    clearBtn.addEventListener('click', clearAll);
+
+    document.getElementById('resetViewBtn').addEventListener('click', resetView);
+    document.getElementById('topViewBtn').addEventListener('click', topView);
+    document.getElementById('frontViewBtn').addEventListener('click', frontView);
+    document.getElementById('sideViewBtn').addEventListener('click', sideView);
+
+    downloadVehicleTemplate.addEventListener('click', (e) => { e.preventDefault(); downloadVehicleTemplateFile(); });
+    downloadPackageTemplate.addEventListener('click', (e) => { e.preventDefault(); downloadPackageTemplateFile(); });
+
+    // 初始化
+    updateUI();
+    addLog('📋 请上传车型尺寸和包装箱数据，然后点击「执行装载计算」', false);
+    addLog('📌 堆叠层数限制：填写数字表示该包装箱最多堆叠层数，留空表示无限制（受车厢高度限制）', false);
+
+    setTimeout(() => { initScene(); }, 100);
+</script>
+</body>
+</html>
