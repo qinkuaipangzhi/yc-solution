@@ -260,6 +260,206 @@
             font-size: 0.65rem;
             padding: 4px 8px;
         }
+
+        /* ===== 数据预览表样式 ===== */
+        .preview-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1.2rem;
+        }
+        @media (max-width: 900px) {
+            .preview-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        .preview-card {
+            background: #f8fafd;
+            border-radius: 1.2rem;
+            border: 1px solid #e2edf5;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+        .preview-card .card-header {
+            background: #eef3fc;
+            padding: 10px 16px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #1f3a5f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #dce6f0;
+        }
+        .preview-card .card-header .count-badge {
+            background: #1a5d8c;
+            color: white;
+            padding: 2px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+        .preview-card .card-body {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 0;
+        }
+        .preview-card .card-body table {
+            width: 100%;
+            font-size: 0.72rem;
+            border-collapse: collapse;
+        }
+        .preview-card .card-body table th {
+            background: #f5f8fc;
+            color: #2c4a6e;
+            font-weight: 600;
+            padding: 6px 10px;
+            text-align: left;
+            border-bottom: 2px solid #dce6f0;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            font-size: 0.68rem;
+            white-space: nowrap;
+        }
+        .preview-card .card-body table td {
+            padding: 5px 10px;
+            border-bottom: 1px solid #e8eef5;
+            color: #2c3e66;
+            font-size: 0.7rem;
+        }
+        .preview-card .card-body table tr:hover td {
+            background: #f0f6fe;
+        }
+        .preview-card .empty-preview {
+            padding: 20px;
+            text-align: center;
+            color: #a0b8cc;
+            font-size: 0.8rem;
+        }
+        .preview-card .card-body::-webkit-scrollbar {
+            width: 4px;
+        }
+        .preview-card .card-body::-webkit-scrollbar-thumb {
+            background: #c0d0e0;
+            border-radius: 10px;
+        }
+        .preview-card .card-body::-webkit-scrollbar-track {
+            background: #f0f4f8;
+        }
+
+        /* ===== 导出报告预览表样式 ===== */
+        .export-preview-section {
+            margin-top: 1.2rem;
+        }
+        .export-preview-card {
+            background: #f8fafd;
+            border-radius: 1.2rem;
+            border: 1px solid #e2edf5;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+        .export-preview-card .card-header {
+            background: #e8f0fa;
+            padding: 10px 16px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #1f3a5f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #dce6f0;
+        }
+        .export-preview-card .card-header .count-badge {
+            background: #2a7f6e;
+            color: white;
+            padding: 2px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+        .export-preview-card .card-body {
+            max-height: 280px;
+            overflow-y: auto;
+            padding: 0;
+        }
+        .export-preview-card .card-body table {
+            width: 100%;
+            font-size: 0.72rem;
+            border-collapse: collapse;
+        }
+        .export-preview-card .card-body table th {
+            background: #eaf2fa;
+            color: #1a4a6e;
+            font-weight: 600;
+            padding: 6px 10px;
+            text-align: left;
+            border-bottom: 2px solid #c8d8e8;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            font-size: 0.68rem;
+            white-space: nowrap;
+        }
+        .export-preview-card .card-body table td {
+            padding: 5px 10px;
+            border-bottom: 1px solid #e0eaf2;
+            color: #1f3a5f;
+            font-size: 0.7rem;
+        }
+        .export-preview-card .card-body table tr:hover td {
+            background: #e8f2fa;
+        }
+        .export-preview-card .card-body table .total-row td {
+            background: #e8f0fa !important;
+            font-weight: 700;
+            color: #0f2b44;
+            border-top: 2px solid #1a5d8c;
+        }
+        .export-preview-card .empty-preview {
+            padding: 20px;
+            text-align: center;
+            color: #a0b8cc;
+            font-size: 0.8rem;
+        }
+        .export-preview-card .card-body::-webkit-scrollbar {
+            width: 4px;
+        }
+        .export-preview-card .card-body::-webkit-scrollbar-thumb {
+            background: #b8c8d8;
+            border-radius: 10px;
+        }
+        .export-preview-card .card-body::-webkit-scrollbar-track {
+            background: #e8eef4;
+        }
+        .preview-toggle {
+            background: none;
+            border: none;
+            color: #1a5d8c;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 30px;
+            transition: 0.2s;
+        }
+        .preview-toggle:hover {
+            background: rgba(26, 93, 140, 0.1);
+        }
+        .preview-card.collapsed .card-body,
+        .export-preview-card.collapsed .card-body {
+            display: none;
+        }
+        .preview-card .card-header .arrow,
+        .export-preview-card .card-header .arrow {
+            transition: transform 0.3s;
+            display: inline-block;
+        }
+        .preview-card.collapsed .card-header .arrow,
+        .export-preview-card.collapsed .card-header .arrow {
+            transform: rotate(-90deg);
+        }
+
         .table-wrap {
             overflow-x: auto;
             border-radius: 1.2rem;
@@ -445,6 +645,8 @@
                 <span class="badge">📐 层数限制控制</span>
                 <span class="badge">📋 结果可导出</span>
                 <span class="badge">🔄 双面渲染</span>
+                <span class="badge">📊 数据预览</span>
+                <span class="badge">📋 报告预览</span>
             </div>
         </div>
 
@@ -473,6 +675,46 @@
                         <div class="file-tags" id="packageFileTags"></div>
                     </div>
                     <div class="template-download"><a id="downloadPackageTemplate">📋 下载包装箱模板</a></div>
+                </div>
+            </div>
+
+            <!-- ★★★ 数据预览区域 ★★★ -->
+            <div class="preview-section" id="previewSection">
+                <!-- 车型数据预览 -->
+                <div class="preview-card" id="vehiclePreviewCard">
+                    <div class="card-header">
+                        <span>🚛 车型数据预览</span>
+                        <span class="count-badge" id="vehiclePreviewCount">0 条</span>
+                        <button class="preview-toggle" onclick="togglePreview('vehicle')">收起</button>
+                    </div>
+                    <div class="card-body" id="vehiclePreviewBody">
+                        <div class="empty-preview">暂无车型数据，请上传Excel文件</div>
+                    </div>
+                </div>
+                <!-- 包装箱数据预览 -->
+                <div class="preview-card" id="packagePreviewCard">
+                    <div class="card-header">
+                        <span>📦 包装箱数据预览</span>
+                        <span class="count-badge" id="packagePreviewCount">0 条</span>
+                        <button class="preview-toggle" onclick="togglePreview('package')">收起</button>
+                    </div>
+                    <div class="card-body" id="packagePreviewBody">
+                        <div class="empty-preview">暂无包装箱数据，请上传Excel文件</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ★★★ 导出报告预览区域 ★★★ -->
+            <div class="export-preview-section" id="exportPreviewSection" style="display:none;">
+                <div class="export-preview-card" id="exportPreviewCard">
+                    <div class="card-header">
+                        <span>📋 导出报告预览（配载清单）</span>
+                        <span class="count-badge" id="exportPreviewCount">0 种包装</span>
+                        <button class="preview-toggle" onclick="toggleExportPreview()">收起</button>
+                    </div>
+                    <div class="card-body" id="exportPreviewBody">
+                        <div class="empty-preview">暂无配载结果，请执行装载计算</div>
+                    </div>
                 </div>
             </div>
 
@@ -602,6 +844,18 @@
         const downloadPackageTemplate = document.getElementById('downloadPackageTemplate');
         const copyToast = document.getElementById('copyToast');
 
+        // 预览相关DOM
+        const vehiclePreviewBody = document.getElementById('vehiclePreviewBody');
+        const packagePreviewBody = document.getElementById('packagePreviewBody');
+        const vehiclePreviewCount = document.getElementById('vehiclePreviewCount');
+        const packagePreviewCount = document.getElementById('packagePreviewCount');
+
+        // 导出报告预览相关DOM
+        const exportPreviewSection = document.getElementById('exportPreviewSection');
+        const exportPreviewBody = document.getElementById('exportPreviewBody');
+        const exportPreviewCount = document.getElementById('exportPreviewCount');
+        let exportPreviewData = [];
+
         // ============================================================
         //  日志
         // ============================================================
@@ -621,6 +875,23 @@
         function updateStatus(msg, isError = false) {
             statusText.textContent = msg;
             statusText.style.color = isError ? '#b13b3b' : '#2c3e66';
+        }
+
+        // ============================================================
+        //  预览表展开/收起
+        // ============================================================
+        function togglePreview(type) {
+            const card = document.getElementById(type === 'vehicle' ? 'vehiclePreviewCard' : 'packagePreviewCard');
+            card.classList.toggle('collapsed');
+            const btn = card.querySelector('.preview-toggle');
+            btn.textContent = card.classList.contains('collapsed') ? '展开' : '收起';
+        }
+
+        function toggleExportPreview() {
+            const card = document.getElementById('exportPreviewCard');
+            card.classList.toggle('collapsed');
+            const btn = card.querySelector('.preview-toggle');
+            btn.textContent = card.classList.contains('collapsed') ? '展开' : '收起';
         }
 
         // ============================================================
@@ -673,6 +944,7 @@
 
                 if (vehicleData.length === 0) { addLog('未解析到有效车型数据', true); return false; }
                 addLog(`✅ 加载 ${vehicleData.length} 种车型`, false);
+                renderVehiclePreview();
                 return true;
             } catch (err) { addLog(`解析车型数据失败: ${err.message}`, true); return false; }
         }
@@ -721,8 +993,181 @@
                 const totalQty = packageData.reduce((sum, p) => sum + p.quantity, 0);
                 addLog(`✅ 加载 ${packageData.length} 种包装箱，共 ${totalQty} 个，${packageData.filter(p => p.layerLimit !== null).length} 种有限制`,
                     false);
+                renderPackagePreview();
                 return true;
             } catch (err) { addLog(`解析包装箱数据失败: ${err.message}`, true); return false; }
+        }
+
+        // ============================================================
+        //  ★★★ 渲染车型数据预览表 ★★★
+        // ============================================================
+        function renderVehiclePreview() {
+            if (vehicleData.length === 0) {
+                vehiclePreviewBody.innerHTML = `<div class="empty-preview">暂无车型数据，请上传Excel文件</div>`;
+                vehiclePreviewCount.textContent = '0 条';
+                return;
+            }
+
+            let html = `<table>
+                <thead><tr>
+                    <th>#</th>
+                    <th>车型代码</th>
+                    <th>长(mm)</th>
+                    <th>宽(mm)</th>
+                    <th>高(mm)</th>
+                    <th>体积(m³)</th>
+                </tr></thead><tbody>`;
+            vehicleData.forEach((v, i) => {
+                const vol = (v.length * v.width * v.height / 1000000000).toFixed(2);
+                html += `<tr>
+                    <td>${i + 1}</td>
+                    <td><strong>${escHtml(v.code)}</strong></td>
+                    <td>${v.length}</td>
+                    <td>${v.width}</td>
+                    <td>${v.height}</td>
+                    <td>${vol}</td>
+                </tr>`;
+            });
+            html += `</tbody></table>`;
+            vehiclePreviewBody.innerHTML = html;
+            vehiclePreviewCount.textContent = `${vehicleData.length} 条`;
+        }
+
+        // ============================================================
+        //  ★★★ 渲染包装箱数据预览表 ★★★
+        // ============================================================
+        function renderPackagePreview() {
+            if (packageData.length === 0) {
+                packagePreviewBody.innerHTML = `<div class="empty-preview">暂无包装箱数据，请上传Excel文件</div>`;
+                packagePreviewCount.textContent = '0 条';
+                return;
+            }
+
+            let html = `<table>
+                <thead><tr>
+                    <th>#</th>
+                    <th>包装代码</th>
+                    <th>长(mm)</th>
+                    <th>宽(mm)</th>
+                    <th>高(mm)</th>
+                    <th>数量</th>
+                    <th>层数限制</th>
+                    <th>车型代码</th>
+                </tr></thead><tbody>`;
+            packageData.forEach((p, i) => {
+                const layerDisplay = p.layerLimit !== null && p.layerLimit !== undefined ? p.layerLimit : '无限制';
+                html += `<tr>
+                    <td>${i + 1}</td>
+                    <td><strong>${escHtml(p.code)}</strong></td>
+                    <td>${p.plength}</td>
+                    <td>${p.pwidth}</td>
+                    <td>${p.pheight}</td>
+                    <td>${p.quantity}</td>
+                    <td>${layerDisplay}</td>
+                    <td>${escHtml(p.vehicleCode)}</td>
+                </tr>`;
+            });
+            html += `</tbody></table>`;
+            packagePreviewBody.innerHTML = html;
+            packagePreviewCount.textContent = `${packageData.length} 条`;
+        }
+
+        // ============================================================
+        //  ★★★ 渲染导出报告预览表 ★★★
+        // ============================================================
+        function renderExportPreview() {
+            if (!currentResults || currentResults.length === 0) {
+                exportPreviewSection.style.display = 'none';
+                return;
+            }
+
+            const loadedItems = currentResults.filter(r => !r.notLoaded);
+            if (loadedItems.length === 0) {
+                exportPreviewSection.style.display = 'none';
+                return;
+            }
+
+            // 按包装代码分组统计
+            const groupMap = new Map();
+            loadedItems.forEach(r => {
+                const key = r.code;
+                if (!groupMap.has(key)) {
+                    groupMap.set(key, {
+                        code: r.code,
+                        plength: r.plength,
+                        pwidth: r.pwidth,
+                        pheight: r.pheight,
+                        quantity: 0,
+                        totalVolume: 0
+                    });
+                }
+                const item = groupMap.get(key);
+                item.quantity += r.quantity || 1;
+                item.totalVolume += (r.plength * r.pwidth * r.pheight) / 1000000000;
+            });
+
+            let grandTotalQty = 0;
+            let grandTotalVolume = 0;
+            const rows = [];
+
+            groupMap.forEach((item) => {
+                const singleVolume = (item.plength * item.pwidth * item.pheight) / 1000000000;
+                grandTotalQty += item.quantity;
+                grandTotalVolume += item.totalVolume;
+                rows.push({
+                    code: item.code,
+                    quantity: item.quantity,
+                    plength: item.plength,
+                    pwidth: item.pwidth,
+                    pheight: item.pheight,
+                    singleVolume: singleVolume,
+                    totalVolume: item.totalVolume
+                });
+            });
+
+            // 按体积降序排列
+            rows.sort((a, b) => b.totalVolume - a.totalVolume);
+
+            let html = `<table>
+                <thead><tr>
+                    <th>#</th>
+                    <th>包装代码</th>
+                    <th>包装数量</th>
+                    <th>长(mm)</th>
+                    <th>宽(mm)</th>
+                    <th>高(mm)</th>
+                    <th>单包装体积(m³)</th>
+                    <th>合计体积(m³)</th>
+                </tr></thead><tbody>`;
+
+            rows.forEach((row, i) => {
+                html += `<tr>
+                    <td>${i + 1}</td>
+                    <td><strong>${escHtml(row.code)}</strong></td>
+                    <td>${row.quantity}</td>
+                    <td>${row.plength}</td>
+                    <td>${row.pwidth}</td>
+                    <td>${row.pheight}</td>
+                    <td>${row.singleVolume.toFixed(4)}</td>
+                    <td>${row.totalVolume.toFixed(4)}</td>
+                </tr>`;
+            });
+
+            // 合计行
+            html += `<tr class="total-row">
+                <td colspan="2" style="text-align:right;"><strong>【合计】</strong></td>
+                <td><strong>${grandTotalQty}</strong></td>
+                <td colspan="4"></td>
+                <td><strong>${grandTotalVolume.toFixed(4)}</strong></td>
+            </tr>`;
+
+            html += `</tbody></table>`;
+            exportPreviewBody.innerHTML = html;
+            exportPreviewCount.textContent = `${rows.length} 种包装`;
+            exportPreviewSection.style.display = 'block';
+
+            // 存储预览数据供导出使用
+            exportPreviewData = { rows, grandTotalQty, grandTotalVolume };
         }
 
         // ============================================================
@@ -798,7 +1243,6 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xffffff);
 
-            // ★★★ 修复1：增大FOV到60°，扩大视野范围 ★★★
             camera = new THREE.PerspectiveCamera(60, finalWidth / finalHeight, 0.1, 1000000);
             camera.position.set(1500, 1200, 1800);
             camera.lookAt(0, 0, 0);
@@ -825,13 +1269,12 @@
             container.appendChild(renderer.domElement);
             container.appendChild(labelRenderer.domElement);
 
-            // ★★★ 修复2：OrbitControls优化配置 ★★★
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.08;
             controls.target.set(0, 0, 0);
-            controls.minDistance = 100; // 防止相机穿入物体
-            controls.maxDistance = 50000; // 允许足够远的视角
+            controls.minDistance = 100;
+            controls.maxDistance = 50000;
             controls.update();
 
             ambientLight = new THREE.AmbientLight(0x606080, 0.5);
@@ -1154,7 +1597,6 @@
             try {
                 initScene();
 
-                // ★★★ 修复3：清除时保留灯光和网格 ★★★
                 for (let mesh of allMeshes) {
                     scene.remove(mesh);
                     if (mesh.geometry) mesh.geometry.dispose();
@@ -1178,7 +1620,6 @@
                 const centerY = vH / 2;
                 const centerZ = vW / 2;
 
-                // ★★★ 修复4：车厢材质 - 双面渲染 + depthTest ★★★
                 const boxGeo = new THREE.BoxGeometry(vL, vH, vW);
                 const boxMat = new THREE.MeshPhysicalMaterial({
                     color: 0x4488cc,
@@ -1188,19 +1629,17 @@
                     roughness: 0.1,
                     metalness: 0.0,
                     side: THREE.DoubleSide,
-                    depthTest: true, // ★★★ 启用深度测试 ★★★
-                    depthWrite: false // 透明物体不写入深度，避免Z-fighting
+                    depthTest: true,
+                    depthWrite: false
                 });
                 const boxMesh = new THREE.Mesh(boxGeo, boxMat);
                 boxMesh.position.set(centerX, centerY, centerZ);
                 boxMesh.frustumCulled = false;
-                // ★★★ 修复5：强制更新包围盒 ★★★
                 boxMesh.geometry.computeBoundingSphere();
                 boxMesh.geometry.computeBoundingBox();
                 scene.add(boxMesh);
                 allMeshes.push(boxMesh);
 
-                // 车厢边框
                 const edges = new THREE.EdgesGeometry(boxGeo);
                 const lineMat = new THREE.LineBasicMaterial({
                     color: 0x4488cc,
@@ -1222,7 +1661,6 @@
                     const color = getColorForCode(r.code);
                     const geo = new THREE.BoxGeometry(r.plength, r.pheight, r.pwidth);
 
-                    // ★★★ 修复6：包装箱材质 - 双面渲染 + depthTest ★★★
                     const mat = new THREE.MeshPhysicalMaterial({
                         color: color,
                         roughness: 0.3,
@@ -1241,7 +1679,6 @@
                     mesh.castShadow = true;
                     mesh.receiveShadow = true;
                     mesh.frustumCulled = false;
-                    // ★★★ 修复7：强制更新包围盒 ★★★
                     mesh.geometry.computeBoundingSphere();
                     mesh.geometry.computeBoundingBox();
                     mesh.userData = {
@@ -1257,7 +1694,6 @@
                     scene.add(mesh);
                     allMeshes.push(mesh);
 
-                    // ★★★ 修复8：包装箱边框 - 双面渲染 ★★★
                     const edgeGeo = new THREE.EdgesGeometry(geo);
                     const edgeMat = new THREE.LineBasicMaterial({
                         color: 0x000000,
@@ -1272,7 +1708,6 @@
                     allMeshes.push(edgeLine);
                 });
 
-                // ★★★ 修复9：确保控制器目标在场景中心 ★★★
                 controls.target.set(centerX, centerY, centerZ);
                 const maxDim = Math.max(vL, vW, vH);
                 const distance = maxDim * 2.0;
@@ -1286,7 +1721,6 @@
                     labelRenderer.render(scene, camera);
                 }
 
-                // 更新统计信息
                 const totalQty = results.length;
                 const loadedQty = loadedPackages.length;
                 const totalVol = loadedPackages.reduce((s, r) => s + r.plength * r.pwidth * r.pheight, 0);
@@ -1297,14 +1731,17 @@
                 legendUtilization.innerHTML = `📐 空间利用率: ${util.toFixed(1)}%`;
                 loadedCountDisplay.textContent = loadedQty;
                 utilizationDisplay.textContent = util.toFixed(1) + '%';
+
+                // ★★★ 渲染导出报告预览 ★★★
+                renderExportPreview();
+
             } finally {
                 isRendering = false;
             }
         }
 
         // ============================================================
-        //  执行装载计算
-        // ============================================================
+        //  执行装载计算        // ============================================================
         function runLoading() {
             if (vehicleData.length === 0 || packageData.length === 0) {
                 addLog('请先上传车型数据和包装箱数据', true);
@@ -1405,7 +1842,7 @@
         }
 
         // ============================================================
-        //  ★★★ 导出配载结果 (Excel) - 精简版 ★★★
+        //  ★★★ 导出配载结果 (Excel) - 使用预览数据 ★★★
         // ============================================================
         function exportResults() {
             if (!currentResults || currentResults.length === 0) {
@@ -1414,44 +1851,23 @@
             }
 
             try {
-                const loadedItems = currentResults.filter(r => !r.notLoaded);
+                // 使用预览数据
+                const { rows, grandTotalQty, grandTotalVolume } = exportPreviewData;
 
-                const groupMap = new Map();
-                loadedItems.forEach(r => {
-                    const key = r.code;
-                    if (!groupMap.has(key)) {
-                        groupMap.set(key, {
-                            code: r.code,
-                            plength: r.plength,
-                            pwidth: r.pwidth,
-                            pheight: r.pheight,
-                            quantity: 0,
-                            totalVolume: 0
-                        });
-                    }
-                    const item = groupMap.get(key);
-                    item.quantity += r.quantity || 1;
-                    item.totalVolume += (r.plength * r.pwidth * r.pheight) / 1000000000;
-                });
+                if (!rows || rows.length === 0) {
+                    addLog('没有可导出的配载数据', true);
+                    return;
+                }
 
-                const exportData = [];
-                let grandTotalQty = 0;
-                let grandTotalVolume = 0;
-
-                groupMap.forEach((item) => {
-                    const singleVolume = (item.plength * item.pwidth * item.pheight) / 1000000000;
-                    grandTotalQty += item.quantity;
-                    grandTotalVolume += item.totalVolume;
-                    exportData.push({
-                        '包装代码': item.code,
-                        '包装数量': item.quantity,
-                        '包装长(mm)': item.plength,
-                        '包装宽(mm)': item.pwidth,
-                        '包装高(mm)': item.pheight,
-                        '单包装体积(m³)': singleVolume.toFixed(4),
-                        '合计体积(m³)': item.totalVolume.toFixed(4)
-                    });
-                });
+                const exportData = rows.map(row => ({
+                    '包装代码': row.code,
+                    '包装数量': row.quantity,
+                    '包装长(mm)': row.plength,
+                    '包装宽(mm)': row.pwidth,
+                    '包装高(mm)': row.pheight,
+                    '单包装体积(m³)': row.singleVolume.toFixed(4),
+                    '合计体积(m³)': row.totalVolume.toFixed(4)
+                }));
 
                 exportData.push({
                     '包装代码': '【合计】',
@@ -1472,6 +1888,7 @@
                 XLSX.utils.book_append_sheet(wb, ws, '配载清单');
 
                 if (currentVehicleUsed) {
+                    const loadedItems = currentResults.filter(r => !r.notLoaded);
                     const vehicleInfo = [{
                         '车型代码': currentVehicleUsed.code,
                         '车型长(mm)': currentVehicleUsed.length,
@@ -1502,7 +1919,7 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
 
-                addLog(`📥 配载结果导出成功！共 ${groupMap.size} 种包装，合计 ${grandTotalQty} 个，总体积 ${grandTotalVolume.toFixed(4)} m³`,
+                addLog(`📥 配载结果导出成功！共 ${rows.length} 种包装，合计 ${grandTotalQty} 个，总体积 ${grandTotalVolume.toFixed(4)} m³`,
                     false);
                 showCopyToast('✅ 配载结果已导出！');
             } catch (err) {
@@ -1604,6 +2021,12 @@
             sceneControls.style.display = 'none';
             legendArea.style.display = 'none';
             exportBtn.disabled = true;
+            // 清空预览
+            renderVehiclePreview();
+            renderPackagePreview();
+            // 隐藏导出报告预览
+            exportPreviewSection.style.display = 'none';
+            exportPreviewData = [];
             updateUI();
             addLog('已清空所有数据', false);
         }
@@ -1714,12 +2137,19 @@
         downloadPackageTemplate.addEventListener('click', (e) => { e.preventDefault();
             downloadPackageTemplateFile(); });
 
+        // 初始化预览表（空状态）
+        renderVehiclePreview();
+        renderPackagePreview();
+        exportPreviewSection.style.display = 'none';
+
         // 初始化
         updateUI();
         addLog('📋 请上传车型尺寸和包装箱数据，然后点击「执行装载计算」', false);
         addLog('📌 堆叠层数限制：填写数字表示该包装箱最多堆叠层数，留空表示无限制（受车厢高度限制）', false);
         addLog('📥 计算完成后可点击「导出配载结果」按钮导出精简版Excel', false);
         addLog('🔄 已启用双面渲染，拖拽旋转时箱子背面可见', false);
+        addLog('📊 上传数据后会自动在「数据预览」区域显示表格', false);
+        addLog('📋 执行装载计算后会在「导出报告预览」区域显示配载清单', false);
 
         setTimeout(() => { initScene(); }, 100);
     </script>
