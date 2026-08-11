@@ -5,10 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>智能线路站点排序 - 并发限流优化版</title>
     <!-- SheetJS 核心库 -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    <!-- 高德地图 JS API -->
-    <script src="https://webapi.amap.com/maps?v=2.0&key=9a5f6a8c2b3d4e5f6a7b8c9d0e1f2a3b&plugin=AMap.ToolBar,AMap.Scale,AMap.InfoWindow"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js">
+    </script>
+    <!-- Leaflet CSS + JS (作为主要地图引擎，更稳定) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
     <style>
+        /* ========== 所有样式保持不变 ========== */
         * {
             margin: 0;
             padding: 0;
@@ -151,31 +155,6 @@
         }
         .key-input-row .hint { font-size: 0.7rem; color: #cc6600; }
 
-        .route-input-row {
-            background: #f1f5f9;
-            border-radius: 1.2rem;
-            padding: 12px 18px;
-            margin-top: 14px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 12px;
-        }
-        .route-input-row label {
-            font-weight: 600;
-            color: #1f3a5f;
-            font-size: 14px;
-        }
-        .route-input-row input {
-            flex: 1;
-            min-width: 200px;
-            padding: 10px 14px;
-            border-radius: 60px;
-            border: 1px solid #cbdde9;
-            font-size: 0.85rem;
-            background: white;
-        }
-
         .rate-limit-info {
             background: #fff8e1;
             border-radius: 1rem;
@@ -188,9 +167,7 @@
             gap: 12px;
             flex-wrap: wrap;
         }
-        .rate-limit-info strong {
-            color: #cc6600;
-        }
+        .rate-limit-info strong { color: #cc6600; }
 
         .file-stats {
             background: #eef2f7;
@@ -318,6 +295,7 @@
         .result-table-wrap .order-col { text-align: center; font-weight: 600; }
         .result-table-wrap .method-retry { color: #cc6600; font-weight: 500; }
 
+        /* ===== 地图容器 ===== */
         .map-container {
             margin-top: 1.5rem;
             border-radius: 1.2rem;
@@ -350,11 +328,76 @@
             color: white;
             border-color: #1a5d8c;
         }
+
         #mapContainer {
             width: 100%;
             height: 520px;
-            background: #eef2f7;
+            background: #e8ecf0;
             position: relative;
+        }
+        #mapContainer .map-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #6c86a3;
+            font-size: 1rem;
+            background: #e8ecf0;
+            flex-direction: column;
+        }
+        #mapContainer .map-loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #dce3ec;
+            border-top-color: #1a5d8c;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        #mapContainer .map-error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #b13b3b;
+            background: #fef5f5;
+            flex-direction: column;
+            padding: 20px;
+            text-align: center;
+        }
+        #mapContainer .map-error .error-icon { font-size: 3rem; margin-bottom: 12px; }
+        #mapContainer .leaflet-container {
+            height: 100%;
+            width: 100%;
+            background: #e8ecf0;
+        }
+        /* Leaflet 标记样式 */
+        .leaflet-marker-origin {
+            background: #2a7f6e;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .leaflet-marker-destination {
+            background: #ff6b6b;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .leaflet-marker-waypoint {
+            background: #ffc107;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
 
         .template-download {
@@ -455,43 +498,55 @@
             vertical-align: middle;
             margin-right: 6px;
         }
-        .map-loading {
+        .map-layer-control {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(255,255,255,0.92);
+            border-radius: 8px;
+            padding: 6px 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            font-size: 10px;
+            color: #4a6a8a;
+            border: 1px solid #e2edf5;
+            backdrop-filter: blur(4px);
+        }
+        .map-layer-control .layer-status {
             display: flex;
             align-items: center;
-            justify-content: center;
-            height: 520px;
-            color: #6c86a3;
-            font-size: 1rem;
-            background: #eef2f7;
-            flex-direction: column;
+            gap: 6px;
         }
-        .map-loading .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #dce3ec;
-            border-top-color: #1a5d8c;
+        .map-layer-control .dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-bottom: 16px;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .map-layer-control .dot.success { background: #2a7f6e; }
+        .map-layer-control .dot.fail { background: #b13b3b; }
+        .map-layer-control .dot.loading { background: #f5c842; animation: blink 0.8s infinite; }
+        @keyframes blink {
+            0%,100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
-        .map-error {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 520px;
-            color: #b13b3b;
-            font-size: 1rem;
-            background: #fef5f5;
-            flex-direction: column;
-            padding: 20px;
-            text-align: center;
+
+        .copy-btn { background: #4a7a9c; color: white; }
+        .copy-btn:hover { background: #1e5a7a; }
+
+        @media (max-width: 768px) {
+            #mapContainer { height: 320px; }
+            .hero-card h1 { font-size: 1.4rem; }
+            .key-input-row input { min-width: 120px; }
+            .fixed-download-bar { padding: 12px 16px; flex-direction: column; align-items: stretch; }
+            .download-btn-big { justify-content: center; }
         }
-        .map-error .error-icon {
-            font-size: 3rem;
-            margin-bottom: 12px;
+        @media (max-width: 480px) {
+            #mapContainer { height: 240px; }
+            body { padding: 0.8rem; }
+            .hero-card { padding: 1rem 1.2rem; }
+            .upload-card { padding: 1rem; }
+            .map-tab { font-size: 0.7rem; padding: 4px 12px; }
         }
     </style>
 </head>
@@ -506,6 +561,7 @@
             <span class="badge">⏱️ 预计时间(40km/h)</span>
             <span class="badge limit">🛑 并发限制 ≤ 3</span>
             <span class="badge">🔄 自动重试</span>
+            <span class="badge">🗺️ Leaflet地图</span>
         </div>
     </div>
 
@@ -651,14 +707,40 @@
 
 <script>
     // ============================================================
-    //  限流配置 (高德个人Key并发限制: 3)
+    //  ★★★ Leaflet地图图层配置（多种备用图层） ★★★
+    // ============================================================
+    const TILE_LAYERS = [
+        {
+            name: '高德地图',
+            url: 'https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+            options: { maxZoom: 18, attribution: '© 高德地图' }
+        },
+        {
+            name: '高德卫星图',
+            url: 'https://webst01.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+            options: { maxZoom: 18, attribution: '© 高德地图' }
+        },
+        {
+            name: 'OpenStreetMap',
+            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            options: { maxZoom: 19, attribution: '© OpenStreetMap', subdomains: ['a', 'b', 'c'] }
+        },
+        {
+            name: 'CartoDB浅色',
+            url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+            options: { maxZoom: 19, attribution: '© CartoDB', subdomains: ['a', 'b', 'c'] }
+        }
+    ];
+
+    // ============================================================
+    //  限流配置
     // ============================================================
     const CONFIG = {
-        QPS_LIMIT: 3,              // 每秒最多请求数
-        REQUEST_INTERVAL: 350,      // 每次请求间隔（毫秒）
-        MAX_RETRIES: 2,            // 最大重试次数
-        RETRY_DELAY: 1000,         // 重试等待时间（毫秒）
-        RATE_LIMIT_ERROR: 'CUQPS_HAS_EXCEEDED_THE_LIMIT'  // 限流错误码
+        QPS_LIMIT: 3,
+        REQUEST_INTERVAL: 350,
+        MAX_RETRIES: 2,
+        RETRY_DELAY: 1000,
+        RATE_LIMIT_ERROR: 'CUQPS_HAS_EXCEEDED_THE_LIMIT'
     };
 
     // ============================================================
@@ -670,8 +752,9 @@
     let routeGroupedResults = {};
     let abortFlag = false;
     let isRunning = false;
-    let map = null;
+    let mapInstance = null;
     let currentRouteCode = null;
+    let mapMarkers = [];
 
     // 并发控制
     let activeRequests = 0;
@@ -725,27 +808,19 @@
     }
 
     function updateConcurrencyDisplay() {
-        if (concurrencyDisplay) {
-            concurrencyDisplay.textContent = activeRequests;
-        }
+        if (concurrencyDisplay) concurrencyDisplay.textContent = activeRequests;
     }
 
     // ============================================================
-    //  限流控制 - 等待可用请求槽
+    //  限流控制
     // ============================================================
     async function waitForRequestSlot() {
         const now = Date.now();
-        // 清理1秒前的记录
         requestTimestamps = requestTimestamps.filter(t => now - t < 1000);
-        
-        // 如果当前秒内请求数已达到限制，等待
         while (requestTimestamps.length >= CONFIG.QPS_LIMIT) {
             const oldest = requestTimestamps[0];
             const waitTime = 1000 - (now - oldest) + 50;
-            if (waitTime > 0 && waitTime < 2000) {
-                await new Promise(r => setTimeout(r, waitTime));
-            }
-            // 重新计算
+            if (waitTime > 0 && waitTime < 2000) await new Promise(r => setTimeout(r, waitTime));
             const newNow = Date.now();
             requestTimestamps = requestTimestamps.filter(t => newNow - t < 1000);
         }
@@ -809,9 +884,7 @@
                         addLog(`文件 ${file.name} 缺少必要列！需要: 线路代码, 站点代码, 站点名称, 站点地址, 经度, 纬度`, true);
                         return resolve([]);
                     }
-                    if (!typeCol) {
-                        addLog(`文件 ${file.name} 缺少「站点类型」列，将默认为"普通"`, false);
-                    }
+                    if (!typeCol) addLog(`文件 ${file.name} 缺少「站点类型」列，将默认为"普通"`, false);
 
                     const records = [];
                     for (let row of rows) {
@@ -848,19 +921,14 @@
     }
 
     // ============================================================
-    //  高德距离计算（含限流 + 重试）
+    //  高德距离计算
     // ============================================================
     async function getDrivingDistanceWithRetry(lng1, lat1, lng2, lat2, key) {
         let lastError = null;
-        let retryCount = 0;
-
         for (let attempt = 1; attempt <= CONFIG.MAX_RETRIES + 1; attempt++) {
             if (abortFlag) return { distance: null, status: 'abort', info: '已终止', retryCount: attempt - 1 };
 
-            // ===== 限流控制 =====
             await waitForRequestSlot();
-
-            // 记录请求
             activeRequests++;
             requestTimestamps.push(Date.now());
             updateConcurrencyDisplay();
@@ -873,26 +941,22 @@
                 activeRequests--;
                 updateConcurrencyDisplay();
 
-                // 检查是否限流
                 if (data.status === '0' && data.info && data.info.includes(CONFIG.RATE_LIMIT_ERROR)) {
                     if (attempt <= CONFIG.MAX_RETRIES) {
-                        addLog(`⏳ 触发限流，${attempt}/${CONFIG.MAX_RETRIES} 次重试，等待 ${CONFIG.RETRY_DELAY}ms...`, false);
+                        addLog(`⏳ 触发限流，${attempt}/${CONFIG.MAX_RETRIES} 次重试...`, false);
                         await new Promise(r => setTimeout(r, CONFIG.RETRY_DELAY * attempt));
                         continue;
-                    } else {
-                        return { distance: null, status: 'rate_limit', info: '限流超限', retryCount: attempt - 1 };
                     }
+                    return { distance: null, status: 'rate_limit', info: '限流超限', retryCount: attempt - 1 };
                 }
 
                 if (data.status === '1' && data.route && data.route.paths && data.route.paths.length > 0) {
                     const distanceMeters = data.route.paths[0].distance;
                     if (distanceMeters) {
                         return { distance: (distanceMeters / 1000).toFixed(2), status: 'ok', retryCount: attempt - 1 };
-                    } else {
-                        return { distance: null, status: 'no_path', info: '无路径数据', retryCount: attempt - 1 };
                     }
+                    return { distance: null, status: 'no_path', info: '无路径数据', retryCount: attempt - 1 };
                 } else {
-                    // 其他API错误
                     if (attempt <= CONFIG.MAX_RETRIES) {
                         addLog(`⚠️ API错误: ${data.info || '未知'}，${attempt}/${CONFIG.MAX_RETRIES} 次重试...`, false);
                         await new Promise(r => setTimeout(r, CONFIG.RETRY_DELAY));
@@ -929,48 +993,36 @@
         return (R * c).toFixed(2);
     }
 
-    // ============================================================
-    //  预计时间计算
-    // ============================================================
     const AVG_SPEED = 40;
 
     function calcEstimatedTime(distanceKm) {
-        if (distanceKm === null || distanceKm === undefined || distanceKm === '-' || isNaN(distanceKm)) {
-            return '-';
-        }
-        const hours = distanceKm / AVG_SPEED;
-        return hours.toFixed(1);
+        if (distanceKm === null || distanceKm === undefined || distanceKm === '-' || isNaN(distanceKm)) return '-';
+        return (distanceKm / AVG_SPEED).toFixed(1);
     }
 
     // ============================================================
-    //  核心排序：由远及近（卸货点强制置尾）
+    //  排序算法
     // ============================================================
     function findOptimalOrderFarToNear(sites) {
         if (sites.length <= 1) return sites;
         const unloadPoints = sites.filter(s => s.siteType && (s.siteType.includes('卸货') || s.siteType.includes('目的地')));
-        if (unloadPoints.length === 0) {
-            return findNearestNeighborOrder(sites);
-        }
+        if (unloadPoints.length === 0) return findNearestNeighborOrder(sites);
         const dest = unloadPoints[0];
         const otherPoints = sites.filter(s => s !== dest);
-        const withDist = otherPoints.map(s => ({
-            ...s,
-            distToDest: parseFloat(haversineDistance(s.lat, s.lng, dest.lat, dest.lng))
-        }));
+        const withDist = otherPoints.map(s => ({...s, distToDest: parseFloat(haversineDistance(s.lat, s.lng, dest.lat, dest.lng))}));
         withDist.sort((a, b) => b.distToDest - a.distToDest);
-        const orderedUnload = unloadPoints.map(s => ({ ...s }));
-        return [...withDist, ...orderedUnload];
+        return [...withDist, ...unloadPoints];
     }
 
     function findNearestNeighborOrder(sites) {
         if (sites.length <= 1) return sites;
         let startIdx = sites.findIndex(s => s.siteType && (s.siteType.includes('发货') || s.siteType.includes('起点')));
         if (startIdx === -1) startIdx = 0;
-        const unvisited = sites.map((s, i) => ({ ...s, idx: i, visited: false }));
+        const unvisited = sites.map((s, i) => ({...s, idx: i, visited: false}));
         const ordered = [];
         let current = unvisited[startIdx];
         current.visited = true;
-        ordered.push({ ...current });
+        ordered.push({...current});
         while (ordered.length < unvisited.length) {
             let nextIdx = -1, minDist = Infinity;
             for (let i = 0; i < unvisited.length; i++) {
@@ -981,17 +1033,16 @@
             if (nextIdx === -1) break;
             current = unvisited[nextIdx];
             current.visited = true;
-            ordered.push({ ...current });
+            ordered.push({...current});
         }
         return ordered;
     }
 
     // ============================================================
-    //  计算线路距离（使用限流API）
+    //  计算线路距离
     // ============================================================
     async function computeRouteDistances(sites, amapKey, progressCallback) {
         if (sites.length < 2) return [];
-
         const results = [];
         const total = sites.length - 1;
         let completed = 0;
@@ -1004,25 +1055,18 @@
             let distance = null;
             let method = '';
             let retryCount = 0;
-            let statusDetail = '';
 
-            // 尝试高德驾车（含限流和重试）
             const driving = await getDrivingDistanceWithRetry(from.lng, from.lat, to.lng, to.lat, amapKey);
             
             if (driving.status === 'ok' && driving.distance !== null) {
                 distance = parseFloat(driving.distance);
                 method = '高德驾车';
                 retryCount = driving.retryCount || 0;
-                statusDetail = `重试${retryCount}次`;
             } else {
-                // 降级使用直线估算
                 distance = parseFloat(haversineDistance(from.lat, from.lng, to.lat, to.lng));
                 const failReason = driving.info || driving.status || '未知原因';
-                method = `直线估算(高德失败: ${failReason})`;
+                method = driving.status === 'rate_limit' ? '直线估算(限流降级)' : `直线估算(${failReason})`;
                 retryCount = driving.retryCount || 0;
-                if (driving.status === 'rate_limit') {
-                    method = '直线估算(限流降级)';
-                }
             }
 
             results.push({
@@ -1060,22 +1104,12 @@
     //  计算所有线路
     // ============================================================
     async function calculateAllRoutes() {
-        if (isRunning) {
-            addLog("已有计算任务进行中，请先终止或等待完成", true);
-            return;
-        }
-        if (!allSiteRecords.length) {
-            addLog("请先上传包含站点数据的Excel文件", true);
-            return;
-        }
+        if (isRunning) { addLog("已有计算任务进行中", true); return; }
+        if (!allSiteRecords.length) { addLog("请先上传包含站点数据的Excel文件", true); return; }
 
         const key = amapKeyInput.value.trim();
-        if (!key || key.length < 10) {
-            addLog("请填写有效的高德地图Web服务API Key", true);
-            return;
-        }
+        if (!key || key.length < 10) { addLog("请填写有效的高德地图Web服务API Key", true); return; }
 
-        // 按线路分组
         const routeMap = new Map();
         for (let r of allSiteRecords) {
             if (!routeMap.has(r.routeCode)) routeMap.set(r.routeCode, []);
@@ -1129,16 +1163,13 @@
             addLog("⛔ 计算已被用户终止", false);
             calcStats.innerText = "❌ 已终止计算";
             allDistanceResults = [];
-            resultDisplay.style.display = 'none';
+            document.getElementById('resultDisplay').style.display = 'none';
             mapSection.style.display = 'none';
             copyResultBtn.style.display = 'none';
             return;
         }
 
-        if (!allResults.length) {
-            addLog("未生成任何距离结果", true);
-            return;
-        }
+        if (!allResults.length) { addLog("未生成任何距离结果", true); return; }
 
         allDistanceResults = allResults;
         calcProgressFill.style.width = '100%';
@@ -1163,73 +1194,127 @@
     }
 
     // ============================================================
-    //  渲染地图
+    //  ★★★ Leaflet地图渲染（修复版） ★★★
     // ============================================================
     function initMap(routeCode) {
-        if (mapLoading) mapLoading.style.display = 'none';
-        
-        if (!window.AMap) {
-            mapContainer.innerHTML = `<div class="map-error"><div class="error-icon">❌</div>高德地图API未加载，请检查网络或Key是否正确</div>`;
-            addLog('⚠️ 高德地图API未加载，请检查网络或Key是否正确', true);
-            return;
-        }
-
         try {
-            if (map) {
-                map.destroy();
-                map = null;
+            if (mapLoading) mapLoading.style.display = 'none';
+            
+            // 如果已有地图实例，销毁
+            if (mapInstance) {
+                mapInstance.remove();
+                mapInstance = null;
             }
 
-            map = new AMap.Map('mapContainer', {
+            const container = document.getElementById('mapContainer');
+            
+            // 清空容器（保留加载提示）
+            container.innerHTML = '';
+
+            // 创建地图实例
+            mapInstance = L.map(container, {
+                center: [32.0, 118.0],
                 zoom: 8,
-                center: [118.0, 32.0],
-                mapStyle: 'amap://styles/whitesmoke',
-                viewMode: '2D',
-                showIndoorMap: false,
-                pitch: 0,
-                rotation: 0,
-                resizeEnable: true
+                zoomControl: true,
+                fadeAnimation: true,
+                attributionControl: true
             });
 
-            AMap.plugin(['AMap.ToolBar', 'AMap.Scale'], function() {
+            // ★★★ 添加图层控制指示器 ★★★
+            const controlDiv = document.createElement('div');
+            controlDiv.className = 'map-layer-control';
+            controlDiv.id = 'leafletLayerControl';
+            controlDiv.innerHTML = `<div class="layer-status"><span class="dot loading" id="leafletDot"></span><span id="leafletStatus">加载地图...</span></div>`;
+            container.appendChild(controlDiv);
+
+            // ★★★ 尝试加载地图图层（自动切换备用） ★★★
+            let layerLoaded = false;
+            let currentIdx = 0;
+
+            function tryLoadLayer(index) {
+                if (index >= TILE_LAYERS.length) {
+                    document.getElementById('leafletDot').className = 'dot fail';
+                    document.getElementById('leafletStatus').textContent = '⚠️ 所有地图图层加载失败';
+                    addLog('⚠️ 所有地图图层加载失败，请检查网络', true);
+                    return;
+                }
+
+                const layer = TILE_LAYERS[index];
+                document.getElementById('leafletDot').className = 'dot loading';
+                document.getElementById('leafletStatus').textContent = `加载 ${layer.name}...`;
+
+                const tileLayer = L.tileLayer(layer.url, layer.options);
+                let loaded = false;
+
+                const onLoad = () => {
+                    if (!loaded) {
+                        loaded = true;
+                        layerLoaded = true;
+                        document.getElementById('leafletDot').className = 'dot success';
+                        document.getElementById('leafletStatus').textContent = `✅ ${layer.name}`;
+                        addLog(`🗺️ 地图图层加载成功: ${layer.name}`, false);
+                    }
+                };
+
+                const onError = () => {
+                    if (!loaded) {
+                        loaded = true;
+                        if (mapInstance) {
+                            try { mapInstance.removeLayer(tileLayer); } catch(e) {}
+                        }
+                        document.getElementById('leafletStatus').textContent = `❌ ${layer.name} 失败，切换中...`;
+                        setTimeout(() => {
+                            if (!layerLoaded) tryLoadLayer(index + 1);
+                        }, 500);
+                    }
+                };
+
+                tileLayer.on('load', onLoad);
+                tileLayer.on('tileload', onLoad);
+                tileLayer.on('tileerror', onError);
+
+                // 超时处理
+                const timeoutId = setTimeout(() => {
+                    if (!loaded) onError();
+                }, 10000);
+
+                tileLayer._timeoutId = timeoutId;
+
                 try {
-                    const toolbar = new AMap.ToolBar({
-                        position: 'RT',
-                        offset: new AMap.Pixel(10, 10)
-                    });
-                    map.addControl(toolbar);
-                    const scale = new AMap.Scale();
-                    map.addControl(scale);
-                    addLog('🗺️ 地图控件加载成功', false);
+                    tileLayer.addTo(mapInstance);
                 } catch(e) {
-                    addLog('⚠️ 地图控件加载失败: ' + e.message, false);
+                    onError();
                 }
-            });
+            }
 
-            map.on('complete', function() {
-                drawRouteOnMap(routeCode);
-            });
+            // 开始加载第一个图层
+            tryLoadLayer(0);
 
-            setTimeout(function() {
-                if (map) {
-                    drawRouteOnMap(routeCode);
-                }
+            // 延迟绘制轨迹
+            setTimeout(() => {
+                if (routeCode) drawRouteOnMap(routeCode);
             }, 1500);
 
-            addLog('🗺️ 地图加载成功，背景已显示', false);
+            addLog('🗺️ Leaflet地图初始化完成', false);
         } catch (e) {
-            addLog('地图初始化失败: ' + e.message, true);
-            mapContainer.innerHTML = `<div class="map-error"><div class="error-icon">❌</div>地图加载失败: ${e.message}</div>`;
+            addLog('❌ 地图初始化失败: ' + e.message, true);
+            document.getElementById('mapContainer').innerHTML = `<div class="map-error"><div class="error-icon">❌</div>地图加载失败: ${e.message}</div>`;
         }
     }
 
+    // ★★★ 绘制Leaflet地图轨迹（带站点图标） ★★★
     function drawRouteOnMap(routeCode) {
-        if (!map) {
-            addLog('地图未初始化', true);
-            return;
-        }
+        if (!mapInstance) return;
 
-        map.clearMap();
+        // 清除旧的轨迹层（保留底图和图层控制）
+        mapInstance.eachLayer(layer => {
+            if (layer instanceof L.Polyline || 
+                layer instanceof L.Marker || 
+                layer instanceof L.CircleMarker ||
+                layer instanceof L.Polygon) {
+                mapInstance.removeLayer(layer);
+            }
+        });
 
         const routeResults = routeGroupedResults[routeCode];
         if (!routeResults || !routeResults.length) {
@@ -1237,21 +1322,22 @@
             return;
         }
 
+        // 构建有序站点列表
         const orderedSites = [];
         const seen = new Set();
         routeResults.forEach(r => {
             const key1 = `${r.fromLng},${r.fromLat}`;
             if (!seen.has(key1)) {
                 seen.add(key1);
-                orderedSites.push({
-                    lng: r.fromLng,
-                    lat: r.fromLat,
-                    name: r.fromSiteName,
-                    type: r.fromSiteType,
-                    code: r.fromSiteCode,
-                    addr: r.fromSiteAddr,
-                    order: r.order,
-                    time: r.estimatedTime
+                orderedSites.push({ 
+                    lng: r.fromLng, 
+                    lat: r.fromLat, 
+                    name: r.fromSiteName, 
+                    type: r.fromSiteType, 
+                    code: r.fromSiteCode, 
+                    addr: r.fromSiteAddr, 
+                    order: r.order, 
+                    time: r.estimatedTime 
                 });
             }
         });
@@ -1259,114 +1345,140 @@
         if (last) {
             const keyLast = `${last.toLng},${last.toLat}`;
             if (!seen.has(keyLast)) {
-                orderedSites.push({
-                    lng: last.toLng,
-                    lat: last.toLat,
-                    name: last.toSiteName,
-                    type: last.toSiteType,
-                    code: last.toSiteCode,
-                    addr: last.toSiteAddr,
-                    order: routeResults.length + 1,
-                    time: last.estimatedTime
+                orderedSites.push({ 
+                    lng: last.toLng, 
+                    lat: last.toLat, 
+                    name: last.toSiteName, 
+                    type: last.toSiteType, 
+                    code: last.toSiteCode, 
+                    addr: last.toSiteAddr, 
+                    order: routeResults.length + 1, 
+                    time: last.estimatedTime 
                 });
             }
         }
 
         if (orderedSites.length < 2) {
-            addLog(`线路 ${routeCode} 站点数量不足，无法绘制轨迹`, true);
+            addLog(`线路 ${routeCode} 站点不足，无法绘制轨迹`, true);
             return;
         }
 
-        const pathPoints = orderedSites.map(s => [s.lng, s.lat]);
-
-        const polyline = new AMap.Polyline({
-            path: pathPoints,
-            strokeColor: '#1a5d8c',
-            strokeWeight: 5,
-            strokeStyle: 'solid',
+        // ★★★ 绘制线路轨迹 ★★★
+        const pathPoints = orderedSites.map(s => [s.lat, s.lng]);
+        const polyline = L.polyline(pathPoints, { 
+            color: '#1a5d8c', 
+            weight: 5, 
+            opacity: 0.9,
             lineJoin: 'round',
-            lineCap: 'round',
-            showDir: true,
-            strokeOpacity: 0.9
-        });
-        map.add(polyline);
+            lineCap: 'round'
+        }).addTo(mapInstance);
 
+        // ★★★ 添加站点标记 ★★★
         orderedSites.forEach((s, idx) => {
             let color = '#ffc107';
-            let labelText = `${s.order || idx+1}. ${s.name}`;
+            let markerClass = 'leaflet-marker-waypoint';
             if (s.type && (s.type.includes('卸货') || s.type.includes('目的地'))) {
                 color = '#ff6b6b';
+                markerClass = 'leaflet-marker-destination';
             } else if (s.type && (s.type.includes('发货') || s.type.includes('起点'))) {
                 color = '#2a7f6e';
+                markerClass = 'leaflet-marker-origin';
             }
 
-            const marker = new AMap.Marker({
-                position: [s.lng, s.lat],
-                label: {
-                    content: `<div style="background:${color}; color:white; padding:2px 10px; border-radius:14px; font-size:11px; font-weight:600; box-shadow:0 2px 6px rgba(0,0,0,0.2);">${labelText}</div>`,
-                    direction: 'top',
-                    offset: new AMap.Pixel(0, -8)
-                },
-                icon: new AMap.Icon({
-                    size: new AMap.Size(22, 22),
-                    image: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'%3E%3Ccircle cx='11' cy='11' r='9' fill='${color}' stroke='white' stroke-width='2'/%3E%3C/svg%3E`,
-                    imageSize: new AMap.Size(22, 22)
-                }),
-                zIndex: 100
-            });
-            map.add(marker);
+            // 创建自定义div图标（显示站点名称标签）
+            const iconHtml = `
+                <div style="
+                    background: ${color}; 
+                    color: white; 
+                    padding: 2px 10px; 
+                    border-radius: 14px; 
+                    font-size: 11px; 
+                    font-weight: 600; 
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+                    border: 2px solid white;
+                    white-space: nowrap;
+                    pointer-events: none;
+                ">
+                    ${s.order || idx+1}. ${s.name}
+                </div>
+            `;
 
-            const timeInfo = s.time ? `⏱️ 预计: ${s.time}h` : '';
-            marker.on('click', function(e) {
-                const infoWindow = new AMap.InfoWindow({
-                    content: `<div style="padding:10px 14px; font-size:13px; max-width:280px; line-height:1.6;">
-                        <strong style="font-size:15px; color:#1e3a5f;">${s.name}</strong><br>
-                        📌 类型: ${s.type || '普通'}<br>
-                        🏷️ 代码: ${s.code || '-'}<br>
-                        📍 地址: ${s.addr || '未提供'}<br>
-                        🔢 顺序: ${s.order || idx+1}<br>
-                        ${timeInfo ? `⏱️ 预计时间: ${s.time} 小时` : ''}
-                    </div>`,
-                    offset: new AMap.Pixel(0, -35)
-                });
-                infoWindow.open(map, marker.getPosition());
+            const icon = L.divIcon({
+                html: iconHtml,
+                className: '',
+                iconSize: [null, null],
+                iconAnchor: [0, -8]
             });
+
+            // 创建圆形标记（作为背景）
+            const marker = L.circleMarker([s.lat, s.lng], {
+                radius: 8,
+                fillColor: color,
+                color: 'white',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 1,
+                className: markerClass
+            }).addTo(mapInstance)
+            .bindPopup(`
+                <div style="font-size:13px; line-height:1.8; min-width:180px;">
+                    <div style="font-size:16px; font-weight:700; color:#1e3a5f; margin-bottom:4px;">${s.name}</div>
+                    <div style="color:#4a6a8a;">📌 类型: ${s.type || '普通'}</div>
+                    <div style="color:#4a6a8a;">🏷️ 代码: ${s.code || '-'}</div>
+                    <div style="color:#4a6a8a; font-size:12px;">📍 ${s.addr || '未提供地址'}</div>
+                    <div style="color:#4a6a8a;">🔢 顺序: ${s.order || idx+1}</div>
+                    ${s.time ? `<div style="color:#2a7f6e;">⏱️ 预计: ${s.time} 小时</div>` : ''}
+                    <div style="color:#7a8eaa; font-size:11px; margin-top:4px;">${s.lat}, ${s.lng}</div>
+                </div>
+            `);
+
+            // 添加标签
+            const labelIcon = L.divIcon({
+                html: `<div style="
+                    background: ${color}; 
+                    color: white; 
+                    padding: 2px 10px; 
+                    border-radius: 14px; 
+                    font-size: 10px; 
+                    font-weight: 600; 
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+                    border: 1.5px solid white;
+                    white-space: nowrap;
+                    pointer-events: none;
+                ">
+                    ${s.order || idx+1}
+                </div>`,
+                className: '',
+                iconSize: [null, null],
+                iconAnchor: [0, -30]
+            });
+
+            const labelMarker = L.marker([s.lat, s.lng], { 
+                icon: labelIcon,
+                interactive: false
+            }).addTo(mapInstance);
+
+            mapMarkers.push(marker);
         });
 
-        if (orderedSites.length > 0) {
-            const start = orderedSites[0];
-            const end = orderedSites[orderedSites.length - 1];
-            try {
-                const startMarker = new AMap.Marker({
-                    position: [start.lng, start.lat],
-                    icon: new AMap.Icon({
-                        size: new AMap.Size(32, 32),
-                        image: 'https://webapi.amap.com/theme/v1.3/markers/n/start.png',
-                        imageSize: new AMap.Size(32, 32)
-                    }),
-                    zIndex: 200
-                });
-                map.add(startMarker);
-                const endMarker = new AMap.Marker({
-                    position: [end.lng, end.lat],
-                    icon: new AMap.Icon({
-                        size: new AMap.Size(32, 32),
-                        image: 'https://webapi.amap.com/theme/v1.3/markers/n/end.png',
-                        imageSize: new AMap.Size(32, 32)
-                    }),
-                    zIndex: 200
-                });
-                map.add(endMarker);
-            } catch(e) {}
-        }
-
+        // 自适应视图
         if (pathPoints.length > 0) {
-            map.setFitView(null, false, [60, 60, 60, 60]);
+            try {
+                mapInstance.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+            } catch(e) {
+                // 如果无法适应，使用中心点
+                const centerLat = orderedSites.reduce((s, p) => s + p.lat, 0) / orderedSites.length;
+                const centerLng = orderedSites.reduce((s, p) => s + p.lng, 0) / orderedSites.length;
+                mapInstance.setView([centerLat, centerLng], 9);
+            }
         }
 
         addLog(`🗺️ 线路 ${routeCode} 轨迹已绘制，共 ${orderedSites.length} 个站点`, false);
     }
 
+    // ============================================================
+    //  渲染地图标签
+    // ============================================================
     function renderMapTabs(routeCodes) {
         mapTabs.innerHTML = '';
         routeCodes.forEach((code, idx) => {
@@ -1389,14 +1501,14 @@
     // ============================================================
     function displayResults(results, routeGrouped) {
         if (!results || !results.length) {
-            resultDisplay.style.display = 'none';
+            document.getElementById('resultDisplay').style.display = 'none';
             mapSection.style.display = 'none';
             copyResultBtn.style.display = 'none';
             return;
         }
 
         routeGroupedResults = routeGrouped || {};
-        resultDisplay.style.display = 'block';
+        document.getElementById('resultDisplay').style.display = 'block';
         copyResultBtn.style.display = 'inline-flex';
         copyResultBtn.style.justifyContent = 'center';
 
@@ -1424,9 +1536,9 @@
                 <td>${r.retryCount !== undefined ? r.retryCount : 0}</td>
             </tr>`;
         });
-        resultTableBody.innerHTML = html;
-        resultCount.textContent = results.length;
-        resultDisplay.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('resultTableBody').innerHTML = html;
+        document.getElementById('resultCount').textContent = results.length;
+        document.getElementById('resultDisplay').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         const routeCodes = Object.keys(routeGrouped);
         if (routeCodes.length > 0) {
@@ -1438,10 +1550,9 @@
                     if (mapLoading) mapLoading.style.display = 'flex';
                     initMap(currentRouteCode);
                 }
-            }, 500);
+            }, 300);
         }
 
-        // 统计高德成功和降级的数量
         const drivingCount = results.filter(r => r.method && r.method.includes('高德驾车')).length;
         const estimateCount = results.filter(r => r.method && r.method.includes('直线估算')).length;
         addLog(`📊 统计: 高德驾车 ${drivingCount} 条，直线估算 ${estimateCount} 条`, false);
@@ -1451,10 +1562,7 @@
     //  复制结果
     // ============================================================
     function copyResultsToClipboard() {
-        if (!allDistanceResults || !allDistanceResults.length) {
-            addLog("没有可复制的结果", true);
-            return;
-        }
+        if (!allDistanceResults || !allDistanceResults.length) { addLog("没有可复制的结果", true); return; }
         const headers = ['线路代码', '顺序', '站点类型', '站点代码', '站点名称', '站点地址', '经度', '纬度', 
                         '下一站点类型', '下一站点代码', '下一站点名称', '下一站点地址', '下一经度', '下一纬度', 
                         '站点间距离(km)', '预计时间(小时)', '计算方式', '重试次数'];
@@ -1547,10 +1655,7 @@
     }
 
     function downloadResultFile() {
-        if (!currentResultBlob) {
-            addLog("⚠️ 没有可下载的结果，请先完成计算", true);
-            return;
-        }
+        if (!currentResultBlob) { addLog("⚠️ 没有可下载的结果", true); return; }
         try {
             const url = URL.createObjectURL(currentResultBlob);
             const a = document.createElement('a');
@@ -1558,14 +1663,9 @@
             a.download = `线路距离_含重试_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`;
             document.body.appendChild(a);
             a.click();
-            setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }, 300);
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
             addLog('📥 开始下载Excel结果文件', false);
-        } catch (e) {
-            addLog('下载失败: ' + e.message, true);
-        }
+        } catch (e) { addLog('下载失败: ' + e.message, true); }
     }
 
     function renderPreview(records) {
@@ -1599,13 +1699,8 @@
     }
 
     function clearAll() {
-        if (isRunning) {
-            abortFlag = true;
-            addLog("正在终止计算，请稍后...", false);
-            setTimeout(() => resetData(), 500);
-        } else {
-            resetData();
-        }
+        if (isRunning) { abortFlag = true; addLog("正在终止计算...", false); setTimeout(() => resetData(), 500); }
+        else resetData();
     }
 
     function resetData() {
@@ -1615,14 +1710,18 @@
         routeGroupedResults = {};
         abortFlag = false;
         isRunning = false;
-        if (map) { map.destroy(); map = null; }
+        if (mapInstance) { 
+            try { mapInstance.remove(); } catch(e) {}
+            mapInstance = null; 
+        }
+        mapMarkers = [];
         updateFileUI();
         previewContainer.style.display = 'none';
         progressArea.style.display = 'none';
         calcProgressFill.style.width = '0%';
         calcStats.innerText = '';
         resultSummary.style.display = 'none';
-        resultDisplay.style.display = 'none';
+        document.getElementById('resultDisplay').style.display = 'none';
         mapSection.style.display = 'none';
         copyResultBtn.style.display = 'none';
         calcAllBtn.disabled = true;
@@ -1631,23 +1730,16 @@
         requestTimestamps = [];
         updateConcurrencyDisplay();
         addLog("已清空所有文件和数据", false);
+        document.getElementById('mapContainer').innerHTML = `<div class="map-loading"><div class="spinner"></div><span>地图加载中...</span></div>`;
     }
 
     function terminateCalc() {
-        if (isRunning) {
-            abortFlag = true;
-            addLog("🛑 用户主动终止计算...", false);
-            calcStats.innerText = "⏹️ 正在终止，请稍候...";
-        } else {
-            addLog("当前没有正在进行的计算任务", false);
-        }
+        if (isRunning) { abortFlag = true; addLog("🛑 用户主动终止计算...", false); calcStats.innerText = "⏹️ 正在终止..."; }
+        else addLog("当前没有正在进行的计算任务", false);
     }
 
     function showAllRoutes() {
-        if (!allSiteRecords.length) {
-            addLog("请先上传包含站点数据的Excel文件", true);
-            return;
-        }
+        if (!allSiteRecords.length) { addLog("请先上传包含站点数据的Excel文件", true); return; }
         const routes = [...new Set(allSiteRecords.map(r => r.routeCode))];
         const info = routes.map(r => `${r}(${allSiteRecords.filter(s => s.routeCode === r).length}个站点)`).join(' | ');
         addLog(`📋 所有线路代码：${info}`, false);
@@ -1707,9 +1799,7 @@
     //  事件绑定
     // ============================================================
     folderInput.addEventListener('change', async (e) => {
-        if (e.target.files.length) {
-            await handleFiles(Array.from(e.target.files));
-        }
+        if (e.target.files.length) await handleFiles(Array.from(e.target.files));
         folderInput.value = '';
     });
     fileInput.addEventListener('change', async (e) => {
@@ -1746,13 +1836,12 @@
     });
 
     // 初始化
-    clearLog();
     hideDownloadBar();
     updateFileUI();
     addLog(`📌 排序规则：从距离卸货点最远的站点开始，由远及近排列，卸货点/目的地自动放在最后`, false);
     addLog(`⏱️ 预计时间按 ${AVG_SPEED} km/h 估算，单位：小时，保留一位小数`, false);
     addLog(`🛑 并发限制：≤ ${CONFIG.QPS_LIMIT} req/s，自动重试 ${CONFIG.MAX_RETRIES} 次`, false);
-    addLog("🗺️ 计算完成后将在地图上展示每条线路的行驶轨迹（含地图背景）", false);
+    addLog("🗺️ 地图使用Leaflet + 高德/OSM瓦片，自动切换备用图层", false);
     addLog("提示：请填写高德地图Web服务API Key，上传包含7个字段的站点数据后点击「计算所有线路」", false);
 </script>
 </body>
