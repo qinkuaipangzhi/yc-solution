@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仓库选址分析工具 - Excel导入版</title>
+    <!-- SheetJS 核心库 -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js">
+    </script>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+    <style>
+        /* ========== 全局重置 & 基础 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #eef2f9 0%, #e0e8f2 100%);
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            height: calc(100vh - 32px);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        /* ===== 头部（压缩） ===== */
+        .header {
+            background: linear-gradient(135deg, #1e3a5f, #0f2b44);
+            border-radius: 1.2rem;
+            padding: 16px 28px;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header p {
+            opacity: 0.7;
+            font-size: 13px;
+        }
+        .header .badge-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .header .badge {
+            background: rgba(255, 255, 255, 0.10);
+            padding: 2px 12px;
+            border-radius: 30px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        /* ===== 主体布局（弹性） ===== */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 14px;
+            flex: 1;
+            min-height: 0;
+        }
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+        }
+
+        /* ===== 左侧卡片（数据导入） ===== */
+        .card-left {
+            background: white;
+            border-radius: 1.2rem;
+            padding: 18px 20px;
+            border: 1px solid #e2edf5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+        }
+        .card-left .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f3a5f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .card-left .card-title .sub {
+            font-weight: 400;
+            font-size: 12px;
+            color: #7a8eaa;
+        }
+        .card-left .card-title .right-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        /* 上传区域（压缩） */
+        .upload-zone {
+            border: 2px dashed #c8d8e8;
+            border-radius: 1rem;
+            padding: 16px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #fafcff;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .upload-zone:hover {
+            border-color: #1a5d8c;
+            background: #f2f8ff;
+        }
+        .upload-zone.dragover {
+            border-color: #1a5d8c;
+            background: #e8f0fa;
+        }
+        .upload-zone .icon {
+            font-size: 28px;
+        }
+        .upload-zone .title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f3a5f;
+        }
+        .upload-zone .sub {
+            font-size: 12px;
+            color: #8aa0b8;
+        }
+        .upload-zone .formats {
+            font-size: 10px;
+            color: #aab8c8;
+            margin-top: 2px;
+        }
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 6px;
+            padding: 6px 14px;
+            background: #e8f5ee;
+            border-radius: 8px;
+            border: 1px solid #b8ddd0;
+            font-size: 12px;
+            color: #1e6657;
+            flex-shrink: 0;
+        }
+        .file-status .file-name {
+            font-weight: 600;
+        }
+        .file-status .remove-file {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: #b13b3b;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0 4px;
+        }
+
+        /* 数据预览表格（可滚动） */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #e8eef5;
+            flex: 1;
+            min-height: 0;
+            margin-top: 8px;
+        }
+        .table-wrap::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        .table-wrap::-webkit-scrollbar-thumb {
+            background: #c8d8e8;
+            border-radius: 8px;
+        }
+
+        .data-table {
+            width: 100%;
+            font-size: 11px;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+        .data-table th {
+            background: #f5f8fc;
+            color: #2c4a6e;
+            font-weight: 600;
+            padding: 4px 8px;
+            text-align: left;
+            border-bottom: 2px solid #dce6f0;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+        .data-table td {
+            padding: 3px 8px;
+            border-bottom: 1px solid #e8eef5;
+            color: #2c3e66;
+            font-size: 11px;
+        }
+        .data-table tr:hover td {
+            background: #f0f6fe;
+        }
+        .data-table .empty-row td {
+            text-align: center;
+            color: #a0b8cc;
+            padding: 20px;
+            font-size: 13px;
+        }
+        .data-table .row-origin td:first-child {
+            border-left: 3px solid #2a7f6e;
+        }
+        .data-table .row-destination td:first-child {
+            border-left: 3px solid #b13b3b;
+        }
+
+        .type-tag {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 30px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .type-tag.origin {
+            background: #d4ece4;
+            color: #1e6657;
+        }
+        .type-tag.destination {
+            background: #fce4e4;
+            color: #b13b3b;
+        }
+
+        /* 底部工具栏 */
+        .table-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 6px;
+            align-items: center;
+            padding-top: 6px;
+            border-top: 1px solid #e8eef5;
+            flex-shrink: 0;
+        }
+        .table-toolbar .info-text {
+            font-size: 12px;
+            color: #7a8eaa;
+        }
+        .table-toolbar .info-text strong {
+            color: #1f3a5f;
+        }
+
+        /* ===== 按钮 ===== */
+        .btn {
+            border: none;
+            padding: 6px 16px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+        .btn-success {
+            background: #2a7f6e;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #1e6657;
+            transform: translateY(-1px);
+        }
+        .btn-success:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-outline {
+            background: #eef3fc;
+            color: #1f4970;
+            border: 1px solid #cde0ee;
+        }
+        .btn-outline:hover {
+            background: #e2ebf5;
+        }
+        .btn-danger {
+            background: #fce4e4;
+            color: #b13b3b;
+            border: 1px solid #f5c2c2;
+        }
+        .btn-danger:hover {
+            background: #fccfcf;
+        }
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 11px;
+        }
+        .btn-primary {
+            background: #1a5d8c;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0e466b;
+        }
+
+        /* ===== 右侧卡片（结果+地图） ===== */
+        .card-right {
+            background: white;
+            border-radius: 1.2rem;
+            padding: 18px 20px;
+            border: 1px solid #e2edf5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+        }
+        .card-right .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f3a5f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .card-right .card-title .sub {
+            font-weight: 400;
+            font-size: 12px;
+            color: #7a8eaa;
+        }
+        .card-right .card-title .right-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== 结果区域（滚动） ===== */
+        .result-scroll {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+            padding-right: 4px;
+        }
+        .result-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .result-scroll::-webkit-scrollbar-thumb {
+            background: #c8d8e8;
+            border-radius: 8px;
+        }
+
+        .result-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        @media (max-width: 600px) {
+            .result-summary {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .result-item {
+            background: #f8fafd;
+            border-radius: 8px;
+            padding: 10px 14px;
+            border: 1px solid #e2edf5;
+        }
+        .result-item .label {
+            font-size: 10px;
+            color: #7a8eaa;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .result-item .value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f3a5f;
+            margin-top: 1px;
+        }
+        .result-item .sub {
+            font-size: 11px;
+            color: #8aa0b8;
+            margin-top: 1px;
+        }
+
+        /* 推荐卡片（紧凑） */
+        .recommendation-box {
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin: 6px 0;
+        }
+        .recommendation-box.origin-rec {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            border: 1px solid #93b5e8;
+        }
+        .recommendation-box.dest-rec {
+            background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+            border: 1px solid #f0a8c8;
+        }
+        .recommendation-box.neutral-rec {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 1px solid #f5c842;
+        }
+        .recommendation-box .title {
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .recommendation-box .title .tag {
+            font-size: 9px;
+            font-weight: 500;
+            padding: 1px 8px;
+            border-radius: 30px;
+        }
+        .recommendation-box .title .tag.blue {
+            background: rgba(26, 93, 140, 0.15);
+            color: #1a5d8c;
+        }
+        .recommendation-box .title .tag.purple {
+            background: rgba(108, 91, 123, 0.15);
+            color: #5a4a68;
+        }
+        .recommendation-box .detail {
+            margin-top: 2px;
+            font-size: 12px;
+            color: #1f4a3f;
+            line-height: 1.5;
+        }
+        .recommendation-box .detail strong {
+            color: #0f3a2f;
+        }
+        .site-count-badge {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.06);
+            padding: 0 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            color: #4a6a8a;
+        }
+
+        /* ===== ★★★ 地图容器（放大） ★★★ */
+        #mapContainer {
+            border-radius: 10px;
+            border: 1px solid #e2edf5;
+            height: 340px;
+            min-height: 200px;
+            margin-top: 8px;
+            overflow: hidden;
+            background: #e8ecf0;
+            position: relative;
+            flex-shrink: 0;
+        }
+        #mapContainer .map-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #8aa0b8;
+            font-size: 14px;
+            background: #e8ecf0;
+        }
+        #mapContainer .map-placeholder .icon {
+            font-size: 32px;
+            margin-right: 12px;
+        }
+        #mapContainer .leaflet-container {
+            height: 100%;
+            width: 100%;
+            background: #e8ecf0;
+        }
+
+        /* 地图图层控制 */
+        .map-layer-control {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 8px;
+            padding: 4px 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+            font-size: 10px;
+            color: #4a6a8a;
+            border: 1px solid #e2edf5;
+            backdrop-filter: blur(4px);
+        }
+        .map-layer-control .layer-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .map-layer-control .dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+        .map-layer-control .dot.success {
+            background: #2a7f6e;
+        }
+        .map-layer-control .dot.fail {
+            background: #b13b3b;
+        }
+        .map-layer-control .dot.loading {
+            background: #f5c842;
+            animation: blink 0.8s infinite;
+        }
+        @keyframes blink {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        /* ===== 地图标记样式 ===== */
+        .custom-marker-origin {
+            background: #2a7f6e;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 12px;
+            height: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        .custom-marker-destination {
+            background: #b13b3b;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 12px;
+            height: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        .custom-marker-origin-rec {
+            background: #1a5d8c;
+            border: 3px solid #ffb347;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+        .custom-marker-dest-rec {
+            background: #6c5b7b;
+            border: 3px solid #ffb347;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e6657;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+            animation: fadeInDown 0.3s ease;
+            display: none;
+        }
+        .toast.show {
+            display: block;
+        }
+        .toast.error {
+            background: #b13b3b;
+        }
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: #8aa0b8;
+        }
+        .empty-state .icon-big {
+            font-size: 40px;
+            margin-bottom: 8px;
+        }
+        .empty-state h3 {
+            color: #1f3a5f;
+            margin-bottom: 4px;
+            font-size: 16px;
+        }
+        .empty-state p {
+            font-size: 13px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .tag-green {
+            background: #d4ece4;
+            color: #1e6657;
+        }
+        .tag-blue {
+            background: #d4e4f0;
+            color: #1a5d8c;
+        }
+        .tag-red {
+            background: #fce4e4;
+            color: #b13b3b;
+        }
+
+        .footer-note {
+            margin-top: 6px;
+            font-size: 10px;
+            color: #8aa0b8;
+            text-align: center;
+            border-top: 1px solid #e8eef5;
+            padding-top: 6px;
+            flex-shrink: 0;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 1024px) {
+            .container {
+                height: auto;
+                min-height: 100vh;
+            }
+            .main-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            .card-left {
+                max-height: 420px;
+            }
+            .card-right {
+                min-height: 500px;
+            }
+            #mapContainer {
+                height: 280px;
+            }
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                gap: 10px;
+            }
+            .header {
+                padding: 12px 18px;
+            }
+            .header h1 {
+                font-size: 18px;
+            }
+            .header .badge {
+                font-size: 9px;
+                padding: 1px 8px;
+            }
+            .card-left,
+            .card-right {
+                padding: 14px 16px;
+            }
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            .card-left {
+                max-height: 380px;
+            }
+            #mapContainer {
+                height: 220px;
+            }
+            .result-summary {
+                grid-template-columns: 1fr 1fr;
+            }
+            .result-item .value {
+                font-size: 17px;
+            }
+        }
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 15px;
+            }
+            .header .badge-group {
+                display: none;
+            }
+            .card-left {
+                max-height: 340px;
+            }
+            #mapContainer {
+                height: 180px;
+            }
+            .result-summary {
+                grid-template-columns: 1fr 1fr;
+            }
+            .result-item {
+                padding: 6px 10px;
+            }
+            .result-item .value {
+                font-size: 15px;
+            }
+            .btn {
+                font-size: 10px;
+                padding: 4px 10px;
+            }
+            .data-table {
+                font-size: 10px;
+                min-width: 700px;
+            }
+            .data-table th,
+            .data-table td {
+                padding: 2px 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Toast 提示 -->
+        <div id="toast" class="toast"></div>
+
+        <!-- ===== 头部（压缩） ===== -->
+        <div class="header">
+            <div class="header-left">
+                <h1>🏗️ 仓库选址分析</h1>
+                <p>Excel导入 · K-Means聚类</p>
+            </div>
+            <div class="badge-group">
+                <span class="badge">📍 前置仓</span>
+                <span class="badge">🏁 末端仓</span>
+                <span class="badge">📊 多维度分析</span>
+                <span class="badge">📦 m³</span>
+                <span class="badge">🗺️ 高德地图</span>
+            </div>
+        </div>
+
+        <!-- ===== 主体 ===== -->
+        <div class="main-grid">
+            <!-- ===== 左侧：数据导入 ===== -->
+            <div class="card-left">
+                <div class="card-title">
+                    📥 数据导入
+                    <span class="sub">Excel/CSV</span>
+                    <span class="right-actions">
+                        <button class="btn btn-outline btn-sm" id="sampleBtn">📋 示例</button>
+                        <button class="btn btn-danger btn-sm" id="clearBtn">🗑️ 清空</button>
+                    </span>
+                </div>
+
+                <!-- 上传区域 -->
+                <div class="upload-zone" id="uploadZone">
+                    <div class="icon">📂</div>
+                    <div class="title">拖拽或点击上传</div>
+                    <div class="sub">.xlsx, .xls, .csv</div>
+                    <div class="formats">站点代码,名称,类型,经度,纬度,年/月/周/日(m³),频次,权重</div>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+                </div>
+
+                <div id="fileStatus" style="display:none;"></div>
+
+                <!-- 数据预览 -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin:6px 0 4px; flex-shrink:0;">
+                    <span style="font-weight:600; font-size:13px; color:#1f3a5f;">📊 数据预览</span>
+                    <span style="font-size:11px; color:#7a8eaa;" id="rowCount">共 0 行</span>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>代码</th>
+                                <th>名称</th>
+                                <th>类型</th>
+                                <th>经度</th>
+                                <th>纬度</th>
+                                <th>年</th>
+                                <th>月</th>
+                                <th>周</th>
+                                <th>日</th>
+                                <th>频次</th>
+                                <th>权重</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr class="empty-row"><td colspan="12">📭 暂无数据，请上传文件或加载示例</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-toolbar">
+                    <span class="info-text">📊 起始点 <strong id="originCount">0</strong> · 目的地 <strong id="destCount">0</strong></span>
+                    <span style="margin-left:auto;font-size:11px;color:#8aa0b8;">
+                        <span class="tag tag-green" style="font-size:9px;">🟢 起始点</span>
+                        <span class="tag tag-red" style="font-size:9px;">🔴 目的地</span>
+                    </span>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div style="display:flex; gap:8px; margin-top:8px; flex-shrink:0; flex-wrap:wrap;">
+                    <button class="btn btn-success" id="analyzeBtn" disabled style="flex:1;">🚀 执行选址分析</button>
+                    <button class="btn btn-primary" id="exportBtn" disabled style="flex:0.6;">📥 导出</button>
+                </div>
+            </div>
+
+            <!-- ===== 右侧：分析结果 + 地图 ===== -->
+            <div class="card-right">
+                <div class="card-title">
+                    📊 分析结果
+                    <span class="sub">— 仓库选址推荐</span>
+                    <span class="right-actions">
+                        <span style="font-size:11px;color:#8aa0b8;" id="resultStatus">等待分析</span>
+                    </span>
+                </div>
+
+                <!-- 结果区域（滚动） -->
+                <div class="result-scroll" id="resultScroll">
+                    <div id="resultArea">
+                        <div class="empty-state">
+                            <div class="icon-big">🏗️</div>
+                            <h3>等待数据</h3>
+                            <p>请上传数据文件后点击「执行选址分析」</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 底部 ===== -->
+        <div style="font-size:10px; color:#8aa0b8; text-align:center; flex-shrink:0; padding:4px 0;">
+            🔒 所有数据仅在浏览器本地处理 · 基于K-Means聚类算法 · 出货量单位: m³
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  地图图层配置（高德地图优先）
+        // ============================================================
+        const TILE_LAYERS = [{
+            name: '高德地图',
+            url: 'https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+            options: { maxZoom: 18, attribution: '© 高德地图' }
+        }, {
+            name: '高德卫星图',
+            url: 'https://webst01.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+            options: { maxZoom: 18, attribution: '© 高德地图' }
+        }, {
+            name: 'OpenStreetMap',
+            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            options: { maxZoom: 19, attribution: '© OpenStreetMap', subdomains: ['a', 'b', 'c'] }
+        }];
+
+        // ============================================================
+        //  状态管理
+        // ============================================================
+        let sites = [];
+        let analysisResults = null;
+        let loadedFileName = '';
+        let mapInstance = null;
+        let mapMarkers = [];
+
+        // ============================================================
+        //  DOM 引用
+        // ============================================================
+        const tableBody = document.getElementById('tableBody');
+        const rowCount = document.getElementById('rowCount');
+        const originCount = document.getElementById('originCount');
+        const destCount = document.getElementById('destCount');
+        const fileInput = document.getElementById('fileInput');
+        const uploadZone = document.getElementById('uploadZone');
+        const fileStatus = document.getElementById('fileStatus');
+        const sampleBtn = document.getElementById('sampleBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const resultArea = document.getElementById('resultArea');
+        const resultStatus = document.getElementById('resultStatus');
+        const toast = document.getElementById('toast');
+        const resultScroll = document.getElementById('resultScroll');
+
+        // ============================================================
+        //  工具函数
+        // ============================================================
+        function showToast(msg, isError = false) {
+            toast.textContent = msg;
+            toast.className = 'toast show' + (isError ? ' error' : '');
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => { toast.classList.remove('show'); }, 2500);
+        }
+
+        function haversineDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function getWeightedQty(site) {
+            let qty = 0,
+                count = 0;
+            if (site.yearQty > 0) { qty += site.yearQty / 365;
+                count++; }
+            if (site.monthQty > 0) { qty += site.monthQty / 30;
+                count++; }
+            if (site.weekQty > 0) { qty += site.weekQty / 7;
+                count++; }
+            if (site.dayQty > 0) { qty += site.dayQty;
+                count++; }
+            return count > 0 ? qty / count : 0;
+        }
+
+        function calcWeightedCenter(sites, type) {
+            const filtered = sites.filter(s => s.type === type);
+            if (filtered.length === 0) return null;
+            let totalWeight = 0,
+                sumLat = 0,
+                sumLng = 0;
+            filtered.forEach(s => {
+                const qty = getWeightedQty(s);
+                const freq = s.frequency || 1;
+                const w = s.weight || 5;
+                const weightVal = qty * (1 / freq) * w;
+                totalWeight += weightVal;
+                sumLat += s.lat * weightVal;
+                sumLng += s.lng * weightVal;
+            });
+            if (totalWeight === 0) {
+                const avgLat = filtered.reduce((s, p) => s + p.lat, 0) / filtered.length;
+                const avgLng = filtered.reduce((s, p) => s + p.lng, 0) / filtered.length;
+                return { lat: avgLat, lng: avgLng, weight: filtered.length };
+            }
+            return { lat: sumLat / totalWeight, lng: sumLng / totalWeight, weight: totalWeight };
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[m] || m);
+        }
+
+        // ============================================================
+        //  K-Means 聚类算法
+        // ============================================================
+        function clusterSites(sites, maxClusters) {
+            if (sites.length === 0) return [];
+            if (sites.length <= maxClusters) {
+                return sites.map(s => ({ lat: s.lat, lng: s.lng, sites: [s] }));
+            }
+            const k = Math.min(maxClusters, Math.max(2, Math.ceil(sites.length / 8)));
+            const actualK = Math.max(2, k);
+
+            let centers = [];
+            const firstIdx = Math.floor(Math.random() * sites.length);
+            centers.push({ lat: sites[firstIdx].lat, lng: sites[firstIdx].lng });
+            for (let c = 1; c < actualK; c++) {
+                let maxDist = -1,
+                    bestIdx = 0;
+                for (let i = 0; i < sites.length; i++) {
+                    const s = sites[i];
+                    let minDist = Infinity;
+                    for (let center of centers) {
+                        const d = haversineDistance(s.lat, s.lng, center.lat, center.lng);
+                        if (d < minDist) minDist = d;
+                    }
+                    if (minDist > maxDist) { maxDist = minDist;
+                        bestIdx = i; }
+                }
+                centers.push({ lat: sites[bestIdx].lat, lng: sites[bestIdx].lng });
+            }
+
+            for (let iter = 0; iter < 20; iter++) {
+                const clusters = centers.map(() => []);
+                for (let s of sites) {
+                    let minDist = Infinity,
+                        bestCenter = 0;
+                    for (let ci = 0; ci < centers.length; ci++) {
+                        const d = haversineDistance(s.lat, s.lng, centers[ci].lat, centers[ci].lng);
+                        if (d < minDist) { minDist = d;
+                            bestCenter = ci; }
+                    }
+                    clusters[bestCenter].push(s);
+                }
+                let changed = false;
+                for (let ci = 0; ci < centers.length; ci++) {
+                    if (clusters[ci].length === 0) continue;
+                    const avgLat = clusters[ci].reduce((sum, s) => sum + s.lat, 0) / clusters[ci].length;
+                    const avgLng = clusters[ci].reduce((sum, s) => sum + s.lng, 0) / clusters[ci].length;
+                    if (Math.abs(centers[ci].lat - avgLat) > 0.0001 || Math.abs(centers[ci].lng - avgLng) > 0.0001) {
+                        centers[ci] = { lat: avgLat, lng: avgLng };
+                        changed = true;
+                    }
+                }
+                if (!changed) break;
+            }
+
+            const finalClusters = centers.map(() => []);
+            for (let s of sites) {
+                let minDist = Infinity,
+                    bestCenter = 0;
+                for (let ci = 0; ci < centers.length; ci++) {
+                    const d = haversineDistance(s.lat, s.lng, centers[ci].lat, centers[ci].lng);
+                    if (d < minDist) { minDist = d;
+                        bestCenter = ci; }
+                }
+                finalClusters[bestCenter].push(s);
+            }
+
+            const result = [];
+            for (let ci = 0; ci < centers.length; ci++) {
+                if (finalClusters[ci].length > 0) {
+                    result.push({ lat: centers[ci].lat, lng: centers[ci].lng, sites: finalClusters[ci],
+                        count: finalClusters[ci].length });
+                }
+            }
+            return result;
+        }
+
+        // ============================================================
+        //  地图渲染
+        // ============================================================
+        function renderMap() {
+            const mapContainer = document.getElementById('mapContainer');
+            if (mapInstance) {
+                mapInstance.remove();
+                mapInstance = null;
+            }
+            mapMarkers = [];
+
+            if (!analysisResults || sites.length === 0) {
+                mapContainer.innerHTML =
+                    `<div class="map-placeholder"><span class="icon">🗺️</span><span>请执行分析后查看地图</span></div>`;
+                return;
+            }
+
+            const allPoints = [];
+            sites.forEach(s => {
+                allPoints.push({ lat: s.lat, lng: s.lng, name: s.name, code: s.code || '', type: s.type,
+                    isRecommend: false, recType: null });
+            });
+
+            const recs = analysisResults.recommendations || [];
+            recs.forEach((rec, idx) => {
+                const label = rec.type === 'origin' ? `前置仓${recs.length > 1 ? idx + 1 : ''}` :
+                    `末端仓${recs.length > 1 ? idx + 1 : ''}`;
+                allPoints.push({ lat: rec.lat, lng: rec.lng, name: `推荐${label}`,
+                    code: `REC-${rec.type.toUpperCase()}-${idx}`,
+                    type: rec.type, isRecommend: true, recType: rec.type, servingCount: rec.sites ? rec.sites.length :
+                    0 });
+            });
+
+            if (allPoints.length === 0) {
+                mapContainer.innerHTML =
+                `<div class="map-placeholder"><span class="icon">🗺️</span><span>暂无数据</span></div>`;
+                return;
+            }
+
+            const centerLat = allPoints.reduce((s, p) => s + p.lat, 0) / allPoints.length;
+            const centerLng = allPoints.reduce((s, p) => s + p.lng, 0) / allPoints.length;
+
+            mapContainer.innerHTML = '';
+            mapInstance = L.map(mapContainer, {
+                center: [centerLat, centerLng],
+                zoom: 8,
+                zoomControl: true,
+                fadeAnimation: true,
+                attributionControl: true
+            });
+
+            // 图层控制
+            const controlDiv = document.createElement('div');
+            controlDiv.className = 'map-layer-control';
+            controlDiv.id = 'layerControl';
+            controlDiv.innerHTML =
+                `<div class="layer-status"><span class="dot loading" id="layerDot"></span><span id="layerStatusText">加载地图...</span></div>`;
+            mapContainer.appendChild(controlDiv);
+
+            let layerLoaded = false;
+            let currentIndex = 0;
+
+            function tryLoadLayer(index) {
+                if (index >= TILE_LAYERS.length) {
+                    document.getElementById('layerDot').className = 'dot fail';
+                    document.getElementById('layerStatusText').textContent = '⚠️ 地图加载失败';
+                    return;
+                }
+                const layer = TILE_LAYERS[index];
+                document.getElementById('layerDot').className = 'dot loading';
+                document.getElementById('layerStatusText').textContent = `加载 ${layer.name}...`;
+
+                const tileLayer = L.tileLayer(layer.url, layer.options);
+                let loaded = false;
+                const onLoad = () => { if (!loaded) { loaded = true;
+                        document.getElementById('layerDot').className = 'dot success';
+                        document.getElementById('layerStatusText').textContent = `✅ ${layer.name}`;
+                        layerLoaded = true; } };
+                const onError = () => {
+                    if (!loaded) {
+                        loaded = true;
+                        if (mapInstance) mapInstance.removeLayer(tileLayer);
+                        setTimeout(() => { if (!layerLoaded) tryLoadLayer(index + 1); }, 500);
+                    }
+                };
+                tileLayer.on('load', onLoad);
+                tileLayer.on('tileload', onLoad);
+                tileLayer.on('tileerror', onError);
+                setTimeout(() => { if (!loaded) onError(); }, 8000);
+                tileLayer.addTo(mapInstance);
+            }
+            tryLoadLayer(0);
+
+            // 标记图标
+            const originIcon = L.divIcon({ className: 'custom-marker-origin', iconSize: [12, 12], iconAnchor: [6, 6] });
+            const destIcon = L.divIcon({ className: 'custom-marker-destination', iconSize: [12, 12], iconAnchor: [6, 6] });
+            const originRecIcon = L.divIcon({ className: 'custom-marker-origin-rec', iconSize: [16, 16], iconAnchor: [8,
+                8] });
+            const destRecIcon = L.divIcon({ className: 'custom-marker-dest-rec', iconSize: [16, 16], iconAnchor: [8, 8] });
+
+            allPoints.forEach(p => {
+                let icon, popupContent;
+                if (p.isRecommend) {
+                    icon = p.recType === 'origin' ? originRecIcon : destRecIcon;
+                    const recTypeLabel = p.recType === 'origin' ? '📍 前置仓' : '🏁 末端仓';
+                    popupContent =
+                        `<div style="font-size:14px;font-weight:700;color:#1f3a5f;">🏗️ ${p.name}</div>
+                        <div style="font-size:12px;color:#4a6a8a;">📍 ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}</div>
+                        <div style="font-size:12px;color:#2a7f6e;">⭐ ${recTypeLabel}</div>
+                        <div style="font-size:11px;color:#6c5b7b;">📦 服务 ${p.servingCount || 0} 个站点</div>`;
+                } else {
+                    icon = p.type === 'origin' ? originIcon : destIcon;
+                    const typeLabel = p.type === 'origin' ? '🟢 起始点' : '🔴 目的地';
+                    popupContent =
+                        `<div style="font-size:14px;font-weight:600;color:#1f3a5f;">${p.name}</div>
+                        ${p.code ? `<div style="font-size:12px;color:#7a8eaa;">代码: ${p.code}</div>` : ''}
+                        <div style="font-size:12px;color:#4a6a8a;">📍 ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}</div>
+                        <div style="font-size:12px;color:#7a8eaa;">${typeLabel}</div>`;
+                }
+                const marker = L.marker([p.lat, p.lng], { icon: icon }).addTo(mapInstance).bindPopup(popupContent);
+                mapMarkers.push(marker);
+            });
+
+            if (mapMarkers.length > 0) {
+                const group = L.featureGroup(mapMarkers);
+                mapInstance.fitBounds(group.getBounds(), { padding: [40, 40] });
+            }
+            if (mapMarkers.length === 1) mapInstance.setZoom(13);
+
+            setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 300);
+            setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 800);
+        }
+
+        // ============================================================
+        //  解析 Excel/CSV
+        // ============================================================
+        function parseDataFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+                        resolve(rows);
+                    } catch (err) { reject(err); }
+                };
+                reader.onerror = () => reject(new Error(`读取失败 ${file.name}`));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        async function importData(file) {
+            try {
+                const rows = await parseDataFile(file);
+                if (!rows || rows.length === 0) { showToast('文件为空或格式不正确', true); return false; }
+
+                const headers = Object.keys(rows[0] || {});
+                const colMap = {
+                    code: findCol(headers, ['站点代码', '代码', 'code', '站点编码', '编码']),
+                    name: findCol(headers, ['站点名称', '名称', 'name', '站点名']),
+                    type: findCol(headers, ['站点类型', '类型', 'type']),
+                    lng: findCol(headers, ['经度', 'lng', 'longitude', 'lon', 'long']),
+                    lat: findCol(headers, ['纬度', 'lat', 'latitude']),
+                    yearQty: findCol(headers, ['年出货量', '年', 'year', '年量', '年出货量(m³)']),
+                    monthQty: findCol(headers, ['月出货量', '月', 'month', '月量', '月出货量(m³)']),
+                    weekQty: findCol(headers, ['周出货量', '周', 'week', '周量', '周出货量(m³)']),
+                    dayQty: findCol(headers, ['日出货量', '日', 'day', '日量', '日出货量(m³)']),
+                    frequency: findCol(headers, ['发运频次', '频次', 'frequency', '发运频次(天/次)']),
+                    weight: findCol(headers, ['权重', 'weight'])
+                };
+
+                const required = ['name', 'type', 'lat', 'lng'];
+                const missing = required.filter(k => colMap[k] === null);
+                if (missing.length > 0) {
+                    showToast(`缺少必填列: ${missing.join(', ')}。检测到: ${headers.join(', ')}`, true);
+                    return false;
+                }
+
+                const parsed = [];
+                let hasError = false;
+                rows.forEach((row, idx) => {
+                    const code = String(row[colMap.code] || '').trim();
+                    const name = String(row[colMap.name] || '').trim();
+                    const type = String(row[colMap.type] || '').trim().toLowerCase();
+                    const lng = parseFloat(row[colMap.lng]);
+                    const lat = parseFloat(row[colMap.lat]);
+
+                    if (!name) { showToast(`第 ${idx + 2} 行: 站点名称为空`, true);
+                        hasError = true; return; }
+                    if (isNaN(lat) || isNaN(lng)) { showToast(`第 ${idx + 2} 行: 经纬度无效`, true);
+                        hasError = true; return; }
+
+                    let typeNorm = 'origin';
+                    if (type === 'destination' || type === '目的地' || type === '收货地' || type === '终点' || type === 'dest') {
+                        typeNorm = 'destination';
+                    } else if (type === 'origin' || type === '起始点' || type === '发货地' || type === '起点' || type ===
+                        'origin') {
+                        typeNorm = 'origin';
+                    } else {
+                        if (name.includes('客户') || name.includes('门店') || name.includes('终端') || name.includes('店')) {
+                            typeNorm = 'destination';
+                        }
+                    }
+
+                    parsed.push({
+                        code: code,
+                        name: name,
+                        type: typeNorm,
+                        lat: lat,
+                        lng: lng,
+                        yearQty: parseFloat(row[colMap.yearQty]) || 0,
+                        monthQty: parseFloat(row[colMap.monthQty]) || 0,
+                        weekQty: parseFloat(row[colMap.weekQty]) || 0,
+                        dayQty: parseFloat(row[colMap.dayQty]) || 0,
+                        frequency: parseFloat(row[colMap.frequency]) || 1,
+                        weight: parseInt(row[colMap.weight]) || 5
+                    });
+                });
+
+                if (hasError || parsed.length === 0) return false;
+
+                sites = parsed;
+                loadedFileName = file.name;
+                showFileStatus(file.name, parsed.length);
+                renderTable();
+                showToast(`✅ 成功导入 ${parsed.length} 条数据`);
+                return true;
+
+            } catch (err) {
+                showToast(`解析失败: ${err.message}`, true);
+                return false;
+            }
+        }
+
+        function findCol(headers, candidates) {
+            for (let c of candidates) {
+                const found = headers.find(h => h.trim() === c || h.trim().toLowerCase() === c.toLowerCase());
+                if (found) return found;
+            }
+            for (let c of candidates) {
+                const found = headers.find(h => h.includes(c) || c.includes(h));
+                if (found) return found;
+            }
+            return null;
+        }
+
+        function showFileStatus(name, count) {
+            fileStatus.style.display = 'block';
+            fileStatus.innerHTML =
+                `<span class="file-name">📄 ${name}</span><span>${count} 条</span><button class="remove-file" onclick="clearAll()">✕</button>`;
+        }
+
+        function renderTable() {
+            if (sites.length === 0) {
+                tableBody.innerHTML =
+                    `<tr class="empty-row"><td colspan="12">📭 暂无数据，请上传 Excel/CSV 文件或加载示例</td></tr>`;
+                updateStats();
+                updateAnalyzeBtn();
+                return;
+            }
+
+            let html = '';
+            sites.forEach((s, i) => {
+                const rowClass = s.type === 'origin' ? 'row-origin' : 'row-destination';
+                const typeLabel = s.type === 'origin' ?
+                    '<span class="type-tag origin">🟢 起始点</span>' :
+                    '<span class="type-tag destination">🔴 目的地</span>';
+                html += `<tr class="${rowClass}">
+                    <td>${i + 1}</td>
+                    <td>${escHtml(s.code || '-')}</td>
+                    <td><strong>${escHtml(s.name)}</strong></td>
+                    <td>${typeLabel}</td>
+                    <td>${s.lng}</td>
+                    <td>${s.lat}</td>
+                    <td>${s.yearQty ? s.yearQty.toFixed(1) : '-'}</td>
+                    <td>${s.monthQty ? s.monthQty.toFixed(1) : '-'}</td>
+                    <td>${s.weekQty ? s.weekQty.toFixed(1) : '-'}</td>
+                    <td>${s.dayQty ? s.dayQty.toFixed(1) : '-'}</td>
+                    <td>${s.frequency || 1}</td>
+                    <td>${s.weight || 5}</td>
+                </tr>`;
+            });
+            tableBody.innerHTML = html;
+            updateStats();
+            updateAnalyzeBtn();
+
+            if (analysisResults) {
+                analysisResults = null;
+                exportBtn.disabled = true;
+                resultStatus.textContent = '数据已更新，请重新分析';
+                resultArea.innerHTML =
+                    `<div class="empty-state"><div class="icon-big">📊</div><h3>数据已更新</h3><p>请重新执行选址分析</p></div>`;
+                const mapContainer = document.getElementById('mapContainer');
+                if (mapContainer) mapContainer.innerHTML =
+                    `<div class="map-placeholder"><span class="icon">🗺️</span><span>请执行分析后查看地图</span></div>`;
+                if (mapInstance) { mapInstance.remove();
+                    mapInstance = null; }
+            }
+        }
+
+        function updateStats() {
+            rowCount.textContent = `共 ${sites.length} 行`;
+            const origins = sites.filter(s => s.type === 'origin');
+            const destinations = sites.filter(s => s.type === 'destination');
+            originCount.textContent = origins.length;
+            destCount.textContent = destinations.length;
+        }
+
+        function updateAnalyzeBtn() {
+            const origins = sites.filter(s => s.type === 'origin');
+            const destinations = sites.filter(s => s.type === 'destination');
+            analyzeBtn.disabled = !(origins.length > 0 && destinations.length > 0);
+        }
+
+        // ============================================================
+        //  加载示例数据
+        // ============================================================
+        function loadSampleData() {
+            if (sites.length > 0 && !confirm('加载示例数据将覆盖当前数据，是否继续？')) return;
+            sites = [];
+            loadedFileName = '';
+            const samples = [
+                { code: 'WH-001', name: '上海仓', type: 'origin', lat: 31.2304, lng: 121.4737, yearQty: 120000,
+                    monthQty: 10000, weekQty: 2500, dayQty: 350, frequency: 1, weight: 8 },
+                { code: 'WH-002', name: '杭州仓', type: 'origin', lat: 30.2741, lng: 120.1551, yearQty: 80000,
+                    monthQty: 7000, weekQty: 1800, dayQty: 250, frequency: 1.5, weight: 7 },
+                { code: 'WH-003', name: '南京仓', type: 'origin', lat: 32.0603, lng: 118.7969, yearQty: 60000,
+                    monthQty: 5000, weekQty: 1200, dayQty: 180, frequency: 2, weight: 6 },
+                { code: 'CUST-001', name: '合肥客户A', type: 'destination', lat: 31.8206, lng: 117.2272, yearQty: 50000,
+                    monthQty: 4200, weekQty: 1000, dayQty: 150, frequency: 1, weight: 7 },
+                { code: 'CUST-002', name: '芜湖客户B', type: 'destination', lat: 31.3656, lng: 118.3622, yearQty: 30000,
+                    monthQty: 2500, weekQty: 600, dayQty: 80, frequency: 1.5, weight: 5 },
+                { code: 'CUST-003', name: '徐州客户C', type: 'destination', lat: 34.2055, lng: 117.2543, yearQty: 40000,
+                    monthQty: 3300, weekQty: 800, dayQty: 120, frequency: 2, weight: 6 }
+            ];
+            sites = samples.map(s => ({ ...s }));
+            fileStatus.style.display = 'none';
+            renderTable();
+            analysisResults = null;
+            exportBtn.disabled = true;
+            resultStatus.textContent = '等待分析';
+            const mapContainer = document.getElementById('mapContainer');
+            if (mapContainer) mapContainer.innerHTML =
+                `<div class="map-placeholder"><span class="icon">🗺️</span><span>请执行分析后查看地图</span></div>`;
+            if (mapInstance) { mapInstance.remove();
+                mapInstance = null; }
+            resultArea.innerHTML =
+                `<div class="empty-state"><div class="icon-big">📊</div><h3>数据已就绪</h3><p>点击「执行选址分析」查看推荐结果</p></div>`;
+            showToast('✅ 已加载 6 个示例站点');
+        }
+
+        function clearAll() {
+            if (sites.length === 0) return;
+            if (!confirm('确定要清空所有数据吗？')) return;
+            sites = [];
+            loadedFileName = '';
+            fileStatus.style.display = 'none';
+            renderTable();
+            analysisResults = null;
+            exportBtn.disabled = true;
+            resultStatus.textContent = '等待分析';
+            const mapContainer = document.getElementById('mapContainer');
+            if (mapContainer) mapContainer.innerHTML =
+                `<div class="map-placeholder"><span class="icon">🗺️</span><span>请执行分析后查看地图</span></div>`;
+            if (mapInstance) { mapInstance.remove();
+                mapInstance = null; }
+            resultArea.innerHTML =
+                `<div class="empty-state"><div class="icon-big">🏗️</div><h3>等待数据</h3><p>请上传数据文件后点击「执行选址分析」</p></div>`;
+            showToast('已清空所有数据');
+        }
+
+        // ============================================================
+        //  核心：选址分析
+        // ============================================================
+        function runAnalysis() {
+            const origins = sites.filter(s => s.type === 'origin');
+            const destinations = sites.filter(s => s.type === 'destination');
+
+            if (origins.length === 0 || destinations.length === 0) {
+                showToast('请至少包含 1 个起始点和 1 个目的地', true);
+                return;
+            }
+
+            let hasError = false;
+            sites.forEach(s => {
+                if (!s.name.trim()) { showToast(`站点 "${s.name || '未命名'}" 缺少名称`, true);
+                    hasError = true; }
+                if (s.lat === 0 || s.lng === 0) { showToast(`站点 "${s.name || '未命名'}" 缺少经纬度`, true);
+                    hasError = true; }
+            });
+            if (hasError) return;
+
+            const totalQty = sites.reduce((sum, s) => sum + getWeightedQty(s), 0);
+            const maxClusters = Math.max(2, Math.min(10, Math.ceil(sites.length / 8)));
+
+            let originClusters = [];
+            if (origins.length > 0) {
+                originClusters = clusterSites(origins, maxClusters);
+                if (originClusters.length === 1 && origins.length <= 3) originClusters = [];
+            }
+
+            let destClusters = [];
+            if (destinations.length > 0) {
+                destClusters = clusterSites(destinations, maxClusters);
+                if (destClusters.length === 1 && destinations.length <= 3) destClusters = [];
+            }
+
+            const recommendations = [];
+
+            originClusters.forEach((cluster, idx) => {
+                const center = calcWeightedCenter(cluster.sites, 'origin');
+                if (center) {
+                    recommendations.push({
+                        type: 'origin',
+                        lat: center.lat,
+                        lng: center.lng,
+                        sites: cluster.sites,
+                        count: cluster.sites.length,
+                        label: `前置仓${originClusters.length > 1 ? idx + 1 : ''}`,
+                        reason: `服务 ${cluster.sites.length} 个起始点`
+                    });
+                }
+            });
+
+            destClusters.forEach((cluster, idx) => {
+                const center = calcWeightedCenter(cluster.sites, 'destination');
+                if (center) {
+                    recommendations.push({
+                        type: 'destination',
+                        lat: center.lat,
+                        lng: center.lng,
+                        sites: cluster.sites,
+                        count: cluster.sites.length,
+                        label: `末端仓${destClusters.length > 1 ? idx + 1 : ''}`,
+                        reason: `服务 ${cluster.sites.length} 个目的地`
+                    });
+                }
+            });
+
+            if (recommendations.length === 0 && sites.length >= 5) {
+                const allCenter = {
+                    lat: sites.reduce((s, p) => s + p.lat, 0) / sites.length,
+                    lng: sites.reduce((s, p) => s + p.lng, 0) / sites.length
+                };
+                recommendations.push({
+                    type: 'origin',
+                    lat: allCenter.lat,
+                    lng: allCenter.lng,
+                    sites: sites,
+                    count: sites.length,
+                    label: '综合中心仓',
+                    reason: `服务所有 ${sites.length} 个站点`
+                });
+            }
+
+            if (recommendations.length === 0) {
+                const originCenter = calcWeightedCenter(sites, 'origin');
+                if (originCenter) {
+                    recommendations.push({
+                        type: 'origin',
+                        lat: originCenter.lat,
+                        lng: originCenter.lng,
+                        sites: origins,
+                        count: origins.length,
+                        label: '前置仓',
+                        reason: '基于起始点中心推荐'
+                    });
+                }
+                const destCenter = calcWeightedCenter(sites, 'destination');
+                if (destCenter) {
+                    recommendations.push({
+                        type: 'destination',
+                        lat: destCenter.lat,
+                        lng: destCenter.lng,
+                        sites: destinations,
+                        count: destinations.length,
+                        label: '末端仓',
+                        reason: '基于目的地中心推荐'
+                    });
+                }
+            }
+
+            const avgOriginDist = origins.length > 0 ? origins.reduce((sum, o) => {
+                let minD = Infinity;
+                recommendations.filter(r => r.type === 'origin').forEach(r => {
+                    const d = haversineDistance(o.lat, o.lng, r.lat, r.lng);
+                    if (d < minD) minD = d;
+                });
+                return sum + (minD === Infinity ? 0 : minD);
+            }, 0) / origins.length : 0;
+
+            analysisResults = {
+                origins,
+                destinations,
+                recommendations: recommendations,
+                avgOriginDist,
+                totalQty,
+                siteCount: sites.length,
+                clusterCount: recommendations.length
+            };
+
+            exportBtn.disabled = false;
+            resultStatus.textContent = `✅ 推荐 ${recommendations.length} 个仓库`;
+            renderResults();
+            showToast(`✅ 分析完成！推荐 ${recommendations.length} 个仓库位置`);
+        }
+
+        // ============================================================
+        //  渲染结果
+        // ============================================================
+        function renderResults() {
+            const r = analysisResults;
+            if (!r) return;
+
+            let html = `
+                <div class="result-summary">
+                    <div class="result-item">
+                        <div class="label">📍 起始点</div>
+                        <div class="value">${r.origins.length}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="label">🏁 目的地</div>
+                        <div class="value">${r.destinations.length}</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="label">🏗️ 推荐仓库</div>
+                        <div class="value">${r.recommendations.length}</div>
+                        <div class="sub">K-Means聚类</div>
+                    </div>
+                </div>
+            `;
+
+            r.recommendations.forEach((rec) => {
+                const isOrigin = rec.type === 'origin';
+                const boxClass = isOrigin ? 'origin-rec' : 'dest-rec';
+                const tagClass = isOrigin ? 'blue' : 'purple';
+                const tagLabel = isOrigin ? '📍 前置仓' : '🏁 末端仓';
+                const siteTypes = isOrigin ? '起始点' : '目的地';
+
+                html += `
+                    <div class="recommendation-box ${boxClass}">
+                        <div class="title">
+                            🏗️ ${rec.label || (isOrigin ? '前置仓' : '末端仓')}
+                            <span class="tag ${tagClass}">${tagLabel}</span>
+                            <span class="site-count-badge">${rec.count} 个${siteTypes}</span>
+                        </div>
+                        <div class="detail">
+                            <strong>位置：</strong>${rec.lat.toFixed(6)}, ${rec.lng.toFixed(6)}
+                            <br><strong>理由：</strong>${rec.reason || `服务 ${rec.count} 个${siteTypes}`}
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (r.recommendations.length === 0) {
+                html += `
+                    <div class="recommendation-box neutral-rec">
+                        <div class="title">💡 分析建议</div>
+                        <div class="detail">当前站点分布较集中，可直接点对点运输，无需额外建仓。</div>
+                    </div>
+                `;
+            }
+
+            // ★★★ 地图容器（放大） ★★★
+            html += `
+                <div id="mapContainer">
+                    <div class="map-placeholder">
+                        <span class="icon">🗺️</span>
+                        <span>正在加载地图...</span>
+                    </div>
+                </div>
+                <div style="margin-top:4px;font-size:10px;color:#8aa0b8;text-align:center;">
+                    📋 服务站点明细已包含在导出的Excel文件中
+                </div>
+            `;
+
+            resultArea.innerHTML = html;
+            setTimeout(() => { renderMap(); }, 200);
+
+            // 滚动到结果区域顶部
+            if (resultScroll) {
+                resultScroll.scrollTop = 0;
+            }
+        }
+
+        // ============================================================
+        //  导出结果
+        // ============================================================
+        function exportResults() {
+            if (!analysisResults) { showToast('请先执行分析', true); return; }
+
+            const r = analysisResults;
+            const data = [];
+
+            const siteToWarehouse = {};
+            r.recommendations.forEach((rec) => {
+                const label = rec.label || (rec.type === 'origin' ? '前置仓' : '末端仓');
+                rec.sites.forEach(s => {
+                    const key = s.name + '_' + s.lat + '_' + s.lng;
+                    siteToWarehouse[key] = label;
+                });
+            });
+
+            sites.forEach(s => {
+                const key = s.name + '_' + s.lat + '_' + s.lng;
+                const warehouse = siteToWarehouse[key] || '未分配';
+                data.push({
+                    '站点代码': s.code || '',
+                    '站点名称': s.name,
+                    '站点类型': s.type === 'origin' ? '起始点' : '目的地',
+                    '经度': s.lng,
+                    '纬度': s.lat,
+                    '年出货量(m³)': s.yearQty || 0,
+                    '月出货量(m³)': s.monthQty || 0,
+                    '周出货量(m³)': s.weekQty || 0,
+                    '日出货量(m³)': s.dayQty || 0,
+                    '发运频次(天/次)': s.frequency || 1,
+                    '权重': s.weight || 5,
+                    '日均出货量(m³)': getWeightedQty(s).toFixed(1),
+                    '服务仓': warehouse
+                });
+            });
+
+            r.recommendations.forEach((rec, idx) => {
+                const label = rec.label || (rec.type === 'origin' ? '前置仓' : '末端仓');
+                const servingNames = rec.sites.map(s => `${s.code || ''} ${s.name}`).join('、');
+                data.push({
+                    '站点代码': `REC-${rec.type.toUpperCase()}-${idx + 1}`,
+                    '站点名称': `【推荐】${label}`,
+                    '站点类型': '推荐位置',
+                    '经度': rec.lng,
+                    '纬度': rec.lat,
+                    '年出货量(m³)': '-',
+                    '月出货量(m³)': '-',
+                    '周出货量(m³)': '-',
+                    '日出货量(m³)': '-',
+                    '发运频次(天/次)': '-',
+                    '权重': '-',
+                    '日均出货量(m³)': '-',
+                    '服务仓': '-',
+                    '推荐理由': rec.reason || '',
+                    '服务站点明细': servingNames,
+                    '服务站点数': rec.sites.length
+                });
+            });
+
+            const headers = Object.keys(data[0] || {});
+            let csv = headers.join(',') + '\n';
+            data.forEach(row => {
+                csv += headers.map(h => {
+                    let val = row[h] || '';
+                    if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
+                        val = '"' + val.replace(/"/g, '""') + '"';
+                    }
+                    return val;
+                }).join(',') + '\n';
+            });
+
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `仓库选址分析_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('📥 导出成功！');
+        }
+
+        // ============================================================
+        //  文件上传事件
+        // ============================================================
+        function handleFile(file) {
+            if (!file) return;
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!['xlsx', 'xls', 'csv'].includes(ext)) {
+                showToast('请上传 .xlsx, .xls 或 .csv 格式文件', true);
+                return;
+            }
+            importData(file);
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) { handleFile(e.target.files[0]); }
+            fileInput.value = '';
+        });
+
+        uploadZone.addEventListener('dragover', (e) => { e.preventDefault();
+            uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragleave', (e) => { e.preventDefault();
+            uploadZone.classList.remove('dragover'); });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) { handleFile(e.dataTransfer.files[0]); }
+        });
+        uploadZone.addEventListener('click', (e) => { if (e.target.tagName !== 'INPUT') fileInput.click(); });
+
+        sampleBtn.addEventListener('click', loadSampleData);
+        clearBtn.addEventListener('click', clearAll);
+        analyzeBtn.addEventListener('click', runAnalysis);
+        exportBtn.addEventListener('click', exportResults);
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); if (!analyzeBtn.disabled) runAnalysis(); }
+        });
+
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 300);
+        });
+
+        // ============================================================
+        //  初始化
+        // ============================================================
+        renderTable();
+        showToast('📥 请上传 Excel/CSV 文件，或点击「示例」快速体验');
+
+        window.loadSampleData = loadSampleData;
+        window.clearAll = clearAll;
+        window.runAnalysis = runAnalysis;
+        window.exportResults = exportResults;
+    </script>
+</body>
+</html>
