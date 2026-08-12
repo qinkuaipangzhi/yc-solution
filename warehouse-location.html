@@ -13,7 +13,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
     </script>
     <style>
-        /* ========== 全局重置 & 基础 ========== */
         * {
             margin: 0;
             padding: 0;
@@ -36,11 +35,11 @@
             gap: 14px;
         }
 
-        /* ===== 头部（压缩） ===== */
+        /* ===== 头部 ===== */
         .header {
             background: linear-gradient(135deg, #1e3a5f, #0f2b44);
             border-radius: 1.2rem;
-            padding: 16px 28px;
+            padding: 14px 28px;
             color: white;
             flex-shrink: 0;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
@@ -48,23 +47,23 @@
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
         }
         .header-left {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
         }
         .header h1 {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         .header p {
             opacity: 0.7;
-            font-size: 13px;
+            font-size: 12px;
         }
         .header .badge-group {
             display: flex;
@@ -75,11 +74,11 @@
             background: rgba(255, 255, 255, 0.10);
             padding: 2px 12px;
             border-radius: 30px;
-            font-size: 11px;
+            font-size: 10px;
             white-space: nowrap;
         }
 
-        /* ===== 主体布局（弹性） ===== */
+        /* ===== 主布局 ===== */
         .main-grid {
             display: grid;
             grid-template-columns: 380px 1fr;
@@ -94,11 +93,11 @@
             }
         }
 
-        /* ===== 左侧卡片（数据导入） ===== */
+        /* ===== 左侧卡片 ===== */
         .card-left {
             background: white;
             border-radius: 1.2rem;
-            padding: 18px 20px;
+            padding: 16px 18px;
             border: 1px solid #e2edf5;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             display: flex;
@@ -107,19 +106,19 @@
             min-height: 0;
         }
         .card-left .card-title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             color: #1f3a5f;
             display: flex;
             align-items: center;
             gap: 8px;
             flex-shrink: 0;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             flex-wrap: wrap;
         }
         .card-left .card-title .sub {
             font-weight: 400;
-            font-size: 12px;
+            font-size: 11px;
             color: #7a8eaa;
         }
         .card-left .card-title .right-actions {
@@ -129,11 +128,10 @@
             flex-wrap: wrap;
         }
 
-        /* 上传区域（压缩） */
         .upload-zone {
             border: 2px dashed #c8d8e8;
             border-radius: 1rem;
-            padding: 16px 16px;
+            padding: 14px 16px;
             text-align: center;
             cursor: pointer;
             transition: 0.2s;
@@ -150,19 +148,19 @@
             background: #e8f0fa;
         }
         .upload-zone .icon {
-            font-size: 28px;
+            font-size: 24px;
         }
         .upload-zone .title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #1f3a5f;
         }
         .upload-zone .sub {
-            font-size: 12px;
+            font-size: 11px;
             color: #8aa0b8;
         }
         .upload-zone .formats {
-            font-size: 10px;
+            font-size: 9px;
             color: #aab8c8;
             margin-top: 2px;
         }
@@ -176,13 +174,13 @@
         .file-status {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             margin-top: 6px;
-            padding: 6px 14px;
+            padding: 5px 12px;
             background: #e8f5ee;
             border-radius: 8px;
             border: 1px solid #b8ddd0;
-            font-size: 12px;
+            font-size: 11px;
             color: #1e6657;
             flex-shrink: 0;
         }
@@ -195,22 +193,21 @@
             border: none;
             color: #b13b3b;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             padding: 0 4px;
         }
 
-        /* 数据预览表格（可滚动） */
         .table-wrap {
             overflow-x: auto;
             border-radius: 8px;
             border: 1px solid #e8eef5;
             flex: 1;
             min-height: 0;
-            margin-top: 8px;
+            margin-top: 6px;
         }
         .table-wrap::-webkit-scrollbar {
-            width: 5px;
-            height: 5px;
+            width: 4px;
+            height: 4px;
         }
         .table-wrap::-webkit-scrollbar-thumb {
             background: #c8d8e8;
@@ -219,28 +216,28 @@
 
         .data-table {
             width: 100%;
-            font-size: 11px;
+            font-size: 10px;
             border-collapse: collapse;
-            min-width: 900px;
+            min-width: 800px;
         }
         .data-table th {
             background: #f5f8fc;
             color: #2c4a6e;
             font-weight: 600;
-            padding: 4px 8px;
+            padding: 4px 6px;
             text-align: left;
             border-bottom: 2px solid #dce6f0;
             position: sticky;
             top: 0;
             z-index: 5;
-            font-size: 10px;
+            font-size: 9px;
             white-space: nowrap;
         }
         .data-table td {
-            padding: 3px 8px;
+            padding: 3px 6px;
             border-bottom: 1px solid #e8eef5;
             color: #2c3e66;
-            font-size: 11px;
+            font-size: 10px;
         }
         .data-table tr:hover td {
             background: #f0f6fe;
@@ -248,8 +245,8 @@
         .data-table .empty-row td {
             text-align: center;
             color: #a0b8cc;
-            padding: 20px;
-            font-size: 13px;
+            padding: 16px;
+            font-size: 12px;
         }
         .data-table .row-origin td:first-child {
             border-left: 3px solid #2a7f6e;
@@ -260,9 +257,9 @@
 
         .type-tag {
             display: inline-block;
-            padding: 1px 8px;
+            padding: 1px 6px;
             border-radius: 30px;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 600;
         }
         .type-tag.origin {
@@ -274,37 +271,35 @@
             color: #b13b3b;
         }
 
-        /* 底部工具栏 */
         .table-toolbar {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 6px;
+            gap: 6px;
+            margin-top: 4px;
             align-items: center;
-            padding-top: 6px;
+            padding-top: 4px;
             border-top: 1px solid #e8eef5;
             flex-shrink: 0;
         }
         .table-toolbar .info-text {
-            font-size: 12px;
+            font-size: 11px;
             color: #7a8eaa;
         }
         .table-toolbar .info-text strong {
             color: #1f3a5f;
         }
 
-        /* ===== 按钮 ===== */
         .btn {
             border: none;
-            padding: 6px 16px;
+            padding: 5px 14px;
             border-radius: 60px;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
             transition: 0.2s;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             white-space: nowrap;
         }
         .btn-success {
@@ -337,8 +332,8 @@
             background: #fccfcf;
         }
         .btn-sm {
-            padding: 4px 12px;
-            font-size: 11px;
+            padding: 3px 10px;
+            font-size: 10px;
         }
         .btn-primary {
             background: #1a5d8c;
@@ -348,11 +343,11 @@
             background: #0e466b;
         }
 
-        /* ===== 右侧卡片（结果+地图） ===== */
+        /* ===== 右侧卡片 ===== */
         .card-right {
             background: white;
             border-radius: 1.2rem;
-            padding: 18px 20px;
+            padding: 16px 18px;
             border: 1px solid #e2edf5;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             display: flex;
@@ -361,19 +356,19 @@
             min-height: 0;
         }
         .card-right .card-title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             color: #1f3a5f;
             display: flex;
             align-items: center;
             gap: 8px;
             flex-shrink: 0;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             flex-wrap: wrap;
         }
         .card-right .card-title .sub {
             font-weight: 400;
-            font-size: 12px;
+            font-size: 11px;
             color: #7a8eaa;
         }
         .card-right .card-title .right-actions {
@@ -383,7 +378,6 @@
             flex-wrap: wrap;
         }
 
-        /* ===== 结果区域（滚动） ===== */
         .result-scroll {
             flex: 1;
             overflow-y: auto;
@@ -401,8 +395,8 @@
         .result-summary {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 6px;
+            margin-bottom: 8px;
         }
         @media (max-width: 600px) {
             .result-summary {
@@ -412,33 +406,32 @@
         .result-item {
             background: #f8fafd;
             border-radius: 8px;
-            padding: 10px 14px;
+            padding: 8px 12px;
             border: 1px solid #e2edf5;
         }
         .result-item .label {
-            font-size: 10px;
+            font-size: 9px;
             color: #7a8eaa;
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
         .result-item .value {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             color: #1f3a5f;
             margin-top: 1px;
         }
         .result-item .sub {
-            font-size: 11px;
+            font-size: 10px;
             color: #8aa0b8;
             margin-top: 1px;
         }
 
-        /* 推荐卡片（紧凑） */
         .recommendation-box {
-            border-radius: 10px;
-            padding: 10px 14px;
-            margin: 6px 0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin: 4px 0;
         }
         .recommendation-box.origin-rec {
             background: linear-gradient(135deg, #dbeafe, #bfdbfe);
@@ -454,16 +447,16 @@
         }
         .recommendation-box .title {
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12px;
             display: flex;
             align-items: center;
             gap: 6px;
             flex-wrap: wrap;
         }
         .recommendation-box .title .tag {
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 500;
-            padding: 1px 8px;
+            padding: 1px 6px;
             border-radius: 30px;
         }
         .recommendation-box .title .tag.blue {
@@ -476,7 +469,7 @@
         }
         .recommendation-box .detail {
             margin-top: 2px;
-            font-size: 12px;
+            font-size: 11px;
             color: #1f4a3f;
             line-height: 1.5;
         }
@@ -486,19 +479,19 @@
         .site-count-badge {
             display: inline-block;
             background: rgba(0, 0, 0, 0.06);
-            padding: 0 8px;
+            padding: 0 6px;
             border-radius: 10px;
-            font-size: 10px;
+            font-size: 9px;
             color: #4a6a8a;
         }
 
-        /* ===== ★★★ 地图容器（放大） ★★★ */
+        /* ===== ★★★ 地图容器 ★★★ ===== */
         #mapContainer {
             border-radius: 10px;
             border: 1px solid #e2edf5;
             height: 340px;
-            min-height: 200px;
-            margin-top: 8px;
+            min-height: 160px;
+            margin-top: 6px;
             overflow: hidden;
             background: #e8ecf0;
             position: relative;
@@ -510,12 +503,12 @@
             justify-content: center;
             height: 100%;
             color: #8aa0b8;
-            font-size: 14px;
+            font-size: 13px;
             background: #e8ecf0;
         }
         #mapContainer .map-placeholder .icon {
-            font-size: 32px;
-            margin-right: 12px;
+            font-size: 28px;
+            margin-right: 10px;
         }
         #mapContainer .leaflet-container {
             height: 100%;
@@ -523,17 +516,16 @@
             background: #e8ecf0;
         }
 
-        /* 地图图层控制 */
         .map-layer-control {
             position: absolute;
-            bottom: 16px;
-            right: 16px;
+            bottom: 12px;
+            right: 12px;
             z-index: 1000;
             background: rgba(255, 255, 255, 0.92);
-            border-radius: 8px;
-            padding: 4px 12px;
+            border-radius: 6px;
+            padding: 4px 10px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-            font-size: 10px;
+            font-size: 9px;
             color: #4a6a8a;
             border: 1px solid #e2edf5;
             backdrop-filter: blur(4px);
@@ -541,12 +533,12 @@
         .map-layer-control .layer-status {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
         .map-layer-control .dot {
             display: inline-block;
-            width: 7px;
-            height: 7px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
         }
         .map-layer-control .dot.success {
@@ -569,21 +561,238 @@
             }
         }
 
-        /* ===== 地图标记样式 ===== */
+        /* ★★★ 地图图例（可点击筛选） ★★★ */
+        .map-legend-wrapper {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            padding: 8px 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            border: 1px solid #e2edf5;
+            min-width: 140px;
+            max-height: calc(100% - 24px);
+            overflow-y: auto;
+        }
+        .map-legend-wrapper .legend-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: #1f3a5f;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #e8eef5;
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .map-legend-wrapper .legend-title .reset-btn {
+            background: none;
+            border: none;
+            color: #1a5d8c;
+            cursor: pointer;
+            font-size: 9px;
+            font-weight: 600;
+            padding: 0 4px;
+        }
+        .map-legend-wrapper .legend-title .reset-btn:hover {
+            text-decoration: underline;
+        }
+        .map-legend-wrapper .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 6px;
+            margin: 2px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 10px;
+            color: #2c3e66;
+            transition: 0.15s;
+            border-left: 3px solid transparent;
+        }
+        .map-legend-wrapper .legend-item:hover {
+            background: #f0f6fe;
+        }
+        .map-legend-wrapper .legend-item.active {
+            background: #e8f0fa;
+            border-left-color: #1a5d8c;
+            font-weight: 600;
+        }
+        .map-legend-wrapper .legend-item .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1.5px solid white;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+        .map-legend-wrapper .legend-item .legend-dot.warehouse {
+            width: 16px;
+            height: 16px;
+            border-width: 2.5px;
+            border-color: #ffb347;
+        }
+        .map-legend-wrapper .legend-item .legend-label {
+            flex: 1;
+            font-size: 10px;
+            line-height: 1.2;
+        }
+        .map-legend-wrapper .legend-item .legend-count {
+            font-size: 8px;
+            color: #8aa0b8;
+            background: #f0f4f8;
+            padding: 0 6px;
+            border-radius: 10px;
+        }
+        .map-legend-wrapper .legend-item .legend-check {
+            color: #2a7f6e;
+            font-size: 10px;
+            display: none;
+        }
+        .map-legend-wrapper .legend-item.active .legend-check {
+            display: inline;
+        }
+        .map-legend-wrapper .legend-separator {
+            height: 1px;
+            background: #e8eef5;
+            margin: 4px 0;
+        }
+        .map-legend-wrapper .legend-all {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 6px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 10px;
+            color: #2c3e66;
+            transition: 0.15s;
+            border-left: 3px solid transparent;
+            font-weight: 500;
+        }
+        .map-legend-wrapper .legend-all:hover {
+            background: #f0f6fe;
+        }
+        .map-legend-wrapper .legend-all.active {
+            background: #e8f0fa;
+            border-left-color: #1a5d8c;
+        }
+        .map-legend-wrapper .legend-all .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: conic-gradient(#1a5d8c 0%, #2a7f6e 33%, #ff6b6b 66%, #ffc107 100%);
+            border: 1.5px solid white;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+        .map-legend-wrapper .legend-all .legend-check {
+            color: #2a7f6e;
+            font-size: 10px;
+            display: none;
+        }
+        .map-legend-wrapper .legend-all.active .legend-check {
+            display: inline;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px 16px;
+            color: #8aa0b8;
+        }
+        .empty-state .icon-big {
+            font-size: 36px;
+            margin-bottom: 6px;
+        }
+        .empty-state h3 {
+            color: #1f3a5f;
+            margin-bottom: 4px;
+            font-size: 15px;
+        }
+        .empty-state p {
+            font-size: 12px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 30px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+        .tag-green {
+            background: #d4ece4;
+            color: #1e6657;
+        }
+        .tag-blue {
+            background: #d4e4f0;
+            color: #1a5d8c;
+        }
+        .tag-red {
+            background: #fce4e4;
+            color: #b13b3b;
+        }
+
+        .footer-note {
+            margin-top: 4px;
+            font-size: 9px;
+            color: #8aa0b8;
+            text-align: center;
+            border-top: 1px solid #e8eef5;
+            padding-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .toast {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e6657;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 13px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+            animation: fadeInDown 0.3s ease;
+            display: none;
+        }
+        .toast.show {
+            display: block;
+        }
+        .toast.error {
+            background: #b13b3b;
+        }
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* 自定义地图标记 */
         .custom-marker-origin {
             background: #2a7f6e;
             border: 2px solid white;
             border-radius: 50%;
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         }
         .custom-marker-destination {
             background: #b13b3b;
             border: 2px solid white;
             border-radius: 50%;
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         }
         .custom-marker-origin-rec {
@@ -603,90 +812,7 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
 
-        /* ===== Toast ===== */
-        .toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1e6657;
-            color: white;
-            padding: 10px 24px;
-            border-radius: 60px;
-            font-weight: 600;
-            font-size: 14px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-            z-index: 999;
-            animation: fadeInDown 0.3s ease;
-            display: none;
-        }
-        .toast.show {
-            display: block;
-        }
-        .toast.error {
-            background: #b13b3b;
-        }
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateX(-50%) translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 30px 20px;
-            color: #8aa0b8;
-        }
-        .empty-state .icon-big {
-            font-size: 40px;
-            margin-bottom: 8px;
-        }
-        .empty-state h3 {
-            color: #1f3a5f;
-            margin-bottom: 4px;
-            font-size: 16px;
-        }
-        .empty-state p {
-            font-size: 13px;
-        }
-
-        .tag {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 30px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-        .tag-green {
-            background: #d4ece4;
-            color: #1e6657;
-        }
-        .tag-blue {
-            background: #d4e4f0;
-            color: #1a5d8c;
-        }
-        .tag-red {
-            background: #fce4e4;
-            color: #b13b3b;
-        }
-
-        .footer-note {
-            margin-top: 6px;
-            font-size: 10px;
-            color: #8aa0b8;
-            text-align: center;
-            border-top: 1px solid #e8eef5;
-            padding-top: 6px;
-            flex-shrink: 0;
-        }
-
-        /* ===== 响应式 ===== */
-        @media (max-width: 1024px) {
+        @media (max-width: 768px) {
             .container {
                 height: auto;
                 min-height: 100vh;
@@ -696,85 +822,81 @@
                 grid-template-rows: auto 1fr;
             }
             .card-left {
-                max-height: 420px;
-            }
-            .card-right {
-                min-height: 500px;
-            }
-            #mapContainer {
-                height: 280px;
-            }
-        }
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            .container {
-                gap: 10px;
-            }
-            .header {
-                padding: 12px 18px;
-            }
-            .header h1 {
-                font-size: 18px;
-            }
-            .header .badge {
-                font-size: 9px;
-                padding: 1px 8px;
-            }
-            .card-left,
-            .card-right {
-                padding: 14px 16px;
-            }
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-            .card-left {
                 max-height: 380px;
             }
+            .card-right {
+                min-height: 460px;
+            }
             #mapContainer {
-                height: 220px;
+                height: 260px;
             }
-            .result-summary {
-                grid-template-columns: 1fr 1fr;
+            .map-legend-wrapper {
+                top: 8px;
+                left: 8px;
+                padding: 6px 10px;
+                min-width: 110px;
             }
-            .result-item .value {
-                font-size: 17px;
+            .map-legend-wrapper .legend-item {
+                font-size: 9px;
+                padding: 2px 4px;
             }
         }
         @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
             .header h1 {
-                font-size: 15px;
+                font-size: 16px;
             }
             .header .badge-group {
                 display: none;
             }
+            .card-left,
+            .card-right {
+                padding: 12px 14px;
+            }
             .card-left {
-                max-height: 340px;
+                max-height: 320px;
             }
             #mapContainer {
-                height: 180px;
+                height: 200px;
             }
             .result-summary {
                 grid-template-columns: 1fr 1fr;
-            }
-            .result-item {
-                padding: 6px 10px;
             }
             .result-item .value {
                 font-size: 15px;
             }
             .btn {
-                font-size: 10px;
-                padding: 4px 10px;
+                font-size: 9px;
+                padding: 3px 8px;
             }
             .data-table {
-                font-size: 10px;
-                min-width: 700px;
+                font-size: 9px;
+                min-width: 600px;
             }
             .data-table th,
             .data-table td {
-                padding: 2px 5px;
+                padding: 2px 4px;
+            }
+            .map-legend-wrapper {
+                top: 4px;
+                left: 4px;
+                padding: 4px 8px;
+                min-width: 90px;
+                max-height: 160px;
+            }
+            .map-legend-wrapper .legend-item {
+                font-size: 8px;
+                padding: 1px 3px;
+            }
+            .map-legend-wrapper .legend-item .legend-dot {
+                width: 8px;
+                height: 8px;
+            }
+            .map-legend-wrapper .legend-item .legend-dot.warehouse {
+                width: 12px;
+                height: 12px;
             }
         }
     </style>
@@ -785,7 +907,7 @@
         <!-- Toast 提示 -->
         <div id="toast" class="toast"></div>
 
-        <!-- ===== 头部（压缩） ===== -->
+        <!-- ===== 头部 ===== -->
         <div class="header">
             <div class="header-left">
                 <h1>🏗️ 仓库选址分析</h1>
@@ -796,7 +918,7 @@
                 <span class="badge">🏁 末端仓</span>
                 <span class="badge">📊 多维度分析</span>
                 <span class="badge">📦 m³</span>
-                <span class="badge">🗺️ 高德地图</span>
+                <span class="badge">🗺️ 图例筛选</span>
             </div>
         </div>
 
@@ -813,7 +935,6 @@
                     </span>
                 </div>
 
-                <!-- 上传区域 -->
                 <div class="upload-zone" id="uploadZone">
                     <div class="icon">📂</div>
                     <div class="title">拖拽或点击上传</div>
@@ -824,10 +945,9 @@
 
                 <div id="fileStatus" style="display:none;"></div>
 
-                <!-- 数据预览 -->
-                <div style="display:flex; justify-content:space-between; align-items:center; margin:6px 0 4px; flex-shrink:0;">
-                    <span style="font-weight:600; font-size:13px; color:#1f3a5f;">📊 数据预览</span>
-                    <span style="font-size:11px; color:#7a8eaa;" id="rowCount">共 0 行</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin:4px 0 2px; flex-shrink:0;">
+                    <span style="font-weight:600; font-size:12px; color:#1f3a5f;">📊 数据预览</span>
+                    <span style="font-size:10px; color:#7a8eaa;" id="rowCount">共 0 行</span>
                 </div>
                 <div class="table-wrap">
                     <table class="data-table" id="dataTable">
@@ -855,15 +975,14 @@
 
                 <div class="table-toolbar">
                     <span class="info-text">📊 起始点 <strong id="originCount">0</strong> · 目的地 <strong id="destCount">0</strong></span>
-                    <span style="margin-left:auto;font-size:11px;color:#8aa0b8;">
-                        <span class="tag tag-green" style="font-size:9px;">🟢 起始点</span>
-                        <span class="tag tag-red" style="font-size:9px;">🔴 目的地</span>
+                    <span style="margin-left:auto;font-size:10px;color:#8aa0b8;">
+                        <span class="tag tag-green" style="font-size:8px;">🟢 起始点</span>
+                        <span class="tag tag-red" style="font-size:8px;">🔴 目的地</span>
                     </span>
                 </div>
 
-                <!-- 操作按钮 -->
-                <div style="display:flex; gap:8px; margin-top:8px; flex-shrink:0; flex-wrap:wrap;">
-                    <button class="btn btn-success" id="analyzeBtn" disabled style="flex:1;">🚀 执行选址分析</button>
+                <div style="display:flex; gap:6px; margin-top:6px; flex-shrink:0; flex-wrap:wrap;">
+                    <button class="btn btn-success" id="analyzeBtn" disabled style="flex:1;">🚀 执行分析</button>
                     <button class="btn btn-primary" id="exportBtn" disabled style="flex:0.6;">📥 导出</button>
                 </div>
             </div>
@@ -874,32 +993,30 @@
                     📊 分析结果
                     <span class="sub">— 仓库选址推荐</span>
                     <span class="right-actions">
-                        <span style="font-size:11px;color:#8aa0b8;" id="resultStatus">等待分析</span>
+                        <span style="font-size:10px;color:#8aa0b8;" id="resultStatus">等待分析</span>
                     </span>
                 </div>
 
-                <!-- 结果区域（滚动） -->
                 <div class="result-scroll" id="resultScroll">
                     <div id="resultArea">
                         <div class="empty-state">
                             <div class="icon-big">🏗️</div>
                             <h3>等待数据</h3>
-                            <p>请上传数据文件后点击「执行选址分析」</p>
+                            <p>请上传数据文件后点击「执行分析」</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ===== 底部 ===== -->
-        <div style="font-size:10px; color:#8aa0b8; text-align:center; flex-shrink:0; padding:4px 0;">
+        <div style="font-size:9px; color:#8aa0b8; text-align:center; flex-shrink:0; padding:2px 0;">
             🔒 所有数据仅在浏览器本地处理 · 基于K-Means聚类算法 · 出货量单位: m³
         </div>
     </div>
 
     <script>
         // ============================================================
-        //  地图图层配置（高德地图优先）
+        //  地图图层配置
         // ============================================================
         const TILE_LAYERS = [{
             name: '高德地图',
@@ -923,6 +1040,8 @@
         let loadedFileName = '';
         let mapInstance = null;
         let mapMarkers = [];
+        let allMapLayers = [];
+        let currentFilter = 'all';
 
         // ============================================================
         //  DOM 引用
@@ -1083,7 +1202,7 @@
         }
 
         // ============================================================
-        //  地图渲染
+        //  ★★★ 地图渲染（带图例筛选） ★★★
         // ============================================================
         function renderMap() {
             const mapContainer = document.getElementById('mapContainer');
@@ -1092,6 +1211,7 @@
                 mapInstance = null;
             }
             mapMarkers = [];
+            allMapLayers = [];
 
             if (!analysisResults || sites.length === 0) {
                 mapContainer.innerHTML =
@@ -1100,24 +1220,44 @@
             }
 
             const allPoints = [];
+            // 普通站点
             sites.forEach(s => {
-                allPoints.push({ lat: s.lat, lng: s.lng, name: s.name, code: s.code || '', type: s.type,
-                    isRecommend: false, recType: null });
+                allPoints.push({
+                    lat: s.lat,
+                    lng: s.lng,
+                    name: s.name,
+                    code: s.code || '',
+                    type: s.type,
+                    isRecommend: false,
+                    recType: null,
+                    recIndex: -1,
+                    siteData: s
+                });
             });
 
+            // 推荐仓库
             const recs = analysisResults.recommendations || [];
             recs.forEach((rec, idx) => {
                 const label = rec.type === 'origin' ? `前置仓${recs.length > 1 ? idx + 1 : ''}` :
                     `末端仓${recs.length > 1 ? idx + 1 : ''}`;
-                allPoints.push({ lat: rec.lat, lng: rec.lng, name: `推荐${label}`,
+                allPoints.push({
+                    lat: rec.lat,
+                    lng: rec.lng,
+                    name: `推荐${label}`,
                     code: `REC-${rec.type.toUpperCase()}-${idx}`,
-                    type: rec.type, isRecommend: true, recType: rec.type, servingCount: rec.sites ? rec.sites.length :
-                    0 });
+                    type: rec.type,
+                    isRecommend: true,
+                    recType: rec.type,
+                    recIndex: idx,
+                    servingCount: rec.sites ? rec.sites.length : 0,
+                    servingSites: rec.sites || [],
+                    recData: rec
+                });
             });
 
             if (allPoints.length === 0) {
                 mapContainer.innerHTML =
-                `<div class="map-placeholder"><span class="icon">🗺️</span><span>暂无数据</span></div>`;
+                `<div class="map-placeholder"><span class="icon">🗺️</span><span>暂无数据可展示</span></div>`;
                 return;
             }
 
@@ -1141,8 +1281,14 @@
                 `<div class="layer-status"><span class="dot loading" id="layerDot"></span><span id="layerStatusText">加载地图...</span></div>`;
             mapContainer.appendChild(controlDiv);
 
+            // ★★★ 图例（可点击筛选） ★★★
+            const legendDiv = document.createElement('div');
+            legendDiv.className = 'map-legend-wrapper';
+            legendDiv.id = 'mapLegend';
+            mapContainer.appendChild(legendDiv);
+
             let layerLoaded = false;
-            let currentIndex = 0;
+            let currentIdx = 0;
 
             function tryLoadLayer(index) {
                 if (index >= TILE_LAYERS.length) {
@@ -1156,10 +1302,12 @@
 
                 const tileLayer = L.tileLayer(layer.url, layer.options);
                 let loaded = false;
-                const onLoad = () => { if (!loaded) { loaded = true;
+                const onLoad = () => {
+                    if (!loaded) { loaded = true;
                         document.getElementById('layerDot').className = 'dot success';
                         document.getElementById('layerStatusText').textContent = `✅ ${layer.name}`;
-                        layerLoaded = true; } };
+                        layerLoaded = true; }
+                };
                 const onError = () => {
                     if (!loaded) {
                         loaded = true;
@@ -1175,23 +1323,55 @@
             }
             tryLoadLayer(0);
 
-            // 标记图标
-            const originIcon = L.divIcon({ className: 'custom-marker-origin', iconSize: [12, 12], iconAnchor: [6, 6] });
-            const destIcon = L.divIcon({ className: 'custom-marker-destination', iconSize: [12, 12], iconAnchor: [6, 6] });
+            // 创建标记图标
+            const originIcon = L.divIcon({ className: 'custom-marker-origin', iconSize: [10, 10], iconAnchor: [5, 5] });
+            const destIcon = L.divIcon({ className: 'custom-marker-destination', iconSize: [10, 10], iconAnchor: [5, 5] });
             const originRecIcon = L.divIcon({ className: 'custom-marker-origin-rec', iconSize: [16, 16], iconAnchor: [8,
                 8] });
             const destRecIcon = L.divIcon({ className: 'custom-marker-dest-rec', iconSize: [16, 16], iconAnchor: [8, 8] });
 
-            allPoints.forEach(p => {
-                let icon, popupContent;
+            // 存储所有图层组，用于筛选
+            const layerGroups = {
+                origin: { markers: [], label: '起始点', color: '#2a7f6e' },
+                destination: { markers: [], label: '目的地', color: '#b13b3b' },
+                warehouses: []
+            };
+
+            // 推荐仓库索引 -> 对应的标记组
+            const warehouseGroups = {};
+
+            // 添加标记
+            allPoints.forEach((p, idx) => {
+                let icon, popupContent, layerType;
+
                 if (p.isRecommend) {
                     icon = p.recType === 'origin' ? originRecIcon : destRecIcon;
                     const recTypeLabel = p.recType === 'origin' ? '📍 前置仓' : '🏁 末端仓';
+                    const recLabel = p.recType === 'origin' ? '前置仓' : '末端仓';
+                    const idxLabel = analysisResults.recommendations.length > 1 ? ` ${p.recIndex + 1}` : '';
+                    const servingNames = (p.servingSites || []).map(s => s.name).join('、');
+
                     popupContent =
                         `<div style="font-size:14px;font-weight:700;color:#1f3a5f;">🏗️ ${p.name}</div>
                         <div style="font-size:12px;color:#4a6a8a;">📍 ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}</div>
                         <div style="font-size:12px;color:#2a7f6e;">⭐ ${recTypeLabel}</div>
-                        <div style="font-size:11px;color:#6c5b7b;">📦 服务 ${p.servingCount || 0} 个站点</div>`;
+                        <div style="font-size:11px;color:#6c5b7b;">📦 服务 ${p.servingCount || 0} 个站点</div>
+                        ${servingNames ? `<div style="font-size:10px;color:#8aa0b8;margin-top:4px;border-top:1px solid #eee;padding-top:4px;">📋 ${servingNames}</div>` : ''}`;
+
+                    layerType = 'warehouse';
+                    const groupKey = `warehouse_${p.recIndex}`;
+                    if (!warehouseGroups[groupKey]) {
+                        warehouseGroups[groupKey] = {
+                            markers: [],
+                            label: `${recLabel}${idxLabel}`,
+                            color: p.recType === 'origin' ? '#1a5d8c' : '#6c5b7b',
+                            recIndex: p.recIndex,
+                            recType: p.recType,
+                            servingSiteNames: (p.servingSites || []).map(s => s.name),
+                            servingSiteCoords: (p.servingSites || []).map(s => ({ lat: s.lat, lng: s.lng, name: s
+                                    .name, type: s.type }))
+                        };
+                    }
                 } else {
                     icon = p.type === 'origin' ? originIcon : destIcon;
                     const typeLabel = p.type === 'origin' ? '🟢 起始点' : '🔴 目的地';
@@ -1200,19 +1380,179 @@
                         ${p.code ? `<div style="font-size:12px;color:#7a8eaa;">代码: ${p.code}</div>` : ''}
                         <div style="font-size:12px;color:#4a6a8a;">📍 ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}</div>
                         <div style="font-size:12px;color:#7a8eaa;">${typeLabel}</div>`;
+                    layerType = p.type === 'origin' ? 'origin' : 'destination';
                 }
+
                 const marker = L.marker([p.lat, p.lng], { icon: icon }).addTo(mapInstance).bindPopup(popupContent);
+
+                // 存储图层信息
+                const layerInfo = { marker: marker, point: p, layerType: layerType };
+
+                if (p.isRecommend) {
+                    const groupKey = `warehouse_${p.recIndex}`;
+                    if (warehouseGroups[groupKey]) {
+                        warehouseGroups[groupKey].markers.push(marker);
+                    }
+                    // 同时存储到总列表
+                    allMapLayers.push(layerInfo);
+                } else {
+                    if (layerType === 'origin') {
+                        layerGroups.origin.markers.push(marker);
+                    } else {
+                        layerGroups.destination.markers.push(marker);
+                    }
+                    allMapLayers.push(layerInfo);
+                }
                 mapMarkers.push(marker);
             });
 
+            // ★★★ 构建图例 ★★★
+            buildLegend(layerGroups, warehouseGroups);
+
+            // 调整视图
             if (mapMarkers.length > 0) {
-                const group = L.featureGroup(mapMarkers);
-                mapInstance.fitBounds(group.getBounds(), { padding: [40, 40] });
+                try {
+                    const group = L.featureGroup(mapMarkers);
+                    mapInstance.fitBounds(group.getBounds(), { padding: [50, 50] });
+                } catch (e) {
+                    mapInstance.setView([centerLat, centerLng], 8);
+                }
             }
             if (mapMarkers.length === 1) mapInstance.setZoom(13);
 
             setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 300);
             setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 800);
+        }
+
+        // ★★★ 构建图例（可点击筛选） ★★★
+        function buildLegend(layerGroups, warehouseGroups) {
+            const legendDiv = document.getElementById('mapLegend');
+            if (!legendDiv) return;
+
+            const recs = analysisResults.recommendations || [];
+
+            let html = `
+                <div class="legend-title">
+                    <span>🗺️ 图例</span>
+                    <button class="reset-btn" onclick="resetMapFilter()">重置</button>
+                </div>
+                <div class="legend-all active" onclick="filterMap('all')" id="legendAll">
+                    <span class="legend-dot"></span>
+                    <span style="flex:1;">全部显示</span>
+                    <span class="legend-check">✓</span>
+                </div>
+                <div class="legend-separator"></div>
+            `;
+
+            // 普通站点
+            html += `
+                <div class="legend-item" onclick="filterMap('origin')" id="legendOrigin">
+                    <span class="legend-dot" style="background:#2a7f6e;"></span>
+                    <span class="legend-label">起始点</span>
+                    <span class="legend-count">${layerGroups.origin.markers.length}</span>
+                    <span class="legend-check">✓</span>
+                </div>
+                <div class="legend-item" onclick="filterMap('destination')" id="legendDestination">
+                    <span class="legend-dot" style="background:#b13b3b;"></span>
+                    <span class="legend-label">目的地</span>
+                    <span class="legend-count">${layerGroups.destination.markers.length}</span>
+                    <span class="legend-check">✓</span>
+                </div>
+            `;
+
+            if (Object.keys(warehouseGroups).length > 0) {
+                html += `<div class="legend-separator"></div>`;
+                // 每个仓库
+                Object.keys(warehouseGroups).forEach((key, idx) => {
+                    const group = warehouseGroups[key];
+                    const rec = recs[idx] || {};
+                    const recLabel = rec.type === 'origin' ? '📍 前置仓' : '🏁 末端仓';
+                    const color = rec.type === 'origin' ? '#1a5d8c' : '#6c5b7b';
+                    const count = group.markers.length;
+                    // 计算服务的站点数量（包括起始点和目的地）
+                    const servingSites = group.servingSiteCoords || [];
+                    const totalServing = servingSites.length;
+
+                    html += `
+                        <div class="legend-item" onclick="filterMap('warehouse_${idx}')" id="legendWarehouse_${idx}" data-warehouse="${idx}">
+                            <span class="legend-dot warehouse" style="background:${color};border-color:#ffb347;"></span>
+                            <span class="legend-label">${recLabel} ${recs.length > 1 ? idx + 1 : ''}</span>
+                            <span class="legend-count">${totalServing} 站点</span>
+                            <span class="legend-check">✓</span>
+                        </div>
+                    `;
+                });
+            }
+
+            legendDiv.innerHTML = html;
+        }
+
+        // ★★★ 地图筛选函数 ★★★
+        function filterMap(filterType) {
+            currentFilter = filterType;
+
+            // 更新图例高亮
+            document.querySelectorAll('.legend-item, .legend-all').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            if (filterType === 'all') {
+                document.getElementById('legendAll')?.classList.add('active');
+            } else if (filterType === 'origin') {
+                document.getElementById('legendOrigin')?.classList.add('active');
+            } else if (filterType === 'destination') {
+                document.getElementById('legendDestination')?.classList.add('active');
+            } else if (filterType.startsWith('warehouse_')) {
+                const el = document.getElementById(`legendWarehouse_${filterType.replace('warehouse_', '')}`);
+                if (el) el.classList.add('active');
+            }
+
+            // 执行筛选：显示/隐藏标记
+            const recs = analysisResults.recommendations || [];
+
+            allMapLayers.forEach(layerInfo => {
+                const marker = layerInfo.marker;
+                const p = layerInfo.point;
+                let visible = false;
+
+                if (filterType === 'all') {
+                    visible = true;
+                } else if (filterType === 'origin') {
+                    visible = p.type === 'origin' && !p.isRecommend;
+                } else if (filterType === 'destination') {
+                    visible = p.type === 'destination' && !p.isRecommend;
+                } else if (filterType.startsWith('warehouse_')) {
+                    const idx = parseInt(filterType.replace('warehouse_', ''));
+                    if (p.isRecommend && p.recIndex === idx) {
+                        visible = true;
+                    } else if (!p.isRecommend) {
+                        // 检查该站点是否属于这个仓库
+                        const rec = recs[idx];
+                        if (rec && rec.sites) {
+                            const isServing = rec.sites.some(s => s.name === p.name && Math.abs(s.lat - p.lat) < 0.0001 &&
+                                Math.abs(s.lng - p.lng) < 0.0001);
+                            visible = isServing;
+                        }
+                    }
+                }
+
+                if (marker) {
+                    if (visible) {
+                        if (marker._icon) marker._icon.style.display = '';
+                        if (marker._shadow) marker._shadow.style.display = '';
+                    } else {
+                        if (marker._icon) marker._icon.style.display = 'none';
+                        if (marker._shadow) marker._shadow.style.display = 'none';
+                    }
+                }
+            });
+
+            addLog(`🔍 已筛选: ${filterType === 'all' ? '全部显示' : filterType}`, false);
+        }
+
+        // ★★★ 重置地图筛选 ★★★
+        function resetMapFilter() {
+            filterMap('all');
         }
 
         // ============================================================
@@ -1431,7 +1771,7 @@
             if (mapInstance) { mapInstance.remove();
                 mapInstance = null; }
             resultArea.innerHTML =
-                `<div class="empty-state"><div class="icon-big">📊</div><h3>数据已就绪</h3><p>点击「执行选址分析」查看推荐结果</p></div>`;
+                `<div class="empty-state"><div class="icon-big">📊</div><h3>数据已就绪</h3><p>点击「执行分析」查看推荐结果</p></div>`;
             showToast('✅ 已加载 6 个示例站点');
         }
 
@@ -1451,7 +1791,7 @@
             if (mapInstance) { mapInstance.remove();
                 mapInstance = null; }
             resultArea.innerHTML =
-                `<div class="empty-state"><div class="icon-big">🏗️</div><h3>等待数据</h3><p>请上传数据文件后点击「执行选址分析」</p></div>`;
+                `<div class="empty-state"><div class="icon-big">🏗️</div><h3>等待数据</h3><p>请上传数据文件后点击「执行分析」</p></div>`;
             showToast('已清空所有数据');
         }
 
@@ -1647,7 +1987,6 @@
                 `;
             }
 
-            // ★★★ 地图容器（放大） ★★★
             html += `
                 <div id="mapContainer">
                     <div class="map-placeholder">
@@ -1655,15 +1994,22 @@
                         <span>正在加载地图...</span>
                     </div>
                 </div>
-                <div style="margin-top:4px;font-size:10px;color:#8aa0b8;text-align:center;">
-                    📋 服务站点明细已包含在导出的Excel文件中
+                <div style="margin-top:4px;font-size:9px;color:#8aa0b8;text-align:center;">
+                    💡 点击图例可筛选显示对应仓库及其服务站点
                 </div>
             `;
 
             resultArea.innerHTML = html;
-            setTimeout(() => { renderMap(); }, 200);
 
-            // 滚动到结果区域顶部
+            // 延迟渲染地图
+            setTimeout(() => {
+                renderMap();
+                // 默认显示全部
+                setTimeout(() => {
+                    filterMap('all');
+                }, 100);
+            }, 200);
+
             if (resultScroll) {
                 resultScroll.scrollTop = 0;
             }
@@ -1804,6 +2150,9 @@
         renderTable();
         showToast('📥 请上传 Excel/CSV 文件，或点击「示例」快速体验');
 
+        // 暴露全局函数给HTML调用
+        window.filterMap = filterMap;
+        window.resetMapFilter = resetMapFilter;
         window.loadSampleData = loadSampleData;
         window.clearAll = clearAll;
         window.runAnalysis = runAnalysis;
