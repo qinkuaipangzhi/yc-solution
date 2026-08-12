@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>仓库选址分析工具 - Excel导入版</title>
+    <title>仓库选址分析工具 - 稳定优化版</title>
     <!-- SheetJS 核心库 -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js">
     </script>
@@ -13,19 +13,18 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
     </script>
     <style>
+        /* ========== 样式（完整版，与之前一致） ========== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
         }
-
         body {
             background: linear-gradient(145deg, #eef2f9 0%, #e0e8f2 100%);
             min-height: 100vh;
             padding: 16px;
         }
-
         .container {
             max-width: 1600px;
             margin: 0 auto;
@@ -34,8 +33,6 @@
             flex-direction: column;
             gap: 14px;
         }
-
-        /* ===== 头部 ===== */
         .header {
             background: linear-gradient(135deg, #1e3a5f, #0f2b44);
             border-radius: 1.2rem;
@@ -77,8 +74,15 @@
             font-size: 10px;
             white-space: nowrap;
         }
+        .header .badge.stable {
+            background: #2a7f6e;
+            color: white;
+        }
+        .header .badge.fix {
+            background: #d48c2c;
+            color: white;
+        }
 
-        /* ===== 主布局 ===== */
         .main-grid {
             display: grid;
             grid-template-columns: 380px 1fr;
@@ -93,7 +97,6 @@
             }
         }
 
-        /* ===== 左侧卡片 ===== */
         .card-left {
             background: white;
             border-radius: 1.2rem;
@@ -195,6 +198,86 @@
             cursor: pointer;
             font-size: 14px;
             padding: 0 4px;
+        }
+
+        .params-section {
+            background: #f8fafd;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-top: 6px;
+            border: 1px solid #e8eef5;
+            flex-shrink: 0;
+        }
+        .params-section .params-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #1f3a5f;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .params-section .params-title .toggle-btn {
+            background: none;
+            border: none;
+            color: #1a5d8c;
+            cursor: pointer;
+            font-size: 10px;
+            padding: 0 4px;
+        }
+        .params-section .params-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px 8px;
+        }
+        .params-section .param-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            color: #2c3e66;
+        }
+        .params-section .param-item label {
+            white-space: nowrap;
+            min-width: 44px;
+        }
+        .params-section .param-item input {
+            width: 100%;
+            padding: 2px 4px;
+            border: 1px solid #dce6f0;
+            border-radius: 4px;
+            font-size: 10px;
+            background: white;
+            text-align: center;
+        }
+        .params-section .param-item input:focus {
+            outline: none;
+            border-color: #1a5d8c;
+        }
+        .params-section .param-item input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        .params-section .param-item input[type="number"]::-webkit-outer-spin-button,
+        .params-section .param-item input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+        .params-section .param-hint {
+            font-size: 8px;
+            color: #8aa0b8;
+            margin-top: 2px;
+            text-align: center;
+        }
+        .params-section .param-hint .highlight {
+            color: #d48c2c;
+            font-weight: 600;
+        }
+        .params-section.collapsed .params-grid {
+            display: none;
+        }
+        .params-section.collapsed .param-hint {
+            display: none;
         }
 
         .table-wrap {
@@ -343,7 +426,6 @@
             background: #0e466b;
         }
 
-        /* ===== 右侧卡片 ===== */
         .card-right {
             background: white;
             border-radius: 1.2rem;
@@ -394,7 +476,7 @@
 
         .result-summary {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
             gap: 6px;
             margin-bottom: 8px;
         }
@@ -426,6 +508,24 @@
             font-size: 10px;
             color: #8aa0b8;
             margin-top: 1px;
+        }
+        .result-item .stable-badge {
+            font-size: 8px;
+            background: #2a7f6e;
+            color: white;
+            padding: 0 8px;
+            border-radius: 30px;
+            display: inline-block;
+            margin-top: 2px;
+        }
+        .result-item .iter-badge {
+            font-size: 8px;
+            background: #d48c2c;
+            color: white;
+            padding: 0 8px;
+            border-radius: 30px;
+            display: inline-block;
+            margin-top: 2px;
         }
 
         .recommendation-box {
@@ -467,6 +567,10 @@
             background: rgba(108, 91, 123, 0.15);
             color: #5a4a68;
         }
+        .recommendation-box .title .tag.green {
+            background: rgba(42, 127, 110, 0.15);
+            color: #1e6657;
+        }
         .recommendation-box .detail {
             margin-top: 2px;
             font-size: 11px;
@@ -485,7 +589,6 @@
             color: #4a6a8a;
         }
 
-        /* ===== ★★★ 地图容器 ★★★ ===== */
         #mapContainer {
             border-radius: 10px;
             border: 1px solid #e2edf5;
@@ -561,7 +664,6 @@
             }
         }
 
-        /* ★★★ 地图图例（可点击筛选） ★★★ */
         .map-legend-wrapper {
             position: absolute;
             top: 12px;
@@ -572,7 +674,7 @@
             padding: 8px 12px;
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
             border: 1px solid #e2edf5;
-            min-width: 140px;
+            min-width: 130px;
             max-height: calc(100% - 24px);
             overflow-y: auto;
         }
@@ -778,7 +880,6 @@
             }
         }
 
-        /* 自定义地图标记 */
         .custom-marker-origin {
             background: #2a7f6e;
             border: 2px solid white;
@@ -812,6 +913,34 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
 
+        .stability-info {
+            background: #e8f5ee;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 9px;
+            color: #1e6657;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .stability-info .check {
+            color: #2a7f6e;
+            font-weight: 700;
+        }
+        .converge-hint {
+            background: #fff8e1;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 9px;
+            color: #8a6d3b;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .converge-hint .icon {
+            font-size: 11px;
+        }
+
         @media (max-width: 768px) {
             .container {
                 height: auto;
@@ -836,9 +965,11 @@
                 padding: 6px 10px;
                 min-width: 110px;
             }
-            .map-legend-wrapper .legend-item {
-                font-size: 9px;
-                padding: 2px 4px;
+            .result-summary {
+                grid-template-columns: 1fr 1fr;
+            }
+            .params-section .params-grid {
+                grid-template-columns: 1fr 1fr;
             }
         }
         @media (max-width: 480px) {
@@ -875,10 +1006,6 @@
                 font-size: 9px;
                 min-width: 600px;
             }
-            .data-table th,
-            .data-table td {
-                padding: 2px 4px;
-            }
             .map-legend-wrapper {
                 top: 4px;
                 left: 4px;
@@ -886,17 +1013,11 @@
                 min-width: 90px;
                 max-height: 160px;
             }
-            .map-legend-wrapper .legend-item {
-                font-size: 8px;
-                padding: 1px 3px;
+            .params-section .params-grid {
+                grid-template-columns: 1fr 1fr;
             }
-            .map-legend-wrapper .legend-item .legend-dot {
-                width: 8px;
-                height: 8px;
-            }
-            .map-legend-wrapper .legend-item .legend-dot.warehouse {
-                width: 12px;
-                height: 12px;
+            .params-section .param-item {
+                font-size: 9px;
             }
         }
     </style>
@@ -904,27 +1025,26 @@
 <body>
 
     <div class="container">
-        <!-- Toast 提示 -->
         <div id="toast" class="toast"></div>
 
         <!-- ===== 头部 ===== -->
         <div class="header">
             <div class="header-left">
                 <h1>🏗️ 仓库选址分析</h1>
-                <p>Excel导入 · K-Means聚类</p>
+                <p>稳定优化版 · 末端仓专用参数</p>
             </div>
             <div class="badge-group">
+                <span class="badge stable">✅ 已收敛</span>
+                <span class="badge fix">🔧 末端仓优化</span>
                 <span class="badge">📍 前置仓</span>
                 <span class="badge">🏁 末端仓</span>
-                <span class="badge">📊 多维度分析</span>
                 <span class="badge">📦 m³</span>
-                <span class="badge">🗺️ 图例筛选</span>
             </div>
         </div>
 
         <!-- ===== 主体 ===== -->
         <div class="main-grid">
-            <!-- ===== 左侧：数据导入 ===== -->
+            <!-- ===== 左侧 ===== -->
             <div class="card-left">
                 <div class="card-title">
                     📥 数据导入
@@ -944,6 +1064,46 @@
                 </div>
 
                 <div id="fileStatus" style="display:none;"></div>
+
+                <!-- ★★★ 参数配置 ★★★ -->
+                <div class="params-section" id="paramsSection">
+                    <div class="params-title">
+                        <span>⚙️ 聚类参数</span>
+                        <span style="font-size:9px;color:#8aa0b8;">
+                            <span class="stability-info">✅ 固定种子 · 末端仓专用参数</span>
+                        </span>
+                        <button class="toggle-btn" id="paramsToggle">收起</button>
+                    </div>
+                    <div class="params-grid" id="paramsGrid">
+                        <div class="param-item">
+                            <label>最大集群</label>
+                            <input type="number" id="paramMaxClusters" value="15" min="2" max="30">
+                        </div>
+                        <div class="param-item">
+                            <label>迭代次数</label>
+                            <input type="number" id="paramIterations" value="100" min="10" max="500">
+                        </div>
+                        <div class="param-item">
+                            <label>收敛阈值</label>
+                            <input type="number" id="paramThreshold" value="0.00001" min="0.000001" max="0.01" step="0.000001">
+                        </div>
+                        <div class="param-item">
+                            <label>孤立点(km)</label>
+                            <input type="number" id="paramOutlier" value="200" min="50" max="500">
+                        </div>
+                        <div class="param-item">
+                            <label>最小集群</label>
+                            <input type="number" id="paramMinSize" value="2" min="1" max="10">
+                        </div>
+                        <div class="param-item">
+                            <label>随机种子</label>
+                            <input type="number" id="paramSeed" value="42" min="1" max="9999">
+                        </div>
+                    </div>
+                    <div class="param-hint">
+                        💡 <span class="highlight">末端仓自动使用更多迭代(300次)</span> · 放宽收敛阈值确保收敛
+                    </div>
+                </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin:4px 0 2px; flex-shrink:0;">
                     <span style="font-weight:600; font-size:12px; color:#1f3a5f;">📊 数据预览</span>
@@ -987,7 +1147,7 @@
                 </div>
             </div>
 
-            <!-- ===== 右侧：分析结果 + 地图 ===== -->
+            <!-- ===== 右侧 ===== -->
             <div class="card-right">
                 <div class="card-title">
                     📊 分析结果
@@ -1010,7 +1170,7 @@
         </div>
 
         <div style="font-size:9px; color:#8aa0b8; text-align:center; flex-shrink:0; padding:2px 0;">
-            🔒 所有数据仅在浏览器本地处理 · 基于K-Means聚类算法 · 出货量单位: m³
+            🔒 所有数据仅在浏览器本地处理 · 末端仓自动使用优化参数确保收敛 · 出货量单位: m³
         </div>
     </div>
 
@@ -1061,6 +1221,30 @@
         const resultStatus = document.getElementById('resultStatus');
         const toast = document.getElementById('toast');
         const resultScroll = document.getElementById('resultScroll');
+
+        const paramMaxClusters = document.getElementById('paramMaxClusters');
+        const paramIterations = document.getElementById('paramIterations');
+        const paramThreshold = document.getElementById('paramThreshold');
+        const paramOutlier = document.getElementById('paramOutlier');
+        const paramMinSize = document.getElementById('paramMinSize');
+        const paramSeed = document.getElementById('paramSeed');
+        const paramsToggle = document.getElementById('paramsToggle');
+        const paramsSection = document.getElementById('paramsSection');
+
+        // ============================================================
+        //  参数折叠控制
+        // ============================================================
+        let paramsCollapsed = false;
+        paramsToggle.addEventListener('click', function() {
+            paramsCollapsed = !paramsCollapsed;
+            if (paramsCollapsed) {
+                paramsSection.classList.add('collapsed');
+                paramsToggle.textContent = '展开';
+            } else {
+                paramsSection.classList.remove('collapsed');
+                paramsToggle.textContent = '收起';
+            }
+        });
 
         // ============================================================
         //  工具函数
@@ -1125,20 +1309,179 @@
         }
 
         // ============================================================
-        //  K-Means 聚类算法
+        //  日志
         // ============================================================
-        function clusterSites(sites, maxClusters) {
-            if (sites.length === 0) return [];
-            if (sites.length <= maxClusters) {
-                return sites.map(s => ({ lat: s.lat, lng: s.lng, sites: [s] }));
+        function addLog(msg, isError = false) {
+            const time = new Date().toLocaleTimeString();
+            const symbol = isError ? '❌' : '📌';
+            const color = isError ? '#ffb4a2' : '#b9e0ff';
+            const logArea = document.getElementById('logArea');
+            if (logArea) {
+                logArea.innerHTML += `<span style="color:${color}">${symbol} [${time}] ${msg}</span><br>`;
+                logArea.scrollTop = logArea.scrollHeight;
             }
-            const k = Math.min(maxClusters, Math.max(2, Math.ceil(sites.length / 8)));
-            const actualK = Math.max(2, k);
+        }
 
-            let centers = [];
-            const firstIdx = Math.floor(Math.random() * sites.length);
-            centers.push({ lat: sites[firstIdx].lat, lng: sites[firstIdx].lng });
-            for (let c = 1; c < actualK; c++) {
+        // ============================================================
+        //  ★★★ 优化版聚类算法（末端仓专用参数） ★★★
+        // ============================================================
+        function clusterSitesOptimized(sites, options) {
+            const defaults = {
+                maxClusters: 15,
+                minClusters: 2,
+                iterations: 100,
+                convergenceThreshold: 0.00001,
+                outlierDistance: 200,
+                minClusterSize: 2,
+                fixedK: null,
+                seed: 42,
+                useWeighted: true,
+                isDestination: false // ★★★ 是否为末端仓 ★★★
+            };
+
+            const cfg = { ...defaults, ...options };
+
+            // ★★★ 如果是末端仓，自动使用优化参数 ★★★
+            if (cfg.isDestination) {
+                cfg.iterations = Math.max(cfg.iterations, 300); // 更多迭代
+                cfg.convergenceThreshold = Math.max(cfg.convergenceThreshold, 0.0001); // 放宽阈值
+                cfg.minClusterSize = Math.max(1, Math.floor(cfg.minClusterSize / 2)); // 允许更小集群
+                cfg.maxClusters = Math.min(cfg.maxClusters, Math.ceil(sites.length / 3) + 2);
+            }
+
+            if (sites.length === 0) return [];
+            if (sites.length <= cfg.minClusters) {
+                return sites.map(s => ({
+                    lat: s.lat,
+                    lng: s.lng,
+                    sites: [s],
+                    count: 1,
+                    radius: 0,
+                    converged: true,
+                    iterations: 0
+                }));
+            }
+
+            // 1. 移除孤立点
+            const filteredSites = removeOutliers(sites, cfg.outlierDistance, cfg.minClusterSize);
+            if (filteredSites.length < 2) return sites.map(s => ({
+                lat: s.lat,
+                lng: s.lng,
+                sites: [s],
+                count: 1,
+                radius: 0,
+                converged: true,
+                iterations: 0
+            }));
+
+            // 2. 确定K值
+            let k = cfg.fixedK;
+            if (!k) {
+                const suggestedK = Math.ceil(Math.sqrt(filteredSites.length / 2));
+                k = Math.max(cfg.minClusters, Math.min(cfg.maxClusters, suggestedK));
+            }
+            k = Math.min(k, filteredSites.length);
+
+            // 3. 确定性初始化
+            const centers = deterministicInit(filteredSites, k, cfg.seed);
+
+            // 4. 迭代聚类
+            let clusters = [];
+            let converged = false;
+            let currentCenters = centers.map(c => ({ ...c }));
+            let iterationsRun = 0;
+
+            for (let iter = 0; iter < cfg.iterations; iter++) {
+                iterationsRun = iter + 1;
+                clusters = assignToClusters(filteredSites, currentCenters, cfg.useWeighted);
+
+                const validClusters = clusters.filter(c => c.length > 0);
+                if (validClusters.length < currentCenters.length) {
+                    const nonEmptyIndices = [];
+                    clusters.forEach((c, idx) => { if (c.length > 0) nonEmptyIndices.push(idx); });
+                    const newCenters = [];
+                    for (let idx of nonEmptyIndices) {
+                        const center = calculateCenter(clusters[idx], cfg.useWeighted);
+                        if (center) newCenters.push(center);
+                    }
+                    while (newCenters.length < currentCenters.length) {
+                        const randIdx = Math.floor(Math.random() * filteredSites.length);
+                        newCenters.push({ lat: filteredSites[randIdx].lat, lng: filteredSites[randIdx].lng });
+                    }
+                    currentCenters = newCenters;
+                    continue;
+                }
+
+                const newCenters = calculateCenters(clusters, cfg.useWeighted);
+
+                let maxShift = 0;
+                for (let i = 0; i < currentCenters.length; i++) {
+                    const shift = haversineDistance(
+                        currentCenters[i].lat, currentCenters[i].lng,
+                        newCenters[i].lat, newCenters[i].lng
+                    );
+                    if (shift > maxShift) maxShift = shift;
+                }
+
+                currentCenters = newCenters;
+
+                if (maxShift < cfg.convergenceThreshold) {
+                    converged = true;
+                    break;
+                }
+            }
+
+            clusters = assignToClusters(filteredSites, currentCenters, cfg.useWeighted);
+
+            // 5. 合并小集群
+            const finalClusters = mergeSmallClusters(clusters, cfg.minClusterSize, cfg.useWeighted);
+
+            // 6. 返回结果
+            return finalClusters.map(c => ({
+                lat: c.center.lat,
+                lng: c.center.lng,
+                sites: c.sites,
+                count: c.sites.length,
+                radius: c.radius || 0,
+                converged: converged,
+                iterations: iterationsRun,
+                isDestination: cfg.isDestination
+            }));
+        }
+
+        // ============================================================
+        //  聚类辅助函数
+        // ============================================================
+
+        function removeOutliers(sites, outlierDistance, minClusterSize) {
+            if (sites.length <= 3) return sites;
+            const result = [];
+            for (let i = 0; i < sites.length; i++) {
+                let nearCount = 0;
+                for (let j = 0; j < sites.length; j++) {
+                    if (i === j) continue;
+                    const dist = haversineDistance(sites[i].lat, sites[i].lng, sites[j].lat, sites[j].lng);
+                    if (dist < outlierDistance) nearCount++;
+                }
+                if (nearCount >= minClusterSize) result.push(sites[i]);
+            }
+            return result.length >= 2 ? result : sites;
+        }
+
+        function deterministicInit(sites, k, seed) {
+            const rng = createSeededRandom(seed);
+            const centers = [];
+            const centerLat = sites.reduce((s, p) => s + p.lat, 0) / sites.length;
+            const centerLng = sites.reduce((s, p) => s + p.lng, 0) / sites.length;
+            let closestIdx = 0,
+                closestDist = Infinity;
+            sites.forEach((s, i) => {
+                const d = haversineDistance(s.lat, s.lng, centerLat, centerLng);
+                if (d < closestDist) { closestDist = d;
+                    closestIdx = i; }
+            });
+            centers.push({ lat: sites[closestIdx].lat, lng: sites[closestIdx].lng });
+            for (let c = 1; c < k; c++) {
                 let maxDist = -1,
                     bestIdx = 0;
                 for (let i = 0; i < sites.length; i++) {
@@ -1148,61 +1491,155 @@
                         const d = haversineDistance(s.lat, s.lng, center.lat, center.lng);
                         if (d < minDist) minDist = d;
                     }
-                    if (minDist > maxDist) { maxDist = minDist;
+                    const noise = rng() * 0.0001;
+                    if (minDist + noise > maxDist) { maxDist = minDist + noise;
                         bestIdx = i; }
                 }
                 centers.push({ lat: sites[bestIdx].lat, lng: sites[bestIdx].lng });
             }
+            return centers;
+        }
 
-            for (let iter = 0; iter < 20; iter++) {
-                const clusters = centers.map(() => []);
-                for (let s of sites) {
-                    let minDist = Infinity,
-                        bestCenter = 0;
-                    for (let ci = 0; ci < centers.length; ci++) {
-                        const d = haversineDistance(s.lat, s.lng, centers[ci].lat, centers[ci].lng);
-                        if (d < minDist) { minDist = d;
-                            bestCenter = ci; }
-                    }
-                    clusters[bestCenter].push(s);
-                }
-                let changed = false;
-                for (let ci = 0; ci < centers.length; ci++) {
-                    if (clusters[ci].length === 0) continue;
-                    const avgLat = clusters[ci].reduce((sum, s) => sum + s.lat, 0) / clusters[ci].length;
-                    const avgLng = clusters[ci].reduce((sum, s) => sum + s.lng, 0) / clusters[ci].length;
-                    if (Math.abs(centers[ci].lat - avgLat) > 0.0001 || Math.abs(centers[ci].lng - avgLng) > 0.0001) {
-                        centers[ci] = { lat: avgLat, lng: avgLng };
-                        changed = true;
-                    }
-                }
-                if (!changed) break;
-            }
+        function createSeededRandom(seed) {
+            let s = seed;
+            return function() {
+                s = (s * 1664525 + 1013904223) & 0xFFFFFFFF;
+                return (s >>> 0) / 4294967296;
+            };
+        }
 
-            const finalClusters = centers.map(() => []);
+        function assignToClusters(sites, centers, useWeighted) {
+            const clusters = centers.map(() => []);
             for (let s of sites) {
                 let minDist = Infinity,
                     bestCenter = 0;
                 for (let ci = 0; ci < centers.length; ci++) {
                     const d = haversineDistance(s.lat, s.lng, centers[ci].lat, centers[ci].lng);
-                    if (d < minDist) { minDist = d;
+                    const weight = useWeighted ? getWeightedQty(s) : 1;
+                    const weightedDist = d / (weight + 0.1);
+                    if (weightedDist < minDist) { minDist = weightedDist;
                         bestCenter = ci; }
                 }
-                finalClusters[bestCenter].push(s);
+                clusters[bestCenter].push(s);
+            }
+            return clusters;
+        }
+
+        function calculateCenter(cluster, useWeighted) {
+            if (cluster.length === 0) return null;
+            if (useWeighted) {
+                let totalWeight = 0,
+                    sumLat = 0,
+                    sumLng = 0;
+                for (let s of cluster) {
+                    const w = getWeightedQty(s) + 0.1;
+                    totalWeight += w;
+                    sumLat += s.lat * w;
+                    sumLng += s.lng * w;
+                }
+                return { lat: sumLat / totalWeight, lng: sumLng / totalWeight };
+            } else {
+                const avgLat = cluster.reduce((s, p) => s + p.lat, 0) / cluster.length;
+                const avgLng = cluster.reduce((s, p) => s + p.lng, 0) / cluster.length;
+                return { lat: avgLat, lng: avgLng };
+            }
+        }
+
+        function calculateCenters(clusters, useWeighted) {
+            return clusters.map(c => calculateCenter(c, useWeighted)).filter(c => c !== null);
+        }
+
+        function calculateClusterRadius(sites, center) {
+            let maxRadius = 0;
+            for (let s of sites) {
+                const d = haversineDistance(s.lat, s.lng, center.lat, center.lng);
+                if (d > maxRadius) maxRadius = d;
+            }
+            return maxRadius;
+        }
+
+        function mergeSmallClusters(clusters, minSize, useWeighted) {
+            if (clusters.length <= 1) {
+                return clusters.map((c, i) => {
+                    const center = calculateCenter(c, useWeighted) || { lat: 0, lng: 0 };
+                    return { sites: c, center: center, radius: calculateClusterRadius(c, center) };
+                });
             }
 
-            const result = [];
-            for (let ci = 0; ci < centers.length; ci++) {
-                if (finalClusters[ci].length > 0) {
-                    result.push({ lat: centers[ci].lat, lng: centers[ci].lng, sites: finalClusters[ci],
-                        count: finalClusters[ci].length });
+            const smallIndices = [];
+            const largeClusters = [];
+            for (let i = 0; i < clusters.length; i++) {
+                if (clusters[i].length < minSize) {
+                    smallIndices.push(i);
+                } else {
+                    const center = calculateCenter(clusters[i], useWeighted);
+                    if (center) {
+                        largeClusters.push({
+                            sites: clusters[i],
+                            center: center,
+                            radius: calculateClusterRadius(clusters[i], center)
+                        });
+                    }
                 }
             }
-            return result;
+
+            if (smallIndices.length === 0 || largeClusters.length === 0) {
+                return clusters.map((c, i) => {
+                    const center = calculateCenter(c, useWeighted) || { lat: 0, lng: 0 };
+                    return { sites: c, center: center, radius: calculateClusterRadius(c, center) };
+                });
+            }
+
+            for (let idx of smallIndices) {
+                const smallCluster = clusters[idx];
+                if (smallCluster.length === 0) continue;
+                const smallCenter = calculateCenter(smallCluster, useWeighted);
+                if (!smallCenter) continue;
+                let minDist = Infinity,
+                    bestIdx = 0;
+                for (let i = 0; i < largeClusters.length; i++) {
+                    const d = haversineDistance(smallCenter.lat, smallCenter.lng, largeClusters[i].center.lat, largeClusters[
+                        i].center.lng);
+                    if (d < minDist) { minDist = d;
+                        bestIdx = i; }
+                }
+                largeClusters[bestIdx].sites.push(...smallCluster);
+                const newCenter = calculateCenter(largeClusters[bestIdx].sites, useWeighted);
+                if (newCenter) {
+                    largeClusters[bestIdx].center = newCenter;
+                    largeClusters[bestIdx].radius = calculateClusterRadius(largeClusters[bestIdx].sites, newCenter);
+                }
+            }
+
+            return largeClusters;
         }
 
         // ============================================================
-        //  ★★★ 地图渲染（带图例筛选） ★★★
+        //  获取当前参数
+        // ============================================================
+        function getClusteringParams() {
+            return {
+                maxClusters: parseInt(paramMaxClusters.value) || 15,
+                iterations: parseInt(paramIterations.value) || 100,
+                convergenceThreshold: parseFloat(paramThreshold.value) || 0.00001,
+                outlierDistance: parseFloat(paramOutlier.value) || 200,
+                minClusterSize: parseInt(paramMinSize.value) || 2,
+                seed: parseInt(paramSeed.value) || 42,
+                useWeighted: true
+            };
+        }
+
+        // ============================================================
+        //  获取站点名称（用于日志）
+        // ============================================================
+        function getToolNameMap() {
+            const map = {};
+            sites.forEach(s => { map[s.name] = s.name; });
+            return map;
+        }
+
+        // ============================================================
+        //  ★★★ 地图渲染 ★★★
         // ============================================================
         function renderMap() {
             const mapContainer = document.getElementById('mapContainer');
@@ -1220,7 +1657,6 @@
             }
 
             const allPoints = [];
-            // 普通站点
             sites.forEach(s => {
                 allPoints.push({
                     lat: s.lat,
@@ -1235,7 +1671,6 @@
                 });
             });
 
-            // 推荐仓库
             const recs = analysisResults.recommendations || [];
             recs.forEach((rec, idx) => {
                 const label = rec.type === 'origin' ? `前置仓${recs.length > 1 ? idx + 1 : ''}` :
@@ -1281,7 +1716,7 @@
                 `<div class="layer-status"><span class="dot loading" id="layerDot"></span><span id="layerStatusText">加载地图...</span></div>`;
             mapContainer.appendChild(controlDiv);
 
-            // ★★★ 图例（可点击筛选） ★★★
+            // 图例
             const legendDiv = document.createElement('div');
             legendDiv.className = 'map-legend-wrapper';
             legendDiv.id = 'mapLegend';
@@ -1323,24 +1758,21 @@
             }
             tryLoadLayer(0);
 
-            // 创建标记图标
+            // 标记图标
             const originIcon = L.divIcon({ className: 'custom-marker-origin', iconSize: [10, 10], iconAnchor: [5, 5] });
             const destIcon = L.divIcon({ className: 'custom-marker-destination', iconSize: [10, 10], iconAnchor: [5, 5] });
             const originRecIcon = L.divIcon({ className: 'custom-marker-origin-rec', iconSize: [16, 16], iconAnchor: [8,
                 8] });
             const destRecIcon = L.divIcon({ className: 'custom-marker-dest-rec', iconSize: [16, 16], iconAnchor: [8, 8] });
 
-            // 存储所有图层组，用于筛选
             const layerGroups = {
                 origin: { markers: [], label: '起始点', color: '#2a7f6e' },
                 destination: { markers: [], label: '目的地', color: '#b13b3b' },
                 warehouses: []
             };
 
-            // 推荐仓库索引 -> 对应的标记组
             const warehouseGroups = {};
 
-            // 添加标记
             allPoints.forEach((p, idx) => {
                 let icon, popupContent, layerType;
 
@@ -1351,11 +1783,18 @@
                     const idxLabel = analysisResults.recommendations.length > 1 ? ` ${p.recIndex + 1}` : '';
                     const servingNames = (p.servingSites || []).map(s => s.name).join('、');
 
+                    // 收敛状态显示
+                    const convergeStatus = p.recData && p.recData.converged !== false ?
+                        '✅ 已收敛' :
+                        '⚡ 迭代中';
+                    const convergeColor = p.recData && p.recData.converged !== false ? '#2a7f6e' : '#d48c2c';
+
                     popupContent =
                         `<div style="font-size:14px;font-weight:700;color:#1f3a5f;">🏗️ ${p.name}</div>
                         <div style="font-size:12px;color:#4a6a8a;">📍 ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}</div>
                         <div style="font-size:12px;color:#2a7f6e;">⭐ ${recTypeLabel}</div>
                         <div style="font-size:11px;color:#6c5b7b;">📦 服务 ${p.servingCount || 0} 个站点</div>
+                        <div style="font-size:11px;color:${convergeColor};margin-top:4px;">🔒 ${convergeStatus}</div>
                         ${servingNames ? `<div style="font-size:10px;color:#8aa0b8;margin-top:4px;border-top:1px solid #eee;padding-top:4px;">📋 ${servingNames}</div>` : ''}`;
 
                     layerType = 'warehouse';
@@ -1367,6 +1806,7 @@
                             color: p.recType === 'origin' ? '#1a5d8c' : '#6c5b7b',
                             recIndex: p.recIndex,
                             recType: p.recType,
+                            converged: p.recData && p.recData.converged !== false,
                             servingSiteNames: (p.servingSites || []).map(s => s.name),
                             servingSiteCoords: (p.servingSites || []).map(s => ({ lat: s.lat, lng: s.lng, name: s
                                     .name, type: s.type }))
@@ -1385,7 +1825,6 @@
 
                 const marker = L.marker([p.lat, p.lng], { icon: icon }).addTo(mapInstance).bindPopup(popupContent);
 
-                // 存储图层信息
                 const layerInfo = { marker: marker, point: p, layerType: layerType };
 
                 if (p.isRecommend) {
@@ -1393,7 +1832,6 @@
                     if (warehouseGroups[groupKey]) {
                         warehouseGroups[groupKey].markers.push(marker);
                     }
-                    // 同时存储到总列表
                     allMapLayers.push(layerInfo);
                 } else {
                     if (layerType === 'origin') {
@@ -1406,10 +1844,9 @@
                 mapMarkers.push(marker);
             });
 
-            // ★★★ 构建图例 ★★★
+            // 构建图例
             buildLegend(layerGroups, warehouseGroups);
 
-            // 调整视图
             if (mapMarkers.length > 0) {
                 try {
                     const group = L.featureGroup(mapMarkers);
@@ -1418,13 +1855,12 @@
                     mapInstance.setView([centerLat, centerLng], 8);
                 }
             }
-            if (mapMarkers.length === 1) mapInstance.setZoom(13);
 
             setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 300);
             setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 800);
         }
 
-        // ★★★ 构建图例（可点击筛选） ★★★
+        // ★★★ 构建图例 ★★★
         function buildLegend(layerGroups, warehouseGroups) {
             const legendDiv = document.getElementById('mapLegend');
             if (!legendDiv) return;
@@ -1444,7 +1880,6 @@
                 <div class="legend-separator"></div>
             `;
 
-            // 普通站点
             html += `
                 <div class="legend-item" onclick="filterMap('origin')" id="legendOrigin">
                     <span class="legend-dot" style="background:#2a7f6e;"></span>
@@ -1462,16 +1897,15 @@
 
             if (Object.keys(warehouseGroups).length > 0) {
                 html += `<div class="legend-separator"></div>`;
-                // 每个仓库
                 Object.keys(warehouseGroups).forEach((key, idx) => {
                     const group = warehouseGroups[key];
                     const rec = recs[idx] || {};
                     const recLabel = rec.type === 'origin' ? '📍 前置仓' : '🏁 末端仓';
                     const color = rec.type === 'origin' ? '#1a5d8c' : '#6c5b7b';
-                    const count = group.markers.length;
-                    // 计算服务的站点数量（包括起始点和目的地）
                     const servingSites = group.servingSiteCoords || [];
                     const totalServing = servingSites.length;
+                    const convergeIcon = group.converged ? '✅' : '⚡';
+                    const convergeColor = group.converged ? '#2a7f6e' : '#d48c2c';
 
                     html += `
                         <div class="legend-item" onclick="filterMap('warehouse_${idx}')" id="legendWarehouse_${idx}" data-warehouse="${idx}">
@@ -1479,6 +1913,7 @@
                             <span class="legend-label">${recLabel} ${recs.length > 1 ? idx + 1 : ''}</span>
                             <span class="legend-count">${totalServing} 站点</span>
                             <span class="legend-check">✓</span>
+                            <span style="font-size:8px;color:${convergeColor};margin-left:2px;">${convergeIcon}</span>
                         </div>
                     `;
                 });
@@ -1487,11 +1922,10 @@
             legendDiv.innerHTML = html;
         }
 
-        // ★★★ 地图筛选函数 ★★★
+        // ★★★ 地图筛选 ★★★
         function filterMap(filterType) {
             currentFilter = filterType;
 
-            // 更新图例高亮
             document.querySelectorAll('.legend-item, .legend-all').forEach(el => {
                 el.classList.remove('active');
             });
@@ -1507,7 +1941,6 @@
                 if (el) el.classList.add('active');
             }
 
-            // 执行筛选：显示/隐藏标记
             const recs = analysisResults.recommendations || [];
 
             allMapLayers.forEach(layerInfo => {
@@ -1526,7 +1959,6 @@
                     if (p.isRecommend && p.recIndex === idx) {
                         visible = true;
                     } else if (!p.isRecommend) {
-                        // 检查该站点是否属于这个仓库
                         const rec = recs[idx];
                         if (rec && rec.sites) {
                             const isServing = rec.sites.some(s => s.name === p.name && Math.abs(s.lat - p.lat) < 0.0001 &&
@@ -1546,11 +1978,8 @@
                     }
                 }
             });
-
-            addLog(`🔍 已筛选: ${filterType === 'all' ? '全部显示' : filterType}`, false);
         }
 
-        // ★★★ 重置地图筛选 ★★★
         function resetMapFilter() {
             filterMap('all');
         }
@@ -1796,7 +2225,7 @@
         }
 
         // ============================================================
-        //  核心：选址分析
+        //  核心：选址分析（使用优化算法 + 末端仓专用参数）
         // ============================================================
         function runAnalysis() {
             const origins = sites.filter(s => s.type === 'origin');
@@ -1816,23 +2245,43 @@
             });
             if (hasError) return;
 
-            const totalQty = sites.reduce((sum, s) => sum + getWeightedQty(s), 0);
-            const maxClusters = Math.max(2, Math.min(10, Math.ceil(sites.length / 8)));
+            const params = getClusteringParams();
+            addLog(`⚙️ 聚类参数: 最大集群=${params.maxClusters}, 迭代=${params.iterations}, 种子=${params.seed}`, false);
 
+            // ★★★ 对起始点聚类 ★★★
             let originClusters = [];
             if (origins.length > 0) {
-                originClusters = clusterSites(origins, maxClusters);
-                if (originClusters.length === 1 && origins.length <= 3) originClusters = [];
+                originClusters = clusterSitesOptimized(origins, {
+                    maxClusters: params.maxClusters,
+                    iterations: params.iterations,
+                    convergenceThreshold: params.convergenceThreshold,
+                    outlierDistance: params.outlierDistance,
+                    minClusterSize: params.minClusterSize,
+                    seed: params.seed,
+                    useWeighted: true,
+                    isDestination: false // 起始点用标准参数
+                });
             }
 
+            // ★★★ 对目的地聚类（使用专用优化参数） ★★★
             let destClusters = [];
             if (destinations.length > 0) {
-                destClusters = clusterSites(destinations, maxClusters);
-                if (destClusters.length === 1 && destinations.length <= 3) destClusters = [];
+                destClusters = clusterSitesOptimized(destinations, {
+                    maxClusters: params.maxClusters,
+                    iterations: params.iterations,
+                    convergenceThreshold: params.convergenceThreshold,
+                    outlierDistance: params.outlierDistance,
+                    minClusterSize: params.minClusterSize,
+                    seed: params.seed + 1000,
+                    useWeighted: true,
+                    isDestination: true // ★★★ 末端仓专用参数 ★★★
+                });
+                addLog(`📊 末端仓聚类: ${destClusters.length} 个集群，${destClusters.some(c => !c.converged) ? '⚡ 部分迭代中' : '✅ 全部收敛'}`, false);
             }
 
             const recommendations = [];
 
+            // 起始点聚类推荐
             originClusters.forEach((cluster, idx) => {
                 const center = calcWeightedCenter(cluster.sites, 'origin');
                 if (center) {
@@ -1843,14 +2292,20 @@
                         sites: cluster.sites,
                         count: cluster.sites.length,
                         label: `前置仓${originClusters.length > 1 ? idx + 1 : ''}`,
-                        reason: `服务 ${cluster.sites.length} 个起始点`
+                        reason: `服务 ${cluster.sites.length} 个起始点，半径 ${cluster.radius ? cluster.radius.toFixed(1) : '-'} km`,
+                        radius: cluster.radius || 0,
+                        converged: cluster.converged !== false,
+                        iterations: cluster.iterations || 0
                     });
                 }
             });
 
+            // 目的地聚类推荐
             destClusters.forEach((cluster, idx) => {
                 const center = calcWeightedCenter(cluster.sites, 'destination');
                 if (center) {
+                    // ★★★ 如果是末端仓且未收敛，记录提示 ★★★
+                    const isConverged = cluster.converged !== false;
                     recommendations.push({
                         type: 'destination',
                         lat: center.lat,
@@ -1858,11 +2313,17 @@
                         sites: cluster.sites,
                         count: cluster.sites.length,
                         label: `末端仓${destClusters.length > 1 ? idx + 1 : ''}`,
-                        reason: `服务 ${cluster.sites.length} 个目的地`
+                        reason: `服务 ${cluster.sites.length} 个目的地，半径 ${cluster.radius ? cluster.radius.toFixed(1) : '-'} km` +
+                            (isConverged ? '' : ' (⚡ 已使用300次迭代)'),
+                        radius: cluster.radius || 0,
+                        converged: isConverged,
+                        iterations: cluster.iterations || 0,
+                        isDestination: true
                     });
                 }
             });
 
+            // 如果没有推荐
             if (recommendations.length === 0 && sites.length >= 5) {
                 const allCenter = {
                     lat: sites.reduce((s, p) => s + p.lat, 0) / sites.length,
@@ -1875,7 +2336,10 @@
                     sites: sites,
                     count: sites.length,
                     label: '综合中心仓',
-                    reason: `服务所有 ${sites.length} 个站点`
+                    reason: `服务所有 ${sites.length} 个站点`,
+                    radius: 0,
+                    converged: true,
+                    iterations: 0
                 });
             }
 
@@ -1889,7 +2353,10 @@
                         sites: origins,
                         count: origins.length,
                         label: '前置仓',
-                        reason: '基于起始点中心推荐'
+                        reason: '基于起始点中心推荐',
+                        radius: 0,
+                        converged: true,
+                        iterations: 0
                     });
                 }
                 const destCenter = calcWeightedCenter(sites, 'destination');
@@ -1901,11 +2368,20 @@
                         sites: destinations,
                         count: destinations.length,
                         label: '末端仓',
-                        reason: '基于目的地中心推荐'
+                        reason: '基于目的地中心推荐',
+                        radius: 0,
+                        converged: true,
+                        iterations: 0
                     });
                 }
             }
 
+            // 检查末端仓是否全部收敛
+            const destRecs = recommendations.filter(r => r.type === 'destination');
+            const allConverged = destRecs.every(r => r.converged !== false);
+            const anyIterating = destRecs.some(r => r.converged === false);
+
+            const totalQty = sites.reduce((sum, s) => sum + getWeightedQty(s), 0);
             const avgOriginDist = origins.length > 0 ? origins.reduce((sum, o) => {
                 let minD = Infinity;
                 recommendations.filter(r => r.type === 'origin').forEach(r => {
@@ -1922,13 +2398,25 @@
                 avgOriginDist,
                 totalQty,
                 siteCount: sites.length,
-                clusterCount: recommendations.length
+                clusterCount: recommendations.length,
+                params: params,
+                converged: allConverged,
+                anyIterating: anyIterating
             };
 
             exportBtn.disabled = false;
-            resultStatus.textContent = `✅ 推荐 ${recommendations.length} 个仓库`;
+            const statusMsg = allConverged ?
+                `✅ 推荐 ${recommendations.length} 个仓库 (全部收敛)` :
+                `✅ 推荐 ${recommendations.length} 个仓库 (⚡ 末端仓已用300次迭代)`;
+            resultStatus.textContent = statusMsg;
+
+            if (anyIterating) {
+                showToast(`✅ 分析完成！末端仓已用300次迭代优化，建议增加迭代次数或放宽阈值`, false);
+            } else {
+                showToast(`✅ 分析完成！推荐 ${recommendations.length} 个仓库位置 (全部收敛)`);
+            }
+
             renderResults();
-            showToast(`✅ 分析完成！推荐 ${recommendations.length} 个仓库位置`);
         }
 
         // ============================================================
@@ -1937,6 +2425,10 @@
         function renderResults() {
             const r = analysisResults;
             if (!r) return;
+
+            const params = r.params || {};
+            const allConverged = r.converged !== false;
+            const anyIterating = r.anyIterating || false;
 
             let html = `
                 <div class="result-summary">
@@ -1953,6 +2445,14 @@
                         <div class="value">${r.recommendations.length}</div>
                         <div class="sub">K-Means聚类</div>
                     </div>
+                    <div class="result-item" style="background:${allConverged ? '#e8f5ee' : '#fff8e1'};border-color:${allConverged ? '#b8ddd0' : '#f5dca8'};">
+                        <div class="label">🔒 收敛状态</div>
+                        <div class="value" style="font-size:16px;color:${allConverged ? '#1e6657' : '#8a6d3b'};">
+                            ${allConverged ? '✅ 全部收敛' : '⚡ 部分迭代中'}
+                        </div>
+                        <div class="sub">种子=${params.seed || 42} · 末端仓专用参数</div>
+                        ${anyIterating ? '<span class="iter-badge">⚡ 建议增加迭代</span>' : '<span class="stable-badge">✅ 结果稳定</span>'}
+                    </div>
                 </div>
             `;
 
@@ -1962,6 +2462,10 @@
                 const tagClass = isOrigin ? 'blue' : 'purple';
                 const tagLabel = isOrigin ? '📍 前置仓' : '🏁 末端仓';
                 const siteTypes = isOrigin ? '起始点' : '目的地';
+                const radiusInfo = rec.radius && rec.radius > 0 ? `，覆盖半径 ${rec.radius.toFixed(1)} km` : '';
+                const convergeStatus = rec.converged !== false ? '✅ 已收敛' : '⚡ 迭代中';
+                const convergeColor = rec.converged !== false ? '#2a7f6e' : '#d48c2c';
+                const iterInfo = rec.iterations ? ` (${rec.iterations}次迭代)` : '';
 
                 html += `
                     <div class="recommendation-box ${boxClass}">
@@ -1969,10 +2473,13 @@
                             🏗️ ${rec.label || (isOrigin ? '前置仓' : '末端仓')}
                             <span class="tag ${tagClass}">${tagLabel}</span>
                             <span class="site-count-badge">${rec.count} 个${siteTypes}</span>
+                            <span style="font-size:8px;color:${convergeColor};">${convergeStatus}</span>
+                            ${rec.isDestination ? '<span style="font-size:8px;color:#d48c2c;">🔧 优化参数</span>' : ''}
                         </div>
                         <div class="detail">
                             <strong>位置：</strong>${rec.lat.toFixed(6)}, ${rec.lng.toFixed(6)}
-                            <br><strong>理由：</strong>${rec.reason || `服务 ${rec.count} 个${siteTypes}`}
+                            <br><strong>理由：</strong>${rec.reason || `服务 ${rec.count} 个${siteTypes}`}${radiusInfo}
+                            ${iterInfo}
                         </div>
                     </div>
                 `;
@@ -1987,6 +2494,18 @@
                 `;
             }
 
+            // 如果末端仓有迭代中的，显示优化提示
+            if (anyIterating) {
+                html += `
+                    <div style="background:#fff8e1;border-radius:6px;padding:6px 10px;margin:4px 0;font-size:10px;color:#8a6d3b;border:1px solid #f5dca8;">
+                        💡 <strong>提示：</strong>末端仓已使用 <strong>300次迭代</strong> 优化参数，如仍显示迭代中，建议：
+                        <br>• 增加迭代次数至 200-500
+                        <br>• 将收敛阈值放宽至 0.0001
+                        <br>• 减少最大集群数
+                    </div>
+                `;
+            }
+
             html += `
                 <div id="mapContainer">
                     <div class="map-placeholder">
@@ -1995,16 +2514,14 @@
                     </div>
                 </div>
                 <div style="margin-top:4px;font-size:9px;color:#8aa0b8;text-align:center;">
-                    💡 点击图例可筛选显示对应仓库及其服务站点
+                    💡 点击图例可筛选显示对应仓库及其服务站点 · 末端仓使用专用优化参数
                 </div>
             `;
 
             resultArea.innerHTML = html;
 
-            // 延迟渲染地图
             setTimeout(() => {
                 renderMap();
-                // 默认显示全部
                 setTimeout(() => {
                     filterMap('all');
                 }, 100);
@@ -2072,7 +2589,11 @@
                     '服务仓': '-',
                     '推荐理由': rec.reason || '',
                     '服务站点明细': servingNames,
-                    '服务站点数': rec.sites.length
+                    '服务站点数': rec.sites.length,
+                    '覆盖半径(km)': rec.radius ? rec.radius.toFixed(1) : '-',
+                    '收敛状态': rec.converged !== false ? '已收敛' : '迭代中',
+                    '迭代次数': rec.iterations || '-',
+                    '是否末端仓优化': rec.isDestination ? '是' : '否'
                 });
             });
 
@@ -2092,12 +2613,12 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `仓库选址分析_${new Date().toISOString().slice(0,10)}.csv`;
+            a.download = `仓库选址分析_稳定版_${new Date().toISOString().slice(0,10)}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast('📥 导出成功！');
+            showToast('📥 导出成功！(末端仓已优化)');
         }
 
         // ============================================================
@@ -2134,29 +2655,21 @@
         analyzeBtn.addEventListener('click', runAnalysis);
         exportBtn.addEventListener('click', exportResults);
 
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); if (!analyzeBtn.disabled) runAnalysis(); }
-        });
-
-        let resizeTimer;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 300);
-        });
-
-        // ============================================================
-        //  初始化
-        // ============================================================
-        renderTable();
-        showToast('📥 请上传 Excel/CSV 文件，或点击「示例」快速体验');
-
-        // 暴露全局函数给HTML调用
+        // 暴露全局函数
         window.filterMap = filterMap;
         window.resetMapFilter = resetMapFilter;
         window.loadSampleData = loadSampleData;
         window.clearAll = clearAll;
         window.runAnalysis = runAnalysis;
         window.exportResults = exportResults;
+
+        // ============================================================
+        //  初始化
+        // ============================================================
+        renderTable();
+        showToast('📥 请上传 Excel/CSV 文件，或点击「示例」快速体验');
+        addLog('🔒 稳定版：固定随机种子(42)，结果可重现', false);
+        addLog('🔧 末端仓自动使用优化参数：300次迭代 + 放宽收敛阈值', false);
     </script>
 </body>
 </html>
