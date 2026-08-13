@@ -295,7 +295,7 @@
             margin-top: 2px;
         }
 
-        /* ===== ★★★ 统计页面样式 ★★★ ===== */
+        /* ===== 统计页面样式 ===== */
         .stats-dashboard {
             height: 100%;
             overflow-y: auto;
@@ -620,7 +620,7 @@
 
     <script>
         // ============================================================
-        //  工具导航树配置 ★★★ 新增仓库选址工具 ★★★
+        //  工具导航树配置 ★★★ 新增"仓库规划"分组 ★★★
         // ============================================================
         const TOOLS = [{
             id: 'welcome',
@@ -672,10 +672,18 @@
             desc: '堆叠层数限制',
             file: 'cargo-loading-3d.html'
         }, {
+            // ★★★ 新增：仓库规划分组 ★★★
+            id: 'warehouse-layout',
+            icon: '🏭',
+            label: '仓库布局规划',
+            section: '仓库规划',
+            desc: '面积计算·3D布局·动线·道口',
+            file: 'warehouse-layout.html'
+        }, {
             id: 'warehouse-location',
             icon: '🏗️',
             label: '仓库选址分析',
-            section: '智能规划',
+            section: '仓库规划',
             desc: '前置仓/末端仓推荐',
             file: 'warehouse-location.html'
         }, {
@@ -812,7 +820,7 @@
         }
 
         // ============================================================
-        //  ★★★ 渲染统计页面 ★★★
+        //  渲染统计页面
         // ============================================================
         let usageChartInstance = null;
         let trendChartInstance = null;
@@ -1068,7 +1076,7 @@
                         <div class="welcome-content">
                             <div class="logo-big">📦</div>
                             <h2>物流工具箱</h2>
-                            <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析、3D装载可视化、仓库选址等核心工具</p>
+                            <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析、3D装载可视化、仓库规划等核心工具</p>
                             <div class="tool-grid">
                                 ${TOOLS.filter(t => !t.isWelcome && !t.isStats).map(t => `
                                     <div class="card" onclick="loadTool('${t.id}')">
