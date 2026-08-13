@@ -310,19 +310,90 @@
             display: block;
         }
 
-        /* 结果表格 */
+        /* ===== 优化后的聚合统计摘要区 - 简洁统计卡片 ===== */
+        .result-summary-wrap {
+            margin-top: 12px;
+            margin-bottom: 10px;
+            display: none;
+        }
+        .result-summary-wrap.show {
+            display: block;
+        }
+
+        .summary-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 20px;
+            align-items: center;
+            padding: 8px 16px;
+            background: #f0f6fe;
+            border-radius: 1rem;
+            border: 1px solid #dce8f5;
+            min-height: 44px;
+        }
+        .summary-stats .stat-item {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            font-size: 0.78rem;
+            color: #2c3e66;
+            white-space: nowrap;
+        }
+        .summary-stats .stat-item .label {
+            color: #5a7a9a;
+            font-weight: 400;
+        }
+        .summary-stats .stat-item .value {
+            font-weight: 700;
+            color: #1a5d8c;
+            font-size: 0.95rem;
+        }
+        .summary-stats .stat-item .value.warning {
+            color: #d9534f;
+        }
+        .summary-stats .stat-item .value.success {
+            color: #2a7f6e;
+        }
+        .summary-stats .stat-item .value.isolation {
+            color: #f0a030;
+        }
+        .summary-stats .divider {
+            color: #c0d0e0;
+            font-size: 1.2rem;
+            font-weight: 200;
+        }
+        .summary-stats .status-badge {
+            font-size: 0.65rem;
+            padding: 2px 10px;
+            border-radius: 20px;
+            margin-left: 2px;
+        }
+        .summary-stats .status-badge.valid {
+            background: #c8e6d9;
+            color: #1a6e5a;
+        }
+        .summary-stats .status-badge.invalid {
+            background: #fccfcf;
+            color: #b13b3b;
+        }
+        .summary-stats .status-badge.isolation {
+            background: #ffecd6;
+            color: #a1552a;
+        }
+
+        /* 明细数据表格区 - 固定高度+滚动条 */
         .table-wrap {
             overflow-x: auto;
             border-radius: 1.2rem;
             border: 1px solid #e3ecf5;
             background: white;
             margin-top: 0.5rem;
-            max-height: 500px;
+            height: 420px;
             overflow-y: auto;
         }
         .data-table {
             width: 100%;
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             border-collapse: collapse;
             min-width: 1200px;
         }
@@ -330,25 +401,27 @@
             background: #f1f6fc;
             color: #1f3a5f;
             font-weight: 600;
-            padding: 10px 8px;
+            padding: 8px 6px;
             border-bottom: 2px solid #d3e0ee;
             position: sticky;
             top: 0;
-            z-index: 5;
+            z-index: 10;
             white-space: nowrap;
         }
         .data-table td {
-            padding: 8px 8px;
+            padding: 6px 6px;
             border-bottom: 1px solid #e6edf5;
             vertical-align: middle;
         }
         .data-table tr:hover td { background: #f8fafd; }
+        .data-table .cluster-header td {
+            border-bottom: 2px solid #b8cde0;
+            padding: 4px 6px;
+            font-size: 0.7rem;
+        }
         .data-table .cluster-header {
             background: #e8f0f8;
             font-weight: 700;
-        }
-        .data-table .cluster-header td {
-            border-bottom: 2px solid #b8cde0;
         }
         .data-table .over-capacity { color: #b13b3b; font-weight: 700; }
         .data-table .within-capacity { color: #2a7f6e; font-weight: 700; }
@@ -393,15 +466,15 @@
             display: flex;
             flex-wrap: wrap;
             gap: 18px;
-            padding: 12px 16px;
+            padding: 10px 16px;
             background: #f8fafd;
             border-radius: 1rem;
-            margin-top: 12px;
+            margin-top: 10px;
             align-items: center;
             justify-content: space-between;
         }
         .stat-item {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: #2c3e66;
         }
         .stat-item strong { color: #1a5d8c; }
@@ -424,7 +497,7 @@
             height: 4px;
             background: #dce3ec;
             border-radius: 4px;
-            margin: 12px 0 4px;
+            margin: 10px 0 4px;
             overflow: hidden;
         }
         .progress-fill {
@@ -493,25 +566,6 @@
         .fixed-bar .reset-btn:hover { background: rgba(255,255,255,0.25); }
         .hidden-bar { display: none !important; }
 
-        .cluster-summary {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            padding: 8px 0;
-        }
-        .cluster-badge {
-            background: #e8f0f8;
-            padding: 4px 14px;
-            border-radius: 30px;
-            font-size: 0.75rem;
-            border-left: 3px solid #1a5d8c;
-        }
-        .cluster-badge .vol { font-weight: 700; color: #1a5d8c; }
-        .cluster-badge.isolation {
-            border-left-color: #f0a030;
-            background: #fef9e7;
-        }
-
         footer {
             text-align: center;
             font-size: 0.7rem;
@@ -551,6 +605,25 @@
             height: 280px;
             color: #a0b8cc;
             font-size: 0.9rem;
+        }
+
+        .table-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 2px;
+            padding: 0 2px;
+        }
+        .table-header-bar .title {
+            font-weight: 600;
+            color: #1f3a5f;
+            font-size: 0.85rem;
+        }
+        .table-header-bar .count {
+            font-size: 0.7rem;
+            color: #7a8eaa;
         }
     </style>
 </head>
@@ -615,9 +688,11 @@
             <button class="btn btn-outline" id="clearResultBtn">🗑️ 清空结果</button>
         </div>
 
-        <!-- 结果摘要 -->
-        <div id="resultSummary" style="display:none; margin-top:12px;">
-            <div class="cluster-summary" id="clusterSummary"></div>
+        <!-- ===== 聚合统计摘要区 - 简洁统计卡片 ===== -->
+        <div class="result-summary-wrap" id="resultSummary">
+            <div class="summary-stats" id="summaryStats">
+                <!-- 由JS动态渲染 -->
+            </div>
         </div>
 
         <!-- Tab切换栏 -->
@@ -628,11 +703,11 @@
 
         <!-- Tab1: 数据表格 -->
         <div id="tabTable" class="tab-content active">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:4px;">
-                <span style="font-weight:600; color:#1f3a5f;">📊 聚类结果</span>
-                <span style="font-size:0.75rem; color:#7a8eaa;" id="rowCount">共 0 条</span>
+            <div class="table-header-bar">
+                <span class="title">📋 聚类明细数据</span>
+                <span class="count" id="rowCount">共 0 条记录</span>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap" id="tableWrap">
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -666,22 +741,18 @@
                 <span style="font-size:0.8rem; color:#4a6a8a;">📈 基于聚类结果自动生成以下4个分析图表</span>
             </div>
             <div class="chart-grid">
-                <!-- 图表1: 容量利用率分布 -->
                 <div class="chart-card">
                     <h4>📊 线路容量利用率分布 <span style="font-weight:400; font-size:0.7rem; color:#7a8eaa;">（红色虚线=80%合理下限）</span></h4>
                     <div id="chartUtilization" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div>
                 </div>
-                <!-- 图表2: 货量 vs 容量匹配度 -->
                 <div class="chart-card">
                     <h4>📈 货量 vs 车型容量匹配度 <span style="font-weight:400; font-size:0.7rem; color:#7a8eaa;">（点越近对角线越匹配）</span></h4>
                     <div id="chartMatch" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div>
                 </div>
-                <!-- 图表3: 线路站点数量 -->
                 <div class="chart-card">
                     <h4>📋 各线路站点数量分布 <span style="font-weight:400; font-size:0.7rem; color:#7a8eaa;">（红色虚线=平均站点数）</span></h4>
                     <div id="chartSites" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div>
                 </div>
-                <!-- 图表4: 孤立站点分析 -->
                 <div class="chart-card">
                     <h4>📍 孤立站点分析 <span style="font-weight:400; font-size:0.7rem; color:#7a8eaa;">（单城市单站点且货量&lt;阈值）</span></h4>
                     <div id="chartIsolation" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div>
@@ -762,7 +833,7 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const resetBottomBtn = document.getElementById('resetBottomBtn');
     const resultSummary = document.getElementById('resultSummary');
-    const clusterSummary = document.getElementById('clusterSummary');
+    const summaryStats = document.getElementById('summaryStats');
     const maxIterationsInput = document.getElementById('maxIterations');
     const convergenceThresholdInput = document.getElementById('convergenceThreshold');
     const isolationThresholdInput = document.getElementById('isolationThreshold');
@@ -1298,7 +1369,6 @@
     // ============================================================
     function renderCharts() {
         if (!clusterResults || clusterResults.length === 0) {
-            // 显示无数据提示
             const noDataHtml = `<div class="chart-no-data">运行聚类后自动生成</div>`;
             document.querySelectorAll('.chart-container').forEach(el => {
                 if (!el.querySelector('.chart-no-data')) {
@@ -1308,21 +1378,18 @@
             return;
         }
 
-        // 初始化或重置图表实例
         if (!chartUtilizationInstance) {
             chartUtilizationInstance = echarts.init(chartUtilization);
             chartMatchInstance = echarts.init(chartMatch);
             chartSitesInstance = echarts.init(chartSites);
             chartIsolationInstance = echarts.init(chartIsolation);
         } else {
-            // 清空
             chartUtilizationInstance.clear();
             chartMatchInstance.clear();
             chartSitesInstance.clear();
             chartIsolationInstance.clear();
         }
 
-        // ---- 准备数据 ----
         const clusterList = clusterResults.map(c => {
             const siteCount = c.sites.length;
             return {
@@ -1337,7 +1404,6 @@
             };
         });
 
-        // 按线路ID排序
         clusterList.sort((a, b) => a.id - b.id);
 
         // ---- 图表1: 容量利用率分布 ----
@@ -1632,12 +1698,12 @@
     }
 
     // ============================================================
-    //  渲染结果表格
+    //  渲染结果表格 + 统计摘要
     // ============================================================
     function renderResults() {
         if (!clusterResults || clusterResults.length === 0) {
             tableBody.innerHTML = `<tr><td colspan="15" style="text-align:center; color:#a18163; padding:30px;">暂无聚类结果</td></tr>`;
-            resultSummary.style.display = 'none';
+            resultSummary.classList.remove('show');
             copyResultBtn.disabled = true;
             exportResultBtn.disabled = true;
             return;
@@ -1649,6 +1715,7 @@
         let validClusters = 0;
         let invalidClusters = 0;
         let isoCount = 0;
+        let totalUtilization = 0;
 
         clusterResults.forEach((cluster, idx) => {
             const isValid = cluster.isValid;
@@ -1663,11 +1730,13 @@
             if (isValid) validClusters++;
             else invalidClusters++;
             if (isIsolated) isoCount++;
+            totalUtilization += cluster.utilization;
 
             const routeLabel = `Route${cluster.clusterId}`;
 
+            // 表格头部
             html += `<tr class="cluster-header ${rowClass}">
-                <td colspan="15" style="font-weight:700; color:#1f3a5f;">
+                <td colspan="15" style="font-weight:700; color:#1f3a5f; padding:4px 6px; font-size:0.7rem;">
                     ${typeText} ${routeLabel} &nbsp;|&nbsp; 车型: <strong>${vehicleCode}</strong> &nbsp;|&nbsp; 站点数: ${cluster.sites.length} &nbsp;|&nbsp; 
                     总货量: <strong>${cluster.totalVolume.toFixed(1)}</strong> m³ &nbsp;|&nbsp; 容量: ${cluster.capacity.toFixed(1)} m³ &nbsp;|&nbsp; 
                     利用率: <span style="color:${utilColor}; font-weight:700;">${cluster.utilization.toFixed(1)}%</span>
@@ -1698,8 +1767,48 @@
             });
         });
 
+        // ---- 渲染表格 ----
         tableBody.innerHTML = html;
-        rowCount.textContent = `共 ${totalSitesCount} 条`;
+        rowCount.textContent = `共 ${totalSitesCount} 条记录`;
+
+        // ---- 渲染统计摘要卡片（简洁汇总） ----
+        const avgUtilization = clusterResults.length > 0 ? totalUtilization / clusterResults.length : 0;
+        const utilColor = avgUtilization > 90 ? 'warning' : (avgUtilization > 70 ? 'success' : '');
+        
+        summaryStats.innerHTML = `
+            <span class="stat-item">
+                <span class="label">📌 参与站点</span>
+                <span class="value">${totalSitesCount}</span>
+            </span>
+            <span class="divider">|</span>
+            <span class="stat-item">
+                <span class="label">📦 线路结果</span>
+                <span class="value">${clusterResults.length}</span>
+                <span class="status-badge valid">✅ ${validClusters}</span>
+                ${invalidClusters > 0 ? `<span class="status-badge invalid">❌ ${invalidClusters}</span>` : ''}
+                ${isoCount > 0 ? `<span class="status-badge isolation">📍 ${isoCount}</span>` : ''}
+            </span>
+            <span class="divider">|</span>
+            <span class="stat-item">
+                <span class="label">📐 总货量</span>
+                <span class="value">${totalVol.toFixed(1)} m³</span>
+            </span>
+            <span class="divider">|</span>
+            <span class="stat-item">
+                <span class="label">📊 平均装载率</span>
+                <span class="value ${utilColor}">${avgUtilization.toFixed(1)}%</span>
+            </span>
+            ${invalidClusters > 0 ? `
+                <span class="divider">|</span>
+                <span class="stat-item">
+                    <span class="label">⚠️ 超载线路</span>
+                    <span class="value warning">${invalidClusters} 条</span>
+                </span>
+            ` : ''}
+        `;
+        resultSummary.classList.add('show');
+
+        // ---- 更新统计栏 ----
         totalSites.textContent = totalSitesCount;
         totalClusters.textContent = clusterResults.length;
         totalVolume.textContent = totalVol.toFixed(1);
@@ -1707,26 +1816,6 @@
 
         copyResultBtn.disabled = false;
         exportResultBtn.disabled = false;
-
-        let summaryHtml = '';
-        clusterResults.forEach((c, idx) => {
-            const color = `hsl(${(idx * 137) % 360}, 70%, 55%)`;
-            const statusTag = c.isValid ? '✅' : '❌';
-            const statusText = c.isValid ? '合格' : '超载';
-            const typeText = c.isIsolated ? '孤立' : '聚合';
-            const isoTag = c.isIsolated ? '📍' : '';
-            const vCode = c.vehicle ? c.vehicle.code : '无';
-            const routeLabel = `Route${c.clusterId}`;
-            summaryHtml += `<span class="cluster-badge ${c.isIsolated ? 'isolation' : ''}" style="border-left-color:${color};">
-                ${isoTag} ${statusTag} ${typeText} ${routeLabel}(${vCode}): <span class="vol">${c.sites.length}</span>站 | 
-                货量 <span class="vol">${c.totalVolume.toFixed(1)}</span>m³ | 
-                容量 <span class="vol">${c.capacity.toFixed(1)}</span>m³ | 
-                利用率 <span class="vol">${c.utilization.toFixed(1)}%</span> | 
-                状态 <span class="vol">${statusText}</span>
-            </span>`;
-        });
-        clusterSummary.innerHTML = summaryHtml;
-        resultSummary.style.display = 'block';
 
         progressFill.style.width = '100%';
         progressText.textContent = `✅ 完成！${clusterResults.length} 条线路 (有效 ${validClusters}，超载 ${invalidClusters}，孤立 ${isoCount})，${totalSitesCount} 个站点`;
@@ -1748,7 +1837,6 @@
             const tabId = this.dataset.tab;
             document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            // 切换到图表tab时resize图表
             if (tabId === 'tabChart') {
                 setTimeout(() => {
                     if (chartUtilizationInstance) chartUtilizationInstance.resize();
@@ -1991,18 +2079,16 @@
         clusterResults = [];
         resultBlob = null;
         renderResults();
-        // 清空图表
         if (chartUtilizationInstance) chartUtilizationInstance.clear();
         if (chartMatchInstance) chartMatchInstance.clear();
         if (chartSitesInstance) chartSitesInstance.clear();
         if (chartIsolationInstance) chartIsolationInstance.clear();
-        // 恢复无数据提示
         const noDataHtml = `<div class="chart-no-data">运行聚类后自动生成</div>`;
         document.querySelectorAll('.chart-container').forEach(el => {
             el.innerHTML = noDataHtml;
         });
         hideDownloadBar();
-        resultSummary.style.display = 'none';
+        resultSummary.classList.remove('show');
         progressFill.style.width = '0%';
         progressText.textContent = '⏳ 就绪';
         copyResultBtn.disabled = true;
@@ -2026,7 +2112,7 @@
             el.innerHTML = noDataHtml;
         });
         hideDownloadBar();
-        resultSummary.style.display = 'none';
+        resultSummary.classList.remove('show');
         progressFill.style.width = '0%';
         progressText.textContent = '⏳ 就绪';
         copyResultBtn.disabled = true;
