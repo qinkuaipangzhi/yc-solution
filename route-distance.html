@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>智能线路站点排序 - 并发限流优化版</title>
+    <title>智能线路站点排序 - 限流优化版 + BI图表</title>
     <!-- SheetJS 核心库 -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js">
     </script>
-    <!-- Leaflet CSS + JS (作为主要地图引擎，更稳定) -->
+    <!-- ECharts 图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js">
+    </script>
+    <!-- Leaflet CSS + JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
     </script>
     <style>
-        /* ========== 所有样式保持不变 ========== */
+        /* ========== 所有原样式保持不变 ========== */
         * {
             margin: 0;
             padding: 0;
@@ -62,6 +65,9 @@
         }
         .badge.limit {
             background: #cc6600;
+        }
+        .badge.bi {
+            background: #6a4c9c;
         }
         .upload-card {
             background: white;
@@ -357,24 +363,6 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        #mapContainer .map-error {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #b13b3b;
-            background: #fef5f5;
-            flex-direction: column;
-            padding: 20px;
-            text-align: center;
-        }
-        #mapContainer .map-error .error-icon { font-size: 3rem; margin-bottom: 12px; }
-        #mapContainer .leaflet-container {
-            height: 100%;
-            width: 100%;
-            background: #e8ecf0;
-        }
-        /* Leaflet 标记样式 */
         .leaflet-marker-origin {
             background: #2a7f6e;
             border: 2px solid white;
@@ -419,6 +407,78 @@
             gap: 14px;
             flex-wrap: wrap;
             margin-top: 16px;
+        }
+
+        /* ===== Tab切换（数据/图表/地图） ===== */
+        .view-tabs {
+            display: flex;
+            gap: 4px;
+            background: #f1f5f9;
+            border-radius: 1rem;
+            padding: 4px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .view-tab {
+            border: none;
+            padding: 8px 24px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            background: transparent;
+            color: #4a6a8a;
+            transition: 0.2s;
+        }
+        .view-tab:hover { background: rgba(255,255,255,0.5); }
+        .view-tab.active {
+            background: white;
+            color: #1a5d8c;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .view-content {
+            display: none;
+        }
+        .view-content.active {
+            display: block;
+        }
+
+        /* ===== 图表区域 ===== */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-top: 12px;
+        }
+        @media (max-width: 1000px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .chart-card {
+            background: #fafcff;
+            border-radius: 1.2rem;
+            border: 1px solid #e3ecf5;
+            padding: 14px;
+            min-height: 300px;
+        }
+        .chart-card h4 {
+            color: #1f3a5f;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            padding-left: 4px;
+        }
+        .chart-container {
+            width: 100%;
+            height: 280px;
+        }
+        .chart-no-data {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 250px;
+            color: #a0b8cc;
+            font-size: 0.9rem;
         }
 
         .fixed-download-bar {
@@ -482,14 +542,6 @@
             background: #f8fafd;
             border-top: 1px solid #e3ecf5;
         }
-        .legend-info span {
-            display: inline-block;
-            width: 20px;
-            height: 4px;
-            margin-right: 6px;
-            vertical-align: middle;
-            border-radius: 2px;
-        }
         .legend-info .dot {
             width: 12px;
             height: 12px;
@@ -540,6 +592,7 @@
             .key-input-row input { min-width: 120px; }
             .fixed-download-bar { padding: 12px 16px; flex-direction: column; align-items: stretch; }
             .download-btn-big { justify-content: center; }
+            .chart-container { height: 220px; }
         }
         @media (max-width: 480px) {
             #mapContainer { height: 240px; }
@@ -553,8 +606,8 @@
 <body>
 <div class="main-container">
     <div class="hero-card">
-        <h1>🧭 智能线路排序 · 限流优化版</h1>
-        <p>上传站点数据 → 由远及近排序 → 计算距离和预计时间 → 在地图上可视化轨迹</p>
+        <h1>🧭 智能线路排序 · 限流优化版 + BI图表</h1>
+        <p>上传站点数据 → 由远及近排序 → 计算距离和预计时间 → 地图可视化 + 数据分析</p>
         <div class="badge-group">
             <span class="badge">📌 7个标准字段</span>
             <span class="badge">📏 由远及近排序</span>
@@ -562,6 +615,7 @@
             <span class="badge limit">🛑 并发限制 ≤ 3</span>
             <span class="badge">🔄 自动重试</span>
             <span class="badge">🗺️ Leaflet地图</span>
+            <span class="badge bi">📊 5个BI图表</span>
         </div>
     </div>
 
@@ -579,7 +633,6 @@
             <div id="fileListBox" class="file-list-box" style="display:none;"></div>
         </div>
 
-        <!-- 限流信息 -->
         <div class="rate-limit-info">
             <span>🛑 并发限制：</span>
             <strong>每秒最多 3 次请求</strong>
@@ -595,14 +648,12 @@
             📋 下载Excel模板：<a id="downloadTemplateBtn">点击下载 template.xlsx</a>
         </div>
 
-        <!-- 高德地图API Key 输入 -->
         <div class="key-input-row">
             <span style="font-weight:500;">🗺️ 高德地图Web服务Key (距离计算): </span>
             <input type="text" id="amapKey" placeholder="请输入高德地图Web服务API Key" value="9a5f6a8c2b3d4e5f6a7b8c9d0e1f2a3b" style="flex:2;">
             <span class="hint">⚠️ 必须填写有效高德Key，否则无法计算实际驾车距离</span>
         </div>
 
-        <!-- 操作按钮 -->
         <div class="action-bar">
             <button id="calcAllBtn" class="btn btn-success" style="flex:2; padding:14px; font-size:1rem; justify-content:center;" disabled>
                 🚀 计算所有线路（由远及近排序）
@@ -615,18 +666,15 @@
             </button>
         </div>
 
-        <!-- 数据预览 -->
         <div id="previewContainer" style="display:none;" class="data-preview">
             <div style="font-weight:600; margin-bottom:6px;">📊 站点数据预览 (前8行)</div>
             <div style="overflow-x:auto;"><table id="previewTable" class="data-table"></table></div>
         </div>
 
-        <!-- 结果摘要 -->
         <div id="resultSummary" class="result-summary" style="display:none;">
             <span id="summaryText">计算完成</span>
         </div>
 
-        <!-- 进度条与控制区 -->
         <div id="progressArea">
             <div class="progress-bar-container"><div id="calcProgressFill" class="progress-fill"></div></div>
             <div id="calcStats" class="calc-stats">准备就绪</div>
@@ -640,62 +688,108 @@
         <div class="log-content" id="logArea">⚙️ 等待上传Excel，文件需包含「线路代码, 站点类型, 站点代码, 站点名称, 站点地址, 经度, 纬度」列。</div>
     </div>
 
-    <!-- ===== 地图区域 ===== -->
-    <div id="mapSection" style="display:none;">
-        <h2 style="color:#1e3a5f; margin-bottom:12px;">🗺️ 线路轨迹图</h2>
-        <div class="map-container">
-            <div class="map-tabs" id="mapTabs"></div>
-            <div id="mapContainer">
-                <div class="map-loading" id="mapLoading">
-                    <div class="spinner"></div>
-                    <span>地图加载中...</span>
+    <!-- ===== 视图切换 Tabs ===== -->
+    <div class="view-tabs" id="viewTabs" style="display:none;">
+        <button class="view-tab active" data-view="viewTable">📊 数据表格</button>
+        <button class="view-tab" data-view="viewChart">📈 分析图表</button>
+        <button class="view-tab" data-view="viewMap">🗺️ 地图轨迹</button>
+    </div>
+
+    <!-- ===== Tab1: 数据表格 ===== -->
+    <div id="viewTable" class="view-content active">
+        <div id="resultDisplay" style="display:none;">
+            <h2 style="color:#1e3a5f; margin-bottom:12px;">📊 线路距离计算结果（由远及近排列）</h2>
+            <div class="result-table-wrap" id="resultTableWrap">
+                <table id="resultTable">
+                    <thead>
+                        <tr>
+                            <th>线路代码</th>
+                            <th>顺序</th>
+                            <th>站点类型</th>
+                            <th>站点代码</th>
+                            <th>站点名称</th>
+                            <th>站点地址</th>
+                            <th>经度</th>
+                            <th>纬度</th>
+                            <th>下一站点类型</th>
+                            <th>下一站点代码</th>
+                            <th>下一站点名称</th>
+                            <th>下一站点地址</th>
+                            <th>下一经度</th>
+                            <th>下一纬度</th>
+                            <th>站点间距离(km)</th>
+                            <th>预计时间(小时)</th>
+                            <th>计算方式</th>
+                            <th>重试次数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultTableBody"></tbody>
+                </table>
+            </div>
+            <div style="margin-top:12px; text-align:right; font-size:0.75rem; color:#6c86a3;">
+                共 <span id="resultCount">0</span> 条距离记录 &nbsp;|&nbsp; ⏱️ 预计时间按 <strong>40 km/h</strong> 估算
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Tab2: 分析图表 ===== -->
+    <div id="viewChart" class="view-content">
+        <div id="chartSection" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:4px;">
+                <h2 style="color:#1e3a5f;">📈 线路分析BI图表</h2>
+                <span style="font-size:0.75rem; color:#7a8eaa;">基于计算结果自动生成</span>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h4>📊 各线路总里程对比 <span style="font-weight:400; font-size:0.7rem; color:#7a8eaa;">（柱状图）</span></h4>
+                    <div id="chartTotalDistance" class="chart-container"><div class="chart-no-data">计算完成后自动生成</div></div>
+                </div>
+                <div class="chart-card">
+                    <h4>📈 各线路站点数 vs 平均段距 <span style="font-weight:400; font-size:0.7rem; color:#7a8eaa;">（组合图）</span></h4>
+                    <div id="chartSitesAvgDist" class="chart-container"><div class="chart-no-data">计算完成后自动生成</div></div>
+                </div>
+                <div class="chart-card">
+                    <h4>📉 站点间距离分布 <span style="font-weight:400; font-size:0.7rem; color:#7a8eaa;">（直方图）</span></h4>
+                    <div id="chartDistDistribution" class="chart-container"><div class="chart-no-data">计算完成后自动生成</div></div>
+                </div>
+                <div class="chart-card">
+                    <h4>🧮 计算方式占比 <span style="font-weight:400; font-size:0.7rem; color:#7a8eaa;">（高德驾车 vs 直线估算）</span></h4>
+                    <div id="chartMethodPie" class="chart-container"><div class="chart-no-data">计算完成后自动生成</div></div>
+                </div>
+                <div class="chart-card" style="grid-column: 1 / -1;">
+                    <h4>⏱️ 各线路预计总耗时 <span style="font-weight:400; font-size:0.7rem; color:#7a8eaa;">（横向条形图，按耗时从高到低排序）</span></h4>
+                    <div id="chartTotalTime" class="chart-container" style="height:300px;"><div class="chart-no-data">计算完成后自动生成</div></div>
                 </div>
             </div>
-            <div class="legend-info">
-                <span style="background:#1a5d8c;"></span> 线路轨迹（由远及近顺序） &nbsp;|&nbsp;
-                <span class="dot" style="background:#ff6b6b;"></span> 卸货点/目的地 &nbsp;|&nbsp;
-                <span class="dot" style="background:#2a7f6e;"></span> 发货点/起点 &nbsp;|&nbsp;
-                <span class="dot" style="background:#ffc107;"></span> 中转点
+            <div style="margin-top:8px; text-align:center; font-size:0.7rem; color:#8a9fb0;">
+                💡 悬停图表查看详细数据 · 图表随计算结果自动更新
             </div>
         </div>
     </div>
 
-    <!-- ===== 结果表格 ===== -->
-    <div id="resultDisplay" style="display:none;">
-        <h2 style="color:#1e3a5f; margin-bottom:12px;">📊 线路距离计算结果（由远及近排列）</h2>
-        <div class="result-table-wrap" id="resultTableWrap">
-            <table id="resultTable">
-                <thead>
-                    <tr>
-                        <th>线路代码</th>
-                        <th>顺序</th>
-                        <th>站点类型</th>
-                        <th>站点代码</th>
-                        <th>站点名称</th>
-                        <th>站点地址</th>
-                        <th>经度</th>
-                        <th>纬度</th>
-                        <th>下一站点类型</th>
-                        <th>下一站点代码</th>
-                        <th>下一站点名称</th>
-                        <th>下一站点地址</th>
-                        <th>下一经度</th>
-                        <th>下一纬度</th>
-                        <th>站点间距离(km)</th>
-                        <th>预计时间(小时)</th>
-                        <th>计算方式</th>
-                        <th>重试次数</th>
-                    </tr>
-                </thead>
-                <tbody id="resultTableBody"></tbody>
-            </table>
-        </div>
-        <div style="margin-top:12px; text-align:right; font-size:0.75rem; color:#6c86a3;">
-            共 <span id="resultCount">0</span> 条距离记录 &nbsp;|&nbsp; ⏱️ 预计时间按 <strong>40 km/h</strong> 估算
+    <!-- ===== Tab3: 地图轨迹 ===== -->
+    <div id="viewMap" class="view-content">
+        <div id="mapSection" style="display:none;">
+            <h2 style="color:#1e3a5f; margin-bottom:12px;">🗺️ 线路轨迹图</h2>
+            <div class="map-container">
+                <div class="map-tabs" id="mapTabs"></div>
+                <div id="mapContainer">
+                    <div class="map-loading" id="mapLoading">
+                        <div class="spinner"></div>
+                        <span>地图加载中...</span>
+                    </div>
+                </div>
+                <div class="legend-info">
+                    <span class="dot" style="background:#ff6b6b;"></span> 卸货点/目的地 &nbsp;|&nbsp;
+                    <span class="dot" style="background:#2a7f6e;"></span> 发货点/起点 &nbsp;|&nbsp;
+                    <span class="dot" style="background:#ffc107;"></span> 中转点 &nbsp;|&nbsp;
+                    <span style="background:#1a5d8c; display:inline-block; width:30px; height:4px; border-radius:2px; vertical-align:middle;"></span> 线路轨迹（由远及近顺序）
+                </div>
+            </div>
         </div>
     </div>
 
-    <footer>🔒 所有计算由浏览器发起，数据安全；并发限制：≤ 3 req/s，自动重试 2 次</footer>
+    <footer>🔒 所有计算由浏览器发起，数据安全；并发限制：≤ 3 req/s，自动重试 2 次 | 📊 内置5个BI分析图表</footer>
 </div>
 
 <!-- ========== 底部固定下载栏 ========== -->
@@ -707,7 +801,7 @@
 
 <script>
     // ============================================================
-    //  ★★★ Leaflet地图图层配置（多种备用图层） ★★★
+    //  ★★★ Leaflet地图图层配置 ★★★
     // ============================================================
     const TILE_LAYERS = [
         {
@@ -733,7 +827,7 @@
     ];
 
     // ============================================================
-    //  限流配置
+    //  配置
     // ============================================================
     const CONFIG = {
         QPS_LIMIT: 3,
@@ -756,9 +850,15 @@
     let currentRouteCode = null;
     let mapMarkers = [];
 
-    // 并发控制
     let activeRequests = 0;
     let requestTimestamps = [];
+
+    // 图表实例
+    let chartTotalDistanceInstance = null;
+    let chartSitesAvgDistInstance = null;
+    let chartDistDistributionInstance = null;
+    let chartMethodPieInstance = null;
+    let chartTotalTimeInstance = null;
 
     // DOM
     const folderInput = document.getElementById('folderInput');
@@ -790,6 +890,8 @@
     const mapContainer = document.getElementById('mapContainer');
     const mapLoading = document.getElementById('mapLoading');
     const concurrencyDisplay = document.getElementById('concurrencyDisplay');
+    const viewTabs = document.getElementById('viewTabs');
+    const chartSection = document.getElementById('chartSection');
 
     // ============================================================
     //  日志
@@ -1172,6 +1274,7 @@
         if (!allResults.length) { addLog("未生成任何距离结果", true); return; }
 
         allDistanceResults = allResults;
+        routeGroupedResults = routeGrouped;
         calcProgressFill.style.width = '100%';
         calcStats.innerText = `✅ 完成！共 ${allResults.length} 条距离记录`;
 
@@ -1184,34 +1287,328 @@
             🎯 计算完成！共 <strong>${routeCodes.length}</strong> 条线路，<strong>${allResults.length}</strong> 段距离<br>
             📋 线路概览：${routeSummary}<br>
             📌 排序规则：从距离卸货点最远的站点开始，由远及近排列，卸货点在最后<br>
-            ⏱️ 预计时间按 <strong>40 km/h</strong> 估算<br>
-            🛑 并发限制：≤ ${CONFIG.QPS_LIMIT} req/s，自动重试 ${CONFIG.MAX_RETRIES} 次
+            ⏱️ 预计时间按 <strong>40 km/h</strong> 估算
         `;
         resultSummary.style.display = 'block';
 
         displayResults(allResults, routeGrouped);
-        addLog(`✅ 所有线路计算完成！共 ${allResults.length} 条距离记录，地图已渲染`, false);
+        renderCharts(allResults);
+        addLog(`✅ 所有线路计算完成！共 ${allResults.length} 条距离记录`, false);
     }
 
     // ============================================================
-    //  ★★★ Leaflet地图渲染（修复版） ★★★
+    //  ★★★ 渲染5个BI图表 ★★★
+    // ============================================================
+    function renderCharts(results) {
+        if (!results || results.length === 0) {
+            chartSection.style.display = 'none';
+            return;
+        }
+
+        chartSection.style.display = 'block';
+        viewTabs.style.display = 'flex';
+
+        // 准备数据：按线路分组
+        const routeMap = new Map();
+        results.forEach(r => {
+            if (!routeMap.has(r.routeCode)) routeMap.set(r.routeCode, []);
+            routeMap.get(r.routeCode).push(r);
+        });
+        const routeCodes = Array.from(routeMap.keys());
+
+        // ---- 计算各线路汇总数据 ----
+        const routeSummary = routeCodes.map(code => {
+            const segs = routeMap.get(code);
+            const totalDist = segs.reduce((sum, s) => sum + (s.distance || 0), 0);
+            const avgDist = totalDist / segs.length;
+            const totalTime = segs.reduce((sum, s) => sum + (parseFloat(s.estimatedTime) || 0), 0);
+            return {
+                code: code,
+                segmentCount: segs.length,
+                siteCount: segs.length + 1,
+                totalDist: totalDist,
+                avgDist: avgDist,
+                totalTime: totalTime,
+                segments: segs
+            };
+        }).sort((a, b) => b.totalDist - a.totalDist);
+
+        // ---- 图表1: 各线路总里程对比（柱状图） ----
+        if (!chartTotalDistanceInstance) {
+            chartTotalDistanceInstance = echarts.init(document.getElementById('chartTotalDistance'));
+        } else {
+            chartTotalDistanceInstance.clear();
+        }
+        chartTotalDistanceInstance.setOption({
+            tooltip: {
+                trigger: 'axis',
+                formatter: function(params) {
+                    const d = routeSummary[params[0].dataIndex];
+                    return `<strong>${d.code}</strong><br/>总里程: ${d.totalDist.toFixed(1)} km<br/>段数: ${d.segmentCount}<br/>平均段距: ${d.avgDist.toFixed(1)} km`;
+                }
+            },
+            grid: { left: '8%', right: '5%', bottom: '15%', top: '8%' },
+            xAxis: {
+                type: 'category',
+                data: routeSummary.map(d => d.code),
+                axisLabel: { rotate: 25, fontSize: 10 }
+            },
+            yAxis: {
+                type: 'value',
+                name: '总里程 (km)',
+                splitLine: { lineStyle: { type: 'dashed', color: '#e0e8f0' } }
+            },
+            series: [{
+                type: 'bar',
+                data: routeSummary.map(d => ({
+                    value: parseFloat(d.totalDist.toFixed(1)),
+                    itemStyle: {
+                        color: d.totalDist > routeSummary.reduce((s, r) => s + r.totalDist, 0) / routeSummary.length * 1.3 ? '#d9534f' : '#5b9bd5'
+                    }
+                })),
+                barWidth: '45%',
+                label: {
+                    show: true,
+                    position: 'top',
+                    formatter: function(p) { return p.value + 'km'; },
+                    fontSize: 9,
+                    color: '#4a6a8a'
+                }
+            }]
+        }, true);
+        chartTotalDistanceInstance.resize();
+
+        // ---- 图表2: 各线路站点数 vs 平均段距（组合图） ----
+        if (!chartSitesAvgDistInstance) {
+            chartSitesAvgDistInstance = echarts.init(document.getElementById('chartSitesAvgDist'));
+        } else {
+            chartSitesAvgDistInstance.clear();
+        }
+        chartSitesAvgDistInstance.setOption({
+            tooltip: {
+                trigger: 'axis',
+                formatter: function(params) {
+                    const d = routeSummary[params[0].dataIndex];
+                    return `<strong>${d.code}</strong><br/>站点数: ${d.siteCount}<br/>平均段距: ${d.avgDist.toFixed(1)} km<br/>总里程: ${d.totalDist.toFixed(1)} km`;
+                }
+            },
+            legend: {
+                data: ['站点数', '平均段距(km)'],
+                bottom: 0,
+                left: 'center'
+            },
+            grid: { left: '8%', right: '8%', bottom: '25%', top: '8%' },
+            xAxis: {
+                type: 'category',
+                data: routeSummary.map(d => d.code),
+                axisLabel: { rotate: 25, fontSize: 10 }
+            },
+            yAxis: [
+                {
+                    type: 'value',
+                    name: '站点数',
+                    splitLine: { lineStyle: { type: 'dashed', color: '#e0e8f0' } }
+                },
+                {
+                    type: 'value',
+                    name: '平均段距(km)',
+                    splitLine: { show: false }
+                }
+            ],
+            series: [
+                {
+                    name: '站点数',
+                    type: 'bar',
+                    data: routeSummary.map(d => d.siteCount),
+                    barWidth: '30%',
+                    itemStyle: { color: '#5b9bd5', opacity: 0.8 },
+                    label: { show: true, position: 'top', fontSize: 9, color: '#4a6a8a' }
+                },
+                {
+                    name: '平均段距(km)',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    data: routeSummary.map(d => parseFloat(d.avgDist.toFixed(1))),
+                    smooth: true,
+                    lineStyle: { color: '#d9534f', width: 3 },
+                    itemStyle: { color: '#d9534f' },
+                    symbol: 'circle',
+                    symbolSize: 8,
+                    label: { show: true, formatter: function(p) { return p.value + 'km'; }, fontSize: 9, color: '#d9534f' }
+                }
+            ]
+        }, true);
+        chartSitesAvgDistInstance.resize();
+
+        // ---- 图表3: 距离分布直方图 ----
+        if (!chartDistDistributionInstance) {
+            chartDistDistributionInstance = echarts.init(document.getElementById('chartDistDistribution'));
+        } else {
+            chartDistDistributionInstance.clear();
+        }
+        const distances = results.map(r => r.distance).filter(d => d !== null && d !== undefined && !isNaN(d));
+        const maxDist = Math.max(...distances);
+        const binSize = Math.ceil(maxDist / 10);
+        const bins = [];
+        for (let i = 0; i < 10; i++) {
+            const lower = i * binSize;
+            const upper = (i + 1) * binSize;
+            const count = distances.filter(d => d >= lower && d < upper).length;
+            bins.push({ lower, upper, count });
+        }
+        chartDistDistributionInstance.setOption({
+            tooltip: {
+                trigger: 'axis',
+                formatter: function(params) {
+                    const d = bins[params[0].dataIndex];
+                    return `${d.lower.toFixed(1)} - ${d.upper.toFixed(1)} km<br/>路段数: ${d.count}`;
+                }
+            },
+            grid: { left: '8%', right: '5%', bottom: '12%', top: '8%' },
+            xAxis: {
+                type: 'category',
+                data: bins.map(d => `${d.lower.toFixed(0)}-${d.upper.toFixed(0)}km`),
+                axisLabel: { rotate: 25, fontSize: 9 }
+            },
+            yAxis: {
+                type: 'value',
+                name: '路段数',
+                splitLine: { lineStyle: { type: 'dashed', color: '#e0e8f0' } }
+            },
+            series: [{
+                type: 'bar',
+                data: bins.map(d => ({
+                    value: d.count,
+                    itemStyle: {
+                        color: d.count > bins.reduce((s, b) => Math.max(s, b.count), 0) * 0.8 ? '#d9534f' : '#5b9bd5'
+                    }
+                })),
+                barWidth: '60%',
+                label: { show: true, position: 'top', fontSize: 9, color: '#4a6a8a' }
+            }]
+        }, true);
+        chartDistDistributionInstance.resize();
+
+        // ---- 图表4: 计算方式占比（饼图） ----
+        if (!chartMethodPieInstance) {
+            chartMethodPieInstance = echarts.init(document.getElementById('chartMethodPie'));
+        } else {
+            chartMethodPieInstance.clear();
+        }
+        const drivingCount = results.filter(r => r.method && r.method.includes('高德驾车')).length;
+        const estimateCount = results.filter(r => r.method && r.method.includes('直线估算')).length;
+        const otherCount = results.length - drivingCount - estimateCount;
+        const pieData = [];
+        if (drivingCount > 0) pieData.push({ name: '高德驾车', value: drivingCount, itemStyle: { color: '#2a7f6e' } });
+        if (estimateCount > 0) pieData.push({ name: '直线估算', value: estimateCount, itemStyle: { color: '#f0ad4e' } });
+        if (otherCount > 0) pieData.push({ name: '其他', value: otherCount, itemStyle: { color: '#d9534f' } });
+
+        chartMethodPieInstance.setOption({
+            tooltip: {
+                trigger: 'item',
+                formatter: function(params) {
+                    return `<strong>${params.name}</strong><br/>路段数: ${params.value}<br/>占比: ${params.percent}%`;
+                }
+            },
+            legend: {
+                orient: 'horizontal',
+                left: 'center',
+                bottom: 0,
+                data: pieData.map(d => d.name)
+            },
+            series: [{
+                type: 'pie',
+                radius: ['40%', '70%'],
+                center: ['50%', '50%'],
+                label: {
+                    formatter: function(p) {
+                        return p.name + '\n' + p.percent.toFixed(1) + '%';
+                    },
+                    fontSize: 10
+                },
+                data: pieData
+            }],
+            graphic: [
+                {
+                    type: 'text',
+                    left: 'center',
+                    top: '42%',
+                    style: {
+                        text: `总计 ${results.length}`,
+                        fill: '#4a6a8a',
+                        fontSize: 11,
+                        fontWeight: 'bold'
+                    },
+                    z: 100
+                }
+            ]
+        }, true);
+        chartMethodPieInstance.resize();
+
+        // ---- 图表5: 各线路预计总耗时（横向条形图） ----
+        if (!chartTotalTimeInstance) {
+            chartTotalTimeInstance = echarts.init(document.getElementById('chartTotalTime'));
+        } else {
+            chartTotalTimeInstance.clear();
+        }
+        const sortedByTime = [...routeSummary].sort((a, b) => b.totalTime - a.totalTime);
+        chartTotalTimeInstance.setOption({
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'shadow' },
+                formatter: function(params) {
+                    const d = sortedByTime[params[0].dataIndex];
+                    return `<strong>${d.code}</strong><br/>总耗时: ${d.totalTime.toFixed(1)} 小时<br/>总里程: ${d.totalDist.toFixed(1)} km<br/>段数: ${d.segmentCount}`;
+                }
+            },
+            grid: { left: '12%', right: '8%', bottom: '10%', top: '8%' },
+            xAxis: {
+                type: 'value',
+                name: '预计总耗时 (小时)',
+                splitLine: { lineStyle: { type: 'dashed', color: '#e0e8f0' } }
+            },
+            yAxis: {
+                type: 'category',
+                data: sortedByTime.map(d => d.code),
+                axisLabel: { fontSize: 10 }
+            },
+            series: [{
+                type: 'bar',
+                data: sortedByTime.map(d => ({
+                    value: parseFloat(d.totalTime.toFixed(1)),
+                    itemStyle: {
+                        color: d.totalTime > sortedByTime.reduce((s, r) => s + r.totalTime, 0) / sortedByTime.length * 1.3 ? '#d9534f' : '#5b9bd5'
+                    }
+                })),
+                barWidth: '50%',
+                label: {
+                    show: true,
+                    position: 'right',
+                    formatter: function(p) { return p.value + 'h'; },
+                    fontSize: 9,
+                    color: '#4a6a8a'
+                }
+            }]
+        }, true);
+        chartTotalTimeInstance.resize();
+
+        addLog(`📊 5个BI图表已渲染完成`, false);
+    }
+
+    // ============================================================
+    //  ★★★ Leaflet地图渲染 ★★★
     // ============================================================
     function initMap(routeCode) {
         try {
             if (mapLoading) mapLoading.style.display = 'none';
-            
-            // 如果已有地图实例，销毁
             if (mapInstance) {
                 mapInstance.remove();
                 mapInstance = null;
             }
 
             const container = document.getElementById('mapContainer');
-            
-            // 清空容器（保留加载提示）
             container.innerHTML = '';
 
-            // 创建地图实例
             mapInstance = L.map(container, {
                 center: [32.0, 118.0],
                 zoom: 8,
@@ -1220,14 +1617,12 @@
                 attributionControl: true
             });
 
-            // ★★★ 添加图层控制指示器 ★★★
             const controlDiv = document.createElement('div');
             controlDiv.className = 'map-layer-control';
             controlDiv.id = 'leafletLayerControl';
             controlDiv.innerHTML = `<div class="layer-status"><span class="dot loading" id="leafletDot"></span><span id="leafletStatus">加载地图...</span></div>`;
             container.appendChild(controlDiv);
 
-            // ★★★ 尝试加载地图图层（自动切换备用） ★★★
             let layerLoaded = false;
             let currentIdx = 0;
 
@@ -1273,7 +1668,6 @@
                 tileLayer.on('tileload', onLoad);
                 tileLayer.on('tileerror', onError);
 
-                // 超时处理
                 const timeoutId = setTimeout(() => {
                     if (!loaded) onError();
                 }, 10000);
@@ -1287,10 +1681,8 @@
                 }
             }
 
-            // 开始加载第一个图层
             tryLoadLayer(0);
 
-            // 延迟绘制轨迹
             setTimeout(() => {
                 if (routeCode) drawRouteOnMap(routeCode);
             }, 1500);
@@ -1298,15 +1690,13 @@
             addLog('🗺️ Leaflet地图初始化完成', false);
         } catch (e) {
             addLog('❌ 地图初始化失败: ' + e.message, true);
-            document.getElementById('mapContainer').innerHTML = `<div class="map-error"><div class="error-icon">❌</div>地图加载失败: ${e.message}</div>`;
+            document.getElementById('mapContainer').innerHTML = `<div class="map-error"><div style="font-size:3rem;">❌</div>地图加载失败: ${e.message}</div>`;
         }
     }
 
-    // ★★★ 绘制Leaflet地图轨迹（带站点图标） ★★★
     function drawRouteOnMap(routeCode) {
         if (!mapInstance) return;
 
-        // 清除旧的轨迹层（保留底图和图层控制）
         mapInstance.eachLayer(layer => {
             if (layer instanceof L.Polyline || 
                 layer instanceof L.Marker || 
@@ -1322,7 +1712,6 @@
             return;
         }
 
-        // 构建有序站点列表
         const orderedSites = [];
         const seen = new Set();
         routeResults.forEach(r => {
@@ -1363,7 +1752,6 @@
             return;
         }
 
-        // ★★★ 绘制线路轨迹 ★★★
         const pathPoints = orderedSites.map(s => [s.lat, s.lng]);
         const polyline = L.polyline(pathPoints, { 
             color: '#1a5d8c', 
@@ -1373,52 +1761,21 @@
             lineCap: 'round'
         }).addTo(mapInstance);
 
-        // ★★★ 添加站点标记 ★★★
         orderedSites.forEach((s, idx) => {
             let color = '#ffc107';
-            let markerClass = 'leaflet-marker-waypoint';
             if (s.type && (s.type.includes('卸货') || s.type.includes('目的地'))) {
                 color = '#ff6b6b';
-                markerClass = 'leaflet-marker-destination';
             } else if (s.type && (s.type.includes('发货') || s.type.includes('起点'))) {
                 color = '#2a7f6e';
-                markerClass = 'leaflet-marker-origin';
             }
 
-            // 创建自定义div图标（显示站点名称标签）
-            const iconHtml = `
-                <div style="
-                    background: ${color}; 
-                    color: white; 
-                    padding: 2px 10px; 
-                    border-radius: 14px; 
-                    font-size: 11px; 
-                    font-weight: 600; 
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-                    border: 2px solid white;
-                    white-space: nowrap;
-                    pointer-events: none;
-                ">
-                    ${s.order || idx+1}. ${s.name}
-                </div>
-            `;
-
-            const icon = L.divIcon({
-                html: iconHtml,
-                className: '',
-                iconSize: [null, null],
-                iconAnchor: [0, -8]
-            });
-
-            // 创建圆形标记（作为背景）
             const marker = L.circleMarker([s.lat, s.lng], {
                 radius: 8,
                 fillColor: color,
                 color: 'white',
                 weight: 2,
                 opacity: 1,
-                fillOpacity: 1,
-                className: markerClass
+                fillOpacity: 1
             }).addTo(mapInstance)
             .bindPopup(`
                 <div style="font-size:13px; line-height:1.8; min-width:180px;">
@@ -1432,41 +1789,13 @@
                 </div>
             `);
 
-            // 添加标签
-            const labelIcon = L.divIcon({
-                html: `<div style="
-                    background: ${color}; 
-                    color: white; 
-                    padding: 2px 10px; 
-                    border-radius: 14px; 
-                    font-size: 10px; 
-                    font-weight: 600; 
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-                    border: 1.5px solid white;
-                    white-space: nowrap;
-                    pointer-events: none;
-                ">
-                    ${s.order || idx+1}
-                </div>`,
-                className: '',
-                iconSize: [null, null],
-                iconAnchor: [0, -30]
-            });
-
-            const labelMarker = L.marker([s.lat, s.lng], { 
-                icon: labelIcon,
-                interactive: false
-            }).addTo(mapInstance);
-
             mapMarkers.push(marker);
         });
 
-        // 自适应视图
         if (pathPoints.length > 0) {
             try {
                 mapInstance.fitBounds(polyline.getBounds(), { padding: [50, 50] });
             } catch(e) {
-                // 如果无法适应，使用中心点
                 const centerLat = orderedSites.reduce((s, p) => s + p.lat, 0) / orderedSites.length;
                 const centerLng = orderedSites.reduce((s, p) => s + p.lng, 0) / orderedSites.length;
                 mapInstance.setView([centerLat, centerLng], 9);
@@ -1476,9 +1805,6 @@
         addLog(`🗺️ 线路 ${routeCode} 轨迹已绘制，共 ${orderedSites.length} 个站点`, false);
     }
 
-    // ============================================================
-    //  渲染地图标签
-    // ============================================================
     function renderMapTabs(routeCodes) {
         mapTabs.innerHTML = '';
         routeCodes.forEach((code, idx) => {
@@ -1504,6 +1830,7 @@
             document.getElementById('resultDisplay').style.display = 'none';
             mapSection.style.display = 'none';
             copyResultBtn.style.display = 'none';
+            viewTabs.style.display = 'none';
             return;
         }
 
@@ -1511,6 +1838,7 @@
         document.getElementById('resultDisplay').style.display = 'block';
         copyResultBtn.style.display = 'inline-flex';
         copyResultBtn.style.justifyContent = 'center';
+        viewTabs.style.display = 'flex';
 
         let html = '';
         results.forEach(r => {
@@ -1723,6 +2051,8 @@
         resultSummary.style.display = 'none';
         document.getElementById('resultDisplay').style.display = 'none';
         mapSection.style.display = 'none';
+        chartSection.style.display = 'none';
+        viewTabs.style.display = 'none';
         copyResultBtn.style.display = 'none';
         calcAllBtn.disabled = true;
         hideDownloadBar();
@@ -1731,6 +2061,15 @@
         updateConcurrencyDisplay();
         addLog("已清空所有文件和数据", false);
         document.getElementById('mapContainer').innerHTML = `<div class="map-loading"><div class="spinner"></div><span>地图加载中...</span></div>`;
+        // 清空图表
+        if (chartTotalDistanceInstance) chartTotalDistanceInstance.clear();
+        if (chartSitesAvgDistInstance) chartSitesAvgDistInstance.clear();
+        if (chartDistDistributionInstance) chartDistDistributionInstance.clear();
+        if (chartMethodPieInstance) chartMethodPieInstance.clear();
+        if (chartTotalTimeInstance) chartTotalTimeInstance.clear();
+        document.querySelectorAll('.chart-container').forEach(el => {
+            el.innerHTML = `<div class="chart-no-data">计算完成后自动生成</div>`;
+        });
     }
 
     function terminateCalc() {
@@ -1746,6 +2085,32 @@
         summaryText.innerHTML = `📋 共有 <strong>${routes.length}</strong> 条线路：<br>${routes.join('、')}`;
         resultSummary.style.display = 'block';
     }
+
+    // ============================================================
+    //  Tab切换
+    // ============================================================
+    document.querySelectorAll('.view-tab').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const viewId = this.dataset.view;
+            document.querySelectorAll('.view-content').forEach(vc => vc.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            // 切换到图表tab时resize图表
+            if (viewId === 'viewChart') {
+                setTimeout(() => {
+                    if (chartTotalDistanceInstance) chartTotalDistanceInstance.resize();
+                    if (chartSitesAvgDistInstance) chartSitesAvgDistInstance.resize();
+                    if (chartDistDistributionInstance) chartDistDistributionInstance.resize();
+                    if (chartMethodPieInstance) chartMethodPieInstance.resize();
+                    if (chartTotalTimeInstance) chartTotalTimeInstance.resize();
+                }, 100);
+            }
+            if (viewId === 'viewMap' && mapInstance) {
+                setTimeout(() => { mapInstance.invalidateSize(); }, 100);
+            }
+        });
+    });
 
     // ============================================================
     //  文件上传
@@ -1796,6 +2161,18 @@
     }
 
     // ============================================================
+    //  窗口resize自适应
+    // ============================================================
+    window.addEventListener('resize', function() {
+        if (chartTotalDistanceInstance) chartTotalDistanceInstance.resize();
+        if (chartSitesAvgDistInstance) chartSitesAvgDistInstance.resize();
+        if (chartDistDistributionInstance) chartDistDistributionInstance.resize();
+        if (chartMethodPieInstance) chartMethodPieInstance.resize();
+        if (chartTotalTimeInstance) chartTotalTimeInstance.resize();
+        if (mapInstance) mapInstance.invalidateSize();
+    });
+
+    // ============================================================
     //  事件绑定
     // ============================================================
     folderInput.addEventListener('change', async (e) => {
@@ -1841,7 +2218,7 @@
     addLog(`📌 排序规则：从距离卸货点最远的站点开始，由远及近排列，卸货点/目的地自动放在最后`, false);
     addLog(`⏱️ 预计时间按 ${AVG_SPEED} km/h 估算，单位：小时，保留一位小数`, false);
     addLog(`🛑 并发限制：≤ ${CONFIG.QPS_LIMIT} req/s，自动重试 ${CONFIG.MAX_RETRIES} 次`, false);
-    addLog("🗺️ 地图使用Leaflet + 高德/OSM瓦片，自动切换备用图层", false);
+    addLog("📊 计算完成后自动生成5个BI分析图表", false);
     addLog("提示：请填写高德地图Web服务API Key，上传包含7个字段的站点数据后点击「计算所有线路」", false);
 </script>
 </body>
