@@ -1,0 +1,2033 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仓库规划工具 - 精简参数版</title>
+    <style>
+        /* ===== 样式与之前一致 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #eef2f9 0%, #dce3ec 100%);
+            min-height: 100vh;
+            padding: 12px;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a5f, #0f2b44);
+            border-radius: 1.2rem;
+            padding: 12px 22px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .header h1 {
+            font-size: 19px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header .badge-group {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .header .badge {
+            background: rgba(255, 255, 255, 0.12);
+            padding: 3px 12px;
+            border-radius: 30px;
+            font-size: 9px;
+        }
+        .header .badge.green {
+            background: #2a7f6e;
+        }
+        .header .badge.orange {
+            background: #d48c2c;
+        }
+        .header .badge.purple {
+            background: #6c5b7b;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            gap: 12px;
+            min-height: 600px;
+        }
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel-left {
+            background: white;
+            border-radius: 1.2rem;
+            padding: 14px 16px;
+            border: 1px solid #e2edf5;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 820px;
+            overflow-y: auto;
+        }
+        .panel-left::-webkit-scrollbar {
+            width: 4px;
+        }
+        .panel-left::-webkit-scrollbar-thumb {
+            background: #c8d8e8;
+            border-radius: 8px;
+        }
+        .panel-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1f3a5f;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 2px solid #e8eef5;
+            padding-bottom: 6px;
+            flex-shrink: 0;
+        }
+        .panel-title .sub {
+            font-weight: 400;
+            font-size: 10px;
+            color: #7a8eaa;
+        }
+        .input-section {
+            background: #f8fafd;
+            border-radius: 6px;
+            padding: 8px 10px;
+            border: 1px solid #e8eef5;
+        }
+        .input-section .section-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: #1f3a5f;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .input-section .section-title .hint {
+            font-weight: 400;
+            font-size: 8px;
+            color: #8aa0b8;
+        }
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 10px;
+        }
+        .input-row.three-col {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+        .input-group label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #2c4a6e;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .input-group label .hint {
+            font-weight: 400;
+            font-size: 8px;
+            color: #8aa0b8;
+        }
+        .input-group input {
+            padding: 4px 6px;
+            border: 1.5px solid #dce6f0;
+            border-radius: 4px;
+            font-size: 11px;
+            background: white;
+            width: 100%;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #1a5d8c;
+            box-shadow: 0 0 0 2px rgba(26, 93, 140, 0.1);
+        }
+        .input-group input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        .input-group input[type="number"]::-webkit-outer-spin-button,
+        .input-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+
+        .func-section {
+            background: #f8fafd;
+            border-radius: 6px;
+            padding: 8px 10px;
+            border: 1px solid #e8eef5;
+        }
+        .func-section .func-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: #1f3a5f;
+            margin-bottom: 3px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .func-section .func-title .toggle-all {
+            font-size: 8px;
+            color: #1a5d8c;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-weight: 600;
+        }
+        .func-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px 8px;
+        }
+        .func-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 1px 3px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .func-item:hover {
+            background: #eef4fa;
+        }
+        .func-item input[type="checkbox"] {
+            width: 13px;
+            height: 13px;
+            accent-color: #1a5d8c;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .func-item label {
+            font-size: 9px;
+            color: #2c3e66;
+            cursor: pointer;
+            flex: 1;
+        }
+        .func-item .badge-func {
+            font-size: 7px;
+            padding: 0 4px;
+            border-radius: 30px;
+            background: #dce6f0;
+            color: #4a6a8a;
+        }
+
+        .btn {
+            border: none;
+            padding: 7px 16px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            justify-content: center;
+        }
+        .btn-primary {
+            background: #1a5d8c;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0e466b;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(26, 93, 140, 0.3);
+        }
+        .btn-outline {
+            background: #eef3fc;
+            color: #1f4970;
+            border: 1px solid #cde0ee;
+        }
+        .btn-outline:hover {
+            background: #e2ebf5;
+        }
+        .btn-group {
+            display: flex;
+            gap: 6px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        .btn-group .btn {
+            flex: 1;
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+
+        .panel-right {
+            background: white;
+            border-radius: 1.2rem;
+            padding: 14px 16px;
+            border: 1px solid #e2edf5;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 600px;
+        }
+        .panel-right .panel-title {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .result-summary {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        @media (max-width: 800px) {
+            .result-summary {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (max-width: 500px) {
+            .result-summary {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .result-card {
+            background: #f8fafd;
+            border-radius: 4px;
+            padding: 4px 8px;
+            border: 1px solid #e8eef5;
+        }
+        .result-card .label {
+            font-size: 7px;
+            color: #7a8eaa;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+        .result-card .value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f3a5f;
+            line-height: 1.2;
+        }
+        .result-card .value .unit {
+            font-size: 9px;
+            font-weight: 400;
+            color: #7a8eaa;
+        }
+        .result-card .sub {
+            font-size: 7px;
+            color: #8aa0b8;
+        }
+
+        .area-detail {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 1px 10px;
+            background: #f8fafd;
+            border-radius: 4px;
+            padding: 6px 10px;
+            border: 1px solid #e8eef5;
+            flex-shrink: 0;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        @media (max-width: 700px) {
+            .area-detail {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .area-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 1px 0;
+            font-size: 10px;
+            color: #2c3e66;
+            border-bottom: 1px dashed #eef2f7;
+        }
+        .area-item .name {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .area-item .name .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .area-item .val {
+            font-weight: 600;
+            color: #1f3a5f;
+            font-size: 9px;
+        }
+
+        .color-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 3px 8px;
+            background: #f8fafd;
+            border-radius: 4px;
+            border: 1px solid #e8eef5;
+            flex-shrink: 0;
+        }
+        .color-legend .item {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 7px;
+            color: #4a6a8a;
+        }
+        .color-legend .item .swatch {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .dock-info {
+            display: flex;
+            gap: 12px;
+            padding: 4px 10px;
+            background: #e8f0fa;
+            border-radius: 4px;
+            border: 1px solid #cde0ee;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .dock-info .item {
+            font-size: 10px;
+            color: #1f3a5f;
+        }
+        .dock-info .item strong {
+            color: #1a5d8c;
+        }
+        .dock-info .item .tag {
+            font-size: 8px;
+            padding: 0 6px;
+            border-radius: 30px;
+            background: rgba(26, 93, 140, 0.1);
+            color: #1a5d8c;
+            margin-left: 2px;
+        }
+
+        #threeContainer {
+            flex: 1;
+            border-radius: 8px;
+            border: 1px solid #e2edf5;
+            background: #1a1a2e;
+            min-height: 340px;
+            position: relative;
+            overflow: hidden;
+        }
+        #threeContainer canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        .three-overlay {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.75);
+            color: #c9e1f0;
+            padding: 3px 12px;
+            border-radius: 30px;
+            font-size: 9px;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .three-overlay .highlight {
+            color: #ffb347;
+        }
+
+        .three-controls {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 3px;
+            z-index: 10;
+        }
+        .three-controls button {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 8px;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            transition: 0.2s;
+        }
+        .three-controls button:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .footer {
+            font-size: 8px;
+            color: #8aa0b8;
+            text-align: center;
+            padding: 2px 0;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 6px;
+            }
+            .panel-left {
+                max-height: none;
+            }
+            .input-row {
+                grid-template-columns: 1fr 1fr;
+            }
+            .input-row.three-col {
+                grid-template-columns: 1fr 1fr;
+            }
+            .func-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .area-detail {
+                grid-template-columns: 1fr 1fr;
+            }
+            #threeContainer {
+                min-height: 220px;
+            }
+            .header h1 {
+                font-size: 16px;
+            }
+            .result-summary {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (max-width: 480px) {
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+            .input-row.three-col {
+                grid-template-columns: 1fr;
+            }
+            .func-grid {
+                grid-template-columns: 1fr;
+            }
+            .area-detail {
+                grid-template-columns: 1fr;
+            }
+            #threeContainer {
+                min-height: 160px;
+            }
+            .result-summary {
+                grid-template-columns: 1fr 1fr;
+            }
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ 仓库规划工具 <span style="font-size:13px;font-weight:400;opacity:0.8;">— 精简参数版</span></h1>
+            <div class="badge-group">
+                <span class="badge">📐 面积计算</span>
+                <span class="badge green">🚶 动线分析</span>
+                <span class="badge orange">🚛 道口规划</span>
+                <span class="badge purple">🏗️ 建筑模型</span>
+                <span class="badge">🎯 3D可视化</span>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- ===== 左侧面板 ===== -->
+            <div class="panel-left">
+                <div class="panel-title">
+                    📥 输入参数
+                    <span class="sub">— 流量 · 功能 · 道口</span>
+                </div>
+
+                <!-- 满箱流量 -->
+                <div class="input-section">
+                    <div class="section-title">📦 满箱流量 <span class="hint">(m³/天)</span></div>
+                    <div class="input-row">
+                        <div class="input-group"><label>日进货量</label><input type="number" id="fullInbound" value="350" min="0" step="10"></div>
+                        <div class="input-group"><label>日出货量</label><input type="number" id="fullOutbound" value="300" min="0" step="10"></div>
+                    </div>
+                </div>
+
+                <!-- 空箱流量 -->
+                <div class="input-section">
+                    <div class="section-title">📭 空箱流量 <span class="hint">(m³/天)</span></div>
+                    <div class="input-row">
+                        <div class="input-group"><label>空箱接收</label><input type="number" id="emptyInbound" value="80" min="0" step="5"></div>
+                        <div class="input-group"><label>空箱发出</label><input type="number" id="emptyOutbound" value="70" min="0" step="5"></div>
+                    </div>
+                </div>
+
+                <!-- 翻包 -->
+                <div class="input-section">
+                    <div class="section-title">🔄 翻包作业</div>
+                    <div class="input-row">
+                        <div class="input-group"><label>翻包日处理量 <span class="hint">(m³)</span></label><input type="number" id="repackVolume" value="120" min="0" step="10"></div>
+                        <!-- ★★★ 翻包系数已移除，系统固定为0.35 ★★★ -->
+                        <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
+                            <span style="font-size:9px;color:#6a8aaa;">📌 翻包系数: 0.35 (固定)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 库存与堆高 -->
+                <div class="input-section">
+                    <div class="section-title">📏 库存与堆高</div>
+                    <div class="input-row three-col">
+                        <div class="input-group"><label>满箱周转 <span class="hint">(天)</span></label><input type="number" id="fullTurnover" value="5" min="1" max="60" step="0.5"></div>
+                        <div class="input-group"><label>空箱周转 <span class="hint">(天)</span></label><input type="number" id="emptyTurnover" value="3" min="1" max="30" step="0.5"></div>
+                        <div class="input-group"><label>通道占比 <span class="hint">(%)</span></label><input type="number" id="aisleRatio" value="25" min="5" max="50" step="1"></div>
+                    </div>
+                    <div class="input-row three-col" style="margin-top:3px;">
+                        <div class="input-group"><label>满箱堆高 <span class="hint">(m)</span></label><input type="number" id="fullStackHeight" value="2.0" min="0.5" max="5" step="0.1"></div>
+                        <div class="input-group"><label>空箱堆高 <span class="hint">(m)</span></label><input type="number" id="emptyStackHeight" value="2.8" min="0.5" max="6" step="0.1"></div>
+                        <div class="input-group"><label>空箱体积系数</label><input type="number" id="emptyVolumeFactor" value="0.4" min="0.1" max="0.8" step="0.05"></div>
+                    </div>
+                </div>
+
+                <!-- ★★★ 道口参数（精简版） ★★★ -->
+                <div class="input-section">
+                    <div class="section-title">🚛 道口参数</div>
+                    <div class="input-row three-col">
+                        <div class="input-group">
+                            <label>⏱️ 单车操作时长 <span class="hint">(分钟/车)</span></label>
+                            <input type="number" id="dockOperTime" value="30" min="5" max="120" step="5">
+                        </div>
+                        <div class="input-group">
+                            <label>🕐 工作时间 <span class="hint">(小时/天)</span></label>
+                            <input type="number" id="workHours" value="16" min="4" max="24" step="1">
+                        </div>
+                        <div class="input-group">
+                            <label>📐 道口宽度 <span class="hint">(m)</span></label>
+                            <input type="number" id="dockWidth" value="3.5" min="2.5" max="5" step="0.1">
+                        </div>
+                    </div>
+                    <div class="input-row three-col" style="margin-top:3px;">
+                        <div class="input-group">
+                            <label>🚛 单车平均货量 <span class="hint">(m³/车)</span></label>
+                            <input type="number" id="avgLoadPerTruck" value="25" min="5" max="80" step="5">
+                        </div>
+                        <!-- ★★★ 固定参数显示（不可编辑） ★★★ -->
+                        <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
+                            <span style="font-size:9px;color:#6a8aaa;">📌 利用系数: 0.85 (固定)</span>
+                        </div>
+                        <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
+                            <span style="font-size:9px;color:#6a8aaa;">📌 进货占比: 55% (固定)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 功能区 -->
+                <div class="func-section">
+                    <div class="func-title">
+                        <span>⚙️ 功能区</span>
+                        <button class="toggle-all" id="toggleAllFunc">全选</button>
+                    </div>
+                    <div class="func-grid" id="funcGrid">
+                        <div class="func-item"><input type="checkbox" checked data-func="receiving_full"><label>📥 满箱收货</label><span class="badge-func">接收</span></div>
+                        <div class="func-item"><input type="checkbox" checked data-func="storage_full"><label>📦 满箱存放</label><span class="badge-func">存储</span></div>
+                        <div class="func-item"><input type="checkbox" checked data-func="storage_empty"><label>📭 空箱存放</label><span class="badge-func">存储</span></div>
+                        <div class="func-item"><input type="checkbox" checked data-func="repacking"><label>🔄 翻包换包装</label><span class="badge-func">作业</span></div>
+                        <div class="func-item"><input type="checkbox" checked data-func="empty_outbound"><label>📤 空箱发出</label><span class="badge-func">发出</span></div>
+                        <div class="func-item"><input type="checkbox" checked data-func="full_outbound"><label>📦 满箱发出</label><span class="badge-func">发出</span></div>
+                        <div class="func-item"><input type="checkbox" checked data-func="empty_receiving"><label>📥 空箱接收</label><span class="badge-func">接收</span></div>
+                        <div class="func-item"><input type="checkbox" checked data-func="office"><label>🏢 办公区</label><span class="badge-func">配套</span></div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="calcBtn">🧮 计算 & 生成3D</button>
+                    <button class="btn btn-outline" id="resetBtn">↺ 重置</button>
+                </div>
+            </div>
+
+            <!-- ===== 右侧面板 ===== -->
+            <div class="panel-right">
+                <div class="panel-title">
+                    📊 分析结果
+                    <span class="sub">— 面积 · 道口 · 动线 · 3D</span>
+                    <span style="margin-left:auto;font-size:9px;color:#7a8eaa;" id="statusText">就绪</span>
+                </div>
+
+                <div class="result-summary" id="resultSummary">
+                    <div class="result-card"><div class="label">🏭 总面积</div><div class="value" id="totalArea">0 <span class="unit">m²</span></div><div class="sub" id="totalDim">-</div></div>
+                    <div class="result-card"><div class="label">📦 满箱存储</div><div class="value" id="fullStorageArea">0 <span class="unit">m²</span></div><div class="sub" id="fullStoragePct">-</div></div>
+                    <div class="result-card"><div class="label">📭 空箱存储</div><div class="value" id="emptyStorageArea">0 <span class="unit">m²</span></div><div class="sub" id="emptyStoragePct">-</div></div>
+                    <div class="result-card"><div class="label">📥 作业区</div><div class="value" id="workArea">0 <span class="unit">m²</span></div><div class="sub" id="workPct">-</div></div>
+                    <div class="result-card"><div class="label">🚛 道口数</div><div class="value" id="dockCount">0</div><div class="sub" id="dockDetail">进货/出货</div></div>
+                    <div class="result-card"><div class="label">📤 通道</div><div class="value" id="aisleArea">0 <span class="unit">m²</span></div><div class="sub" id="aislePct">-</div></div>
+                </div>
+
+                <div class="dock-info" id="dockInfo">
+                    <span class="item">🚛 道口规划：<strong id="dockTotal">0</strong> 个</span>
+                    <span class="item">📥 进货道口：<strong id="dockInbound">0</strong> 个 <span class="tag">前墙</span></span>
+                    <span class="item">📤 出货道口：<strong id="dockOutbound">0</strong> 个 <span class="tag">前墙</span></span>
+                    <span class="item">📐 道口宽度：<strong id="dockWidthDisplay">3.5</strong> m</span>
+                    <span class="item">⏱️ 每道口日处理：<strong id="dockDailyCapacity">0</strong> m³/天</span>
+                </div>
+
+                <div class="area-detail" id="areaDetail">
+                    <div style="grid-column:1/-1;font-size:8px;color:#7a8eaa;font-weight:600;padding-bottom:1px;">📋 各功能区面积明细</div>
+                    <div class="area-item" style="border-bottom:none;color:#8aa0b8;font-size:9px;grid-column:1/-1;text-align:center;">请点击「计算 & 生成3D」查看</div>
+                </div>
+
+                <div class="color-legend" id="colorLegend"></div>
+
+                <div id="threeContainer">
+                    <div class="three-controls">
+                        <button id="viewTop">俯视</button>
+                        <button id="viewPerspective">透视</button>
+                        <button id="viewSide">侧视</button>
+                        <button id="viewDock">道口视角</button>
+                        <button id="resetView">复位</button>
+                    </div>
+                    <div class="three-overlay">
+                        🖱️ 拖拽旋转 · 滚轮缩放 · <span class="highlight">精简参数 · 固定系数</span>
+                    </div>
+                </div>
+
+                <div class="footer">📌 翻包系数(0.35) · 道口利用系数(0.85) · 进货占比(55%) 均为系统固定值</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Three.js ===== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js">
+    </script>
+
+    <script>
+        // ============================================================
+        //  配置
+        // ============================================================
+        const FUNC_CONFIG = {
+            'receiving_full': { label: '满箱收货', color: '#4a9eff', factor: 0.12, minArea: 25 },
+            'storage_full': { label: '满箱存放', color: '#ffb347', factor: 0.25, minArea: 60 },
+            'storage_empty': { label: '空箱存放', color: '#5cb85c', factor: 0.15, minArea: 20 },
+            'repacking': { label: '翻包换包装', color: '#6c5b7b', factor: 0.30, minArea: 30 },
+            'empty_outbound': { label: '空箱发出', color: '#5bc0de', factor: 0.08, minArea: 15 },
+            'full_outbound': { label: '满箱发出', color: '#d9534f', factor: 0.10, minArea: 20 },
+            'empty_receiving': { label: '空箱接收', color: '#f0ad4e', factor: 0.07, minArea: 15 },
+            'office': { label: '办公区', color: '#8aa0b8', factor: 0.04, minArea: 30 }
+        };
+
+        const FUNC_ORDER = [
+            'receiving_full', 'empty_receiving',
+            'storage_full', 'storage_empty',
+            'repacking',
+            'full_outbound', 'empty_outbound',
+            'office'
+        ];
+
+        const FLOW_COLORS = {
+            inbound: 0xff4444,
+            outbound: 0x4488ff,
+            repack: 0x44dd88,
+            empty: 0xff8800
+        };
+
+        // ★★★ 系统固定参数 ★★★
+        const FIXED_PARAMS = {
+            repackFactor: 0.35, // 翻包系数
+            dockUtilFactor: 0.85, // 道口利用系数
+            inboundDockRatio: 0.55 // 进货道口占比
+        };
+
+        // ============================================================
+        //  计算引擎
+        // ============================================================
+
+        function calculateWarehouse(params) {
+            const {
+                fullInbound, fullOutbound,
+                emptyInbound, emptyOutbound,
+                repackVolume,
+                fullTurnover, emptyTurnover,
+                fullStackHeight, emptyStackHeight,
+                emptyVolumeFactor, aisleRatio,
+                dockOperTime, workHours, dockWidth,
+                avgLoadPerTruck,
+                enabledFunctions
+            } = params;
+
+            // ★★★ 使用固定参数 ★★★
+            const repackFactor = FIXED_PARAMS.repackFactor;
+            const dockUtilFactor = FIXED_PARAMS.dockUtilFactor;
+            const inboundDockRatio = FIXED_PARAMS.inboundDockRatio;
+
+            const fullAvgFlow = (fullInbound + fullOutbound) / 2;
+            const fullStorageVolume = fullAvgFlow * fullTurnover;
+            const fullStorageArea = fullStorageVolume / fullStackHeight;
+
+            const emptyAvgFlow = (emptyInbound + emptyOutbound) / 2;
+            const emptyStorageVolume = emptyAvgFlow * emptyTurnover * emptyVolumeFactor;
+            const emptyStorageArea = emptyStorageVolume / emptyStackHeight;
+
+            const funcAreas = {};
+            const funcDetails = [];
+            let totalFuncArea = 0;
+
+            for (const [key, enabled] of Object.entries(enabledFunctions)) {
+                if (!enabled) continue;
+                const config = FUNC_CONFIG[key];
+                let area = 0;
+                switch (key) {
+                    case 'storage_full':
+                        area = fullStorageArea + config.minArea;
+                        break;
+                    case 'storage_empty':
+                        area = emptyStorageArea + config.minArea;
+                        break;
+                    case 'receiving_full':
+                        area = Math.max(config.minArea, fullInbound * config.factor + 15);
+                        break;
+                    case 'full_outbound':
+                        area = Math.max(config.minArea, fullOutbound * config.factor + 15);
+                        break;
+                    case 'empty_receiving':
+                        area = Math.max(config.minArea, emptyInbound * config.factor + 10);
+                        break;
+                    case 'empty_outbound':
+                        area = Math.max(config.minArea, emptyOutbound * config.factor + 10);
+                        break;
+                    case 'repacking':
+                        // ★★★ 翻包系数使用固定值 ★★★
+                        area = Math.max(config.minArea, repackVolume * repackFactor + 15);
+                        break;
+                    case 'office':
+                        area = Math.max(config.minArea, (fullStorageArea + emptyStorageArea) * 0.04 + 20);
+                        break;
+                    default:
+                        area = config.minArea;
+                }
+                area = Math.max(config.minArea, Math.round(area / 5) * 5);
+                funcAreas[key] = area;
+                funcDetails.push({ key, label: config.label, area, color: config.color });
+                totalFuncArea += area;
+            }
+
+            const aisleArea = Math.round(totalFuncArea * (aisleRatio / 100));
+            const totalArea = totalFuncArea + aisleArea;
+
+            // ★★★ 道口计算（使用固定系数） ★★★
+            const totalFlow = fullInbound + fullOutbound + emptyInbound + emptyOutbound;
+            const totalTrucks = Math.ceil(totalFlow / avgLoadPerTruck);
+            const operTimeHours = dockOperTime / 60;
+            const trucksPerDockPerDay = (workHours / operTimeHours) * dockUtilFactor;
+            const capacityPerDock = trucksPerDockPerDay * avgLoadPerTruck;
+            const rawDocks = Math.ceil(totalFlow / capacityPerDock);
+            const totalDocks = Math.max(2, rawDocks);
+            // ★★★ 进货道口占比使用固定值 ★★★
+            const inboundDocks = Math.max(1, Math.round(totalDocks * inboundDockRatio));
+            const outboundDocks = Math.max(1, totalDocks - inboundDocks);
+
+            const aspectRatio = 1.3;
+            const baseWidth = Math.sqrt(totalArea / aspectRatio);
+            const baseLength = baseWidth * aspectRatio;
+            const margin = 1.5;
+            const width = baseWidth + margin * 2;
+            const length = baseLength + margin * 2;
+
+            // 道口位置
+            const dockPositions = [];
+            const usableWidth = width - 1.0;
+            const dockSpacing = usableWidth / (totalDocks + 1);
+            for (let i = 0; i < totalDocks; i++) {
+                const pos = (i + 1) * dockSpacing - width / 2 + 0.5;
+                const isInbound = i < inboundDocks;
+                dockPositions.push({
+                    x: pos,
+                    z: length / 2,
+                    type: isInbound ? 'inbound' : 'outbound',
+                    label: isInbound ? `进货${Math.floor(i)+1}` : `出货${Math.floor(i-inboundDocks)+1}`,
+                    width: dockWidth,
+                    depth: 2,
+                    isInbound: isInbound,
+                    index: i
+                });
+            }
+
+            const layout = generateLayout(funcDetails, width - 1.0, length - 1.0);
+
+            const flowPaths = generateFlowPaths(layout, dockPositions, {
+                fullInbound, fullOutbound, emptyInbound, emptyOutbound, repackVolume
+            });
+
+            return {
+                totalArea: Math.round(totalArea),
+                fullStorageArea: Math.round(fullStorageArea),
+                emptyStorageArea: Math.round(emptyStorageArea),
+                workArea: Math.round(Math.max(0, totalFuncArea - fullStorageArea - emptyStorageArea - (funcAreas.office ||
+                    0))),
+                aisleArea: Math.round(aisleArea),
+                funcAreas, funcDetails, totalFuncArea: Math.round(totalFuncArea),
+                width: Math.round(width), length: Math.round(length),
+                fullStackHeight, emptyStackHeight,
+                enabledCount: funcDetails.length,
+                layout,
+                dockPositions,
+                flowPaths,
+                totalDocks,
+                inboundDocks,
+                outboundDocks,
+                dockWidth,
+                totalFlow,
+                capacityPerDock: Math.round(capacityPerDock),
+                totalTrucks: totalTrucks,
+                operTimeHours: operTimeHours,
+                workHours: workHours,
+                // ★★★ 输出固定参数用于显示 ★★★
+                fixedParams: FIXED_PARAMS
+            };
+        }
+
+        function generateLayout(funcDetails, width, length) {
+            if (funcDetails.length === 0) return [];
+            const ordered = FUNC_ORDER.filter(key => funcDetails.some(d => d.key === key))
+                .map(key => funcDetails.find(d => d.key === key)).filter(d => d);
+            const missing = funcDetails.filter(d => !ordered.some(o => o.key === d.key));
+            const allFuncs = [...ordered, ...missing];
+            const totalArea = allFuncs.reduce((s, d) => s + d.area, 0);
+            const colsPerRow = Math.max(2, Math.ceil(Math.sqrt(allFuncs.length * 1.3)));
+            const rows = Math.ceil(allFuncs.length / colsPerRow);
+            const layout = [];
+
+            const WALL_THICKNESS = 0.3;
+            const GAP = 0.1;
+            const BOUNDARY_MARGIN = WALL_THICKNESS + GAP;
+
+            allFuncs.forEach((detail, idx) => {
+                const row = Math.floor(idx / colsPerRow);
+                const col = idx % colsPerRow;
+                const cellW = width / colsPerRow;
+                const cellH = length / rows;
+                const areaRatio = detail.area / totalArea;
+                const sizeScale = 0.55 + areaRatio * 0.9;
+                let w = Math.min(cellW * sizeScale * 0.82, cellW * 0.82);
+                let h = Math.min(cellH * sizeScale * 0.82, cellH * 0.82);
+
+                const maxX = width / 2 - BOUNDARY_MARGIN;
+                const maxZ = length / 2 - BOUNDARY_MARGIN;
+
+                let x = col * cellW + (cellW - w) / 2 - width / 2;
+                let z = row * cellH + (cellH - h) / 2 - length / 2;
+
+                if (x - w / 2 < -maxX) {
+                    const overflow = (-maxX) - (x - w / 2);
+                    w = w - overflow - 0.05;
+                    x = -maxX + w / 2 + 0.05;
+                }
+                if (x + w / 2 > maxX) {
+                    const overflow = (x + w / 2) - maxX;
+                    w = w - overflow - 0.05;
+                    x = maxX - w / 2 - 0.05;
+                }
+                if (z - h / 2 < -maxZ) {
+                    const overflow = (-maxZ) - (z - h / 2);
+                    h = h - overflow - 0.05;
+                    z = -maxZ + h / 2 + 0.05;
+                }
+                if (z + h / 2 > maxZ) {
+                    const overflow = (z + h / 2) - maxZ;
+                    h = h - overflow - 0.05;
+                    z = maxZ - h / 2 - 0.05;
+                }
+
+                w = Math.max(0.5, w);
+                h = Math.max(0.5, h);
+
+                layout.push({
+                    key: detail.key,
+                    label: detail.label,
+                    color: detail.color,
+                    area: detail.area,
+                    x: x,
+                    z: z,
+                    width: w,
+                    depth: h,
+                    height: 1.5 + (detail.area / totalArea) * 5,
+                    row, col
+                });
+            });
+            return layout;
+        }
+
+        function generateFlowPaths(layout, docks, flows) {
+            const paths = [];
+            const { fullInbound, fullOutbound, emptyInbound, emptyOutbound, repackVolume } = flows;
+
+            const getCenter = (key) => {
+                const f = layout.find(d => d.key === key);
+                return f ? { x: f.x + f.width / 2, z: f.z + f.depth / 2 } : null;
+            };
+
+            const recvFull = getCenter('receiving_full');
+            const recvEmpty = getCenter('empty_receiving');
+            const storageFull = getCenter('storage_full');
+            const storageEmpty = getCenter('storage_empty');
+            const repack = getCenter('repacking');
+            const outFull = getCenter('full_outbound');
+            const outEmpty = getCenter('empty_outbound');
+
+            if (recvFull && storageFull && fullInbound > 0) {
+                const inboundDocks = docks.filter(d => d.isInbound);
+                if (inboundDocks.length > 0) {
+                    const dock = inboundDocks[0];
+                    paths.push({
+                        type: 'inbound',
+                        color: FLOW_COLORS.inbound,
+                        label: '满箱进货',
+                        points: [
+                            { x: dock.x, z: dock.z - 1.5 },
+                            { x: dock.x, z: recvFull.z + 1.5 },
+                            { x: recvFull.x, z: recvFull.z },
+                            { x: storageFull.x, z: storageFull.z }
+                        ],
+                        dashed: false
+                    });
+                }
+            }
+
+            if (recvEmpty && storageEmpty && emptyInbound > 0) {
+                const inboundDocks = docks.filter(d => d.isInbound);
+                if (inboundDocks.length > 1) {
+                    const dock = inboundDocks[1] || inboundDocks[0];
+                    paths.push({
+                        type: 'empty_inbound',
+                        color: FLOW_COLORS.empty,
+                        label: '空箱接收',
+                        points: [
+                            { x: dock.x, z: dock.z - 1.5 },
+                            { x: dock.x, z: recvEmpty.z + 1.5 },
+                            { x: recvEmpty.x, z: recvEmpty.z },
+                            { x: storageEmpty.x, z: storageEmpty.z }
+                        ],
+                        dashed: true
+                    });
+                }
+            }
+
+            if (repack && storageFull && repackVolume > 0) {
+                paths.push({
+                    type: 'repack',
+                    color: FLOW_COLORS.repack,
+                    label: '翻包作业',
+                    points: [
+                        { x: storageFull.x, z: storageFull.z },
+                        { x: (storageFull.x + repack.x) / 2, z: (storageFull.z + repack.z) / 2 - 0.8 },
+                        { x: repack.x, z: repack.z }
+                    ],
+                    dashed: false
+                });
+                if (storageEmpty) {
+                    paths.push({
+                        type: 'repack_to_empty',
+                        color: FLOW_COLORS.repack,
+                        label: '翻包→空箱',
+                        points: [
+                            { x: repack.x, z: repack.z },
+                            { x: (repack.x + storageEmpty.x) / 2, z: (repack.z + storageEmpty.z) / 2 + 0.8 },
+                            { x: storageEmpty.x, z: storageEmpty.z }
+                        ],
+                        dashed: true
+                    });
+                }
+            }
+
+            if (outFull && storageFull && fullOutbound > 0) {
+                const outboundDocks = docks.filter(d => !d.isInbound);
+                if (outboundDocks.length > 0) {
+                    const dock = outboundDocks[0];
+                    paths.push({
+                        type: 'outbound',
+                        color: FLOW_COLORS.outbound,
+                        label: '满箱出货',
+                        points: [
+                            { x: storageFull.x, z: storageFull.z },
+                            { x: outFull.x, z: outFull.z },
+                            { x: outFull.x, z: outFull.z - 1.5 },
+                            { x: dock.x, z: dock.z - 1.5 }
+                        ],
+                        dashed: false
+                    });
+                }
+            }
+
+            if (outEmpty && storageEmpty && emptyOutbound > 0) {
+                const outboundDocks = docks.filter(d => !d.isInbound);
+                if (outboundDocks.length > 1) {
+                    const dock = outboundDocks[1] || outboundDocks[0];
+                    paths.push({
+                        type: 'empty_outbound',
+                        color: FLOW_COLORS.empty,
+                        label: '空箱发出',
+                        points: [
+                            { x: storageEmpty.x, z: storageEmpty.z },
+                            { x: outEmpty.x, z: outEmpty.z },
+                            { x: outEmpty.x, z: outEmpty.z - 1.5 },
+                            { x: dock.x, z: dock.z - 1.5 }
+                        ],
+                        dashed: true
+                    });
+                }
+            }
+
+            return paths;
+        }
+
+        // ============================================================
+        //  DOM 操作
+        // ============================================================
+
+        function getFullParams() {
+            const enabled = {};
+            document.querySelectorAll('#funcGrid .func-item input[type="checkbox"]').forEach(cb => {
+                enabled[cb.dataset.func] = cb.checked;
+            });
+            return {
+                fullInbound: parseFloat(document.getElementById('fullInbound').value) || 0,
+                fullOutbound: parseFloat(document.getElementById('fullOutbound').value) || 0,
+                emptyInbound: parseFloat(document.getElementById('emptyInbound').value) || 0,
+                emptyOutbound: parseFloat(document.getElementById('emptyOutbound').value) || 0,
+                repackVolume: parseFloat(document.getElementById('repackVolume').value) || 0,
+                fullTurnover: parseFloat(document.getElementById('fullTurnover').value) || 5,
+                emptyTurnover: parseFloat(document.getElementById('emptyTurnover').value) || 3,
+                fullStackHeight: parseFloat(document.getElementById('fullStackHeight').value) || 2.0,
+                emptyStackHeight: parseFloat(document.getElementById('emptyStackHeight').value) || 2.8,
+                emptyVolumeFactor: parseFloat(document.getElementById('emptyVolumeFactor').value) || 0.4,
+                aisleRatio: parseFloat(document.getElementById('aisleRatio').value) || 25,
+                dockOperTime: parseFloat(document.getElementById('dockOperTime').value) || 30,
+                workHours: parseFloat(document.getElementById('workHours').value) || 16,
+                dockWidth: parseFloat(document.getElementById('dockWidth').value) || 3.5,
+                avgLoadPerTruck: parseFloat(document.getElementById('avgLoadPerTruck').value) || 25,
+                enabledFunctions: enabled
+            };
+        }
+
+        function updateResults(result) {
+            const total = result.totalArea;
+
+            document.getElementById('totalArea').innerHTML = `${total} <span class="unit">m²</span>`;
+            document.getElementById('totalDim').textContent = `${result.length} × ${result.width} m`;
+
+            document.getElementById('fullStorageArea').innerHTML = `${result.fullStorageArea} <span class="unit">m²</span>`;
+            document.getElementById('fullStoragePct').textContent = `占比 ${Math.round(result.fullStorageArea/total*100)}%`;
+
+            document.getElementById('emptyStorageArea').innerHTML = `${result.emptyStorageArea} <span class="unit">m²</span>`;
+            document.getElementById('emptyStoragePct').textContent = `占比 ${Math.round(result.emptyStorageArea/total*100)}%`;
+
+            document.getElementById('workArea').innerHTML = `${result.workArea} <span class="unit">m²</span>`;
+            document.getElementById('workPct').textContent = `占比 ${Math.round(result.workArea/total*100)}%`;
+
+            document.getElementById('aisleArea').innerHTML = `${result.aisleArea} <span class="unit">m²</span>`;
+            document.getElementById('aislePct').textContent = `占比 ${Math.round(result.aisleArea/total*100)}%`;
+
+            document.getElementById('dockCount').textContent = result.totalDocks;
+            document.getElementById('dockDetail').textContent = `${result.inboundDocks}进/${result.outboundDocks}出`;
+
+            document.getElementById('dockTotal').textContent = result.totalDocks;
+            document.getElementById('dockInbound').textContent = result.inboundDocks;
+            document.getElementById('dockOutbound').textContent = result.outboundDocks;
+            document.getElementById('dockWidthDisplay').textContent = result.dockWidth.toFixed(1);
+            document.getElementById('dockDailyCapacity').textContent = result.capacityPerDock;
+
+            const detailContainer = document.getElementById('areaDetail');
+            let detailHtml =
+                `<div style="grid-column:1/-1;font-size:8px;color:#7a8eaa;font-weight:600;padding-bottom:1px;">📋 各功能区面积明细</div>`;
+            result.funcDetails.forEach(d => {
+                const pct = Math.round(d.area / total * 100);
+                detailHtml += `
+                    <div class="area-item">
+                        <span class="name"><span class="dot" style="background:${d.color};"></span>${d.label}</span>
+                        <span class="val">${d.area} m² (${pct}%)</span>
+                    </div>
+                `;
+            });
+            detailContainer.innerHTML = detailHtml;
+
+            const legendContainer = document.getElementById('colorLegend');
+            let legendHtml = '';
+            result.funcDetails.forEach(d => {
+                legendHtml +=
+                    `<span class="item"><span class="swatch" style="background:${d.color};"></span>${d.label}</span>`;
+            });
+            legendHtml +=
+                `<span class="item"><span class="swatch" style="background:#ff4444;"></span>进货</span>`;
+            legendHtml +=
+                `<span class="item"><span class="swatch" style="background:#4488ff;"></span>出货</span>`;
+            legendHtml +=
+                `<span class="item"><span class="swatch" style="background:#44dd88;"></span>翻包</span>`;
+            legendHtml +=
+                `<span class="item"><span class="swatch" style="background:#ff8800;"></span>空箱</span>`;
+            legendContainer.innerHTML = legendHtml;
+
+            // ★★★ 显示固定参数信息 ★★★
+            const fixedInfo = result.fixedParams || FIXED_PARAMS;
+            document.getElementById('statusText').textContent =
+                `✅ 完成 · ${result.enabledCount}功能区 · ${result.totalDocks}道口 · ${total} m² (固定系数: 翻包${fixedInfo.repackFactor} · 利用${fixedInfo.dockUtilFactor} · 进货占比${Math.round(fixedInfo.inboundDockRatio*100)}%)`;
+
+            generate3D(result);
+        }
+
+        // ============================================================
+        //  3D 渲染 (简化版，保持功能)
+        // ============================================================
+
+        let scene, camera, renderer, controls;
+        let threeContainer;
+        let is3DInitialized = false;
+        let initAttempts = 0;
+
+        function createWallMaterial(color, opacity, depthWrite = false) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.7,
+                metalness: 0.1,
+                transparent: true,
+                opacity: opacity,
+                side: THREE.DoubleSide,
+                depthWrite: depthWrite,
+                polygonOffset: true,
+                polygonOffsetFactor: -1,
+                polygonOffsetUnits: -1
+            });
+        }
+
+        function createBlockMaterial(color, opacity = 0.88) {
+            return new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.4,
+                metalness: 0.1,
+                transparent: true,
+                opacity: opacity,
+                depthWrite: false,
+                polygonOffset: true,
+                polygonOffsetFactor: -2,
+                polygonOffsetUnits: -2
+            });
+        }
+
+        function createTruck(color, isInbound) {
+            const group = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({ color: color || 0xcc4444, roughness: 0.6, metalness: 0.3 });
+            const cabMat = new THREE.MeshStandardMaterial({ color: 0x446688, roughness: 0.5, metalness: 0.2 });
+            const windowMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, transparent: true, opacity: 0.4,
+                emissive: 0x4488aa, emissiveIntensity: 0.05 });
+
+            const cargo = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.6, 1.0), bodyMat);
+            cargo.position.set(0.3, 0.9, 0);
+            cargo.castShadow = true;
+            group.add(cargo);
+
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.8, 0.9), cabMat);
+            cab.position.set(-0.9, 0.7, 0);
+            cab.castShadow = true;
+            group.add(cab);
+
+            const win = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.3), windowMat);
+            win.position.set(-0.9, 0.9, 0.46);
+            group.add(win);
+            const win2 = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.3), windowMat);
+            win2.position.set(-0.9, 0.9, -0.46);
+            group.add(win2);
+
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+            const wheelPositions = [
+                [-0.3, 0.15, 0.6],
+                [-0.3, 0.15, -0.6],
+                [0.9, 0.15, 0.6],
+                [0.9, 0.15, -0.6]
+            ];
+            wheelPositions.forEach(([wx, wy, wz]) => {
+                const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.15, 8), wheelMat);
+                wheel.rotation.x = Math.PI / 2;
+                wheel.position.set(wx, wy, wz);
+                group.add(wheel);
+            });
+
+            const lightMat = new THREE.MeshStandardMaterial({
+                color: isInbound ? 0xffff44 : 0xff4444,
+                emissive: isInbound ? 0xffff44 : 0xff4444,
+                emissiveIntensity: 0.3
+            });
+            const headlight = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), lightMat);
+            headlight.position.set(-1.25, 0.6, 0.25);
+            group.add(headlight);
+            const headlight2 = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), lightMat);
+            headlight2.position.set(-1.25, 0.6, -0.25);
+            group.add(headlight2);
+
+            group.scale.set(0.8, 0.8, 0.8);
+            return group;
+        }
+
+        function createForklift() {
+            const group = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffaa33, roughness: 0.5, metalness: 0.2 });
+            const forkMat = new THREE.MeshStandardMaterial({ color: 0x888899, roughness: 0.3, metalness: 0.6 });
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.5), bodyMat);
+            body.position.set(0, 0.3, 0);
+            body.castShadow = true;
+            group.add(body);
+
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.35), bodyMat);
+            cab.position.set(-0.15, 0.6, 0);
+            cab.castShadow = true;
+            group.add(cab);
+
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x666677, roughness: 0.5, metalness: 0.3 });
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.05, 0.4), roofMat);
+            roof.position.set(-0.15, 0.8, 0);
+            group.add(roof);
+
+            const fork1 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.04, 0.06), forkMat);
+            fork1.position.set(0.45, 0.1, -0.08);
+            group.add(fork1);
+            const fork2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.04, 0.06), forkMat);
+            fork2.position.set(0.45, 0.1, 0.08);
+            group.add(fork2);
+
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.3, 0.2), forkMat);
+            frame.position.set(0.2, 0.25, 0);
+            group.add(frame);
+
+            const wheelPos = [
+                [-0.2, 0.1, 0.3],
+                [-0.2, 0.1, -0.3],
+                [0.25, 0.1, 0.3],
+                [0.25, 0.1, -0.3]
+            ];
+            wheelPos.forEach(([wx, wy, wz]) => {
+                const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.08, 8), wheelMat);
+                wheel.rotation.x = Math.PI / 2;
+                wheel.position.set(wx, wy, wz);
+                group.add(wheel);
+            });
+
+            group.scale.set(0.7, 0.7, 0.7);
+            return group;
+        }
+
+        function initThree() {
+            threeContainer = document.getElementById('threeContainer');
+            if (!threeContainer) {
+                console.warn('3D容器未找到');
+                return;
+            }
+
+            const rect = threeContainer.getBoundingClientRect();
+            const width = rect.width || 800;
+            const height = rect.height || 400;
+
+            if (width < 10 || height < 10) {
+                console.warn('容器尺寸异常，重试中...', width, height);
+                initAttempts++;
+                if (initAttempts < 5) {
+                    setTimeout(initThree, 300);
+                }
+                return;
+            }
+
+            try {
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x1a1a2e);
+
+                camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 500);
+                camera.position.set(40, 35, 50);
+
+                renderer = new THREE.WebGLRenderer({
+                    antialias: true,
+                    alpha: false,
+                    polygonOffset: true
+                });
+                renderer.setSize(width, height);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                renderer.toneMappingExposure = 1.2;
+                threeContainer.appendChild(renderer.domElement);
+
+                renderer.sortObjects = true;
+
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.08;
+                controls.minDistance = 5;
+                controls.maxDistance = 150;
+                controls.target.set(0, 0, 0);
+
+                const ambient = new THREE.AmbientLight(0x404060, 0.5);
+                scene.add(ambient);
+
+                const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+                dirLight.position.set(30, 50, 30);
+                dirLight.castShadow = true;
+                dirLight.shadow.mapSize.width = 1024;
+                dirLight.shadow.mapSize.height = 1024;
+                const d2 = 60;
+                dirLight.shadow.camera.left = -d2;
+                dirLight.shadow.camera.right = d2;
+                dirLight.shadow.camera.top = d2;
+                dirLight.shadow.camera.bottom = -d2;
+                dirLight.shadow.camera.near = 1;
+                dirLight.shadow.camera.far = 100;
+                scene.add(dirLight);
+
+                const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
+                fillLight.position.set(-20, 20, -30);
+                scene.add(fillLight);
+
+                const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+                rimLight.position.set(0, -10, 40);
+                scene.add(rimLight);
+
+                const gridHelper = new THREE.GridHelper(80, 20, 0x446688, 0x334466);
+                gridHelper.position.y = -0.01;
+                scene.add(gridHelper);
+
+                const groundGeo = new THREE.PlaneGeometry(80, 80);
+                const groundMat = new THREE.ShadowMaterial({ opacity: 0.3 });
+                const ground = new THREE.Mesh(groundGeo, groundMat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.position.y = -0.01;
+                ground.receiveShadow = true;
+                scene.add(ground);
+
+                is3DInitialized = true;
+                console.log('✅ Three.js 初始化成功 (精简参数版)');
+
+                // 视图控制
+                document.getElementById('viewTop').addEventListener('click', () => {
+                    camera.position.set(0, 60, 0.1);
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+                });
+                document.getElementById('viewPerspective').addEventListener('click', () => {
+                    camera.position.set(35, 30, 40);
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+                });
+                document.getElementById('viewSide').addEventListener('click', () => {
+                    camera.position.set(55, 5, 0);
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+                });
+                document.getElementById('viewDock').addEventListener('click', () => {
+                    camera.position.set(0, 8, 35);
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+                });
+                document.getElementById('resetView').addEventListener('click', () => {
+                    camera.position.set(40, 35, 50);
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+                });
+
+                animate();
+                window.addEventListener('resize', onResize);
+
+            } catch (e) {
+                console.error('Three.js 初始化失败:', e);
+                initAttempts++;
+                if (initAttempts < 5) {
+                    setTimeout(initThree, 500);
+                }
+            }
+        }
+
+        function onResize() {
+            if (!threeContainer || !renderer) return;
+            const rect = threeContainer.getBoundingClientRect();
+            const w = rect.width || 800;
+            const h = rect.height || 400;
+            if (camera) {
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+            }
+            if (renderer) {
+                renderer.setSize(w, h);
+            }
+        }
+
+        function animate() {
+            if (!renderer || !scene || !camera) return;
+            requestAnimationFrame(animate);
+            if (controls) controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // ============================================================
+        //  生成3D仓库 (精简版)
+        // ============================================================
+
+        function generate3D(result) {
+            if (!is3DInitialized) {
+                console.log('3D未初始化，等待...');
+                setTimeout(() => generate3D(result), 300);
+                return;
+            }
+
+            requestAnimationFrame(() => {
+                _render3D(result);
+            });
+        }
+
+        function _render3D(result) {
+            if (!scene) {
+                console.error('场景不存在');
+                return;
+            }
+
+            const toRemove = [];
+            scene.children.forEach(child => {
+                if (child.type === 'AmbientLight' || child.type === 'DirectionalLight') return;
+                if (child.type === 'GridHelper') return;
+                if (child.type === 'Mesh' && child.material && child.material.type === 'ShadowMaterial') return;
+                toRemove.push(child);
+            });
+
+            toRemove.forEach(child => {
+                if (child.parent) scene.remove(child);
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) child.material.dispose();
+            });
+
+            const layout = result.layout || [];
+            const docks = result.dockPositions || [];
+            const paths = result.flowPaths || [];
+            const W = result.width || 30;
+            const L = result.length || 40;
+            const H = 6;
+
+            const WALL_THICK = 0.3;
+            const wallMat = createWallMaterial(0x3a4a6a, 0.40, false);
+            const wallMatLight = createWallMaterial(0x5a7a9a, 0.30, false);
+            const wallHeight = H;
+            const hw = W / 2;
+            const hl = L / 2;
+
+            // 后墙
+            const wall1 = new THREE.Mesh(new THREE.BoxGeometry(W, wallHeight, WALL_THICK), wallMat);
+            wall1.position.set(0, wallHeight / 2, -hl);
+            wall1.castShadow = true;
+            wall1.receiveShadow = true;
+            wall1.renderOrder = 1;
+            scene.add(wall1);
+
+            // 前墙 - 带道口门洞
+            const doorHeight = 4.0;
+            const sortedDocks = [...docks].sort((a, b) => a.x - b.x);
+            let currentX = -hw;
+
+            sortedDocks.forEach((dock) => {
+                const doorX = dock.x;
+                const halfDoor = dock.width / 2 + 0.3;
+                const leftEdge = doorX - halfDoor;
+                const rightEdge = doorX + halfDoor;
+
+                if (leftEdge - currentX > 0.1) {
+                    const segWidth = leftEdge - currentX;
+                    const seg = new THREE.Mesh(
+                        new THREE.BoxGeometry(segWidth, wallHeight, WALL_THICK),
+                        wallMatLight
+                    );
+                    seg.position.set(currentX + segWidth / 2, wallHeight / 2, hl);
+                    seg.castShadow = true;
+                    seg.receiveShadow = true;
+                    seg.renderOrder = 1;
+                    scene.add(seg);
+                }
+
+                const doorMat = new THREE.MeshStandardMaterial({
+                    color: 0x1a1a2e,
+                    transparent: true,
+                    opacity: 0.6,
+                    side: THREE.DoubleSide,
+                    depthWrite: false
+                });
+                const doorHole = new THREE.Mesh(
+                    new THREE.PlaneGeometry(dock.width - 0.2, doorHeight),
+                    doorMat
+                );
+                doorHole.position.set(doorX, doorHeight / 2, hl + 0.01);
+                doorHole.renderOrder = 2;
+                scene.add(doorHole);
+
+                const frameMat = new THREE.MeshStandardMaterial({
+                    color: 0x7a8a9a,
+                    roughness: 0.5,
+                    metalness: 0.3,
+                    depthWrite: false
+                });
+                const frameL = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.08, doorHeight, 0.15),
+                    frameMat
+                );
+                frameL.position.set(doorX - dock.width / 2 + 0.1, doorHeight / 2, hl + 0.05);
+                frameL.renderOrder = 2;
+                scene.add(frameL);
+
+                const frameR = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.08, doorHeight, 0.15),
+                    frameMat
+                );
+                frameR.position.set(doorX + dock.width / 2 - 0.1, doorHeight / 2, hl + 0.05);
+                frameR.renderOrder = 2;
+                scene.add(frameR);
+
+                const frameTop = new THREE.Mesh(
+                    new THREE.BoxGeometry(dock.width - 0.2, 0.08, 0.15),
+                    frameMat
+                );
+                frameTop.position.set(doorX, doorHeight, hl + 0.05);
+                frameTop.renderOrder = 2;
+                scene.add(frameTop);
+
+                const labelColor = dock.isInbound ? 0xff6644 : 0x4488ff;
+                const labelDot = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.25, 8, 8),
+                    new THREE.MeshStandardMaterial({
+                        color: labelColor,
+                        emissive: labelColor,
+                        emissiveIntensity: 0.4,
+                        depthWrite: false
+                    })
+                );
+                labelDot.position.set(doorX, doorHeight + 0.8, hl + 0.3);
+                labelDot.renderOrder = 3;
+                scene.add(labelDot);
+
+                const truckColor = dock.isInbound ? 0xcc4444 : 0x4488cc;
+                const truck = createTruck(truckColor, dock.isInbound);
+                truck.position.set(doorX, 0.05, hl + 3.5);
+                truck.rotation.y = dock.isInbound ? 0 : Math.PI;
+                scene.add(truck);
+
+                const forklift = createForklift();
+                forklift.position.set(doorX + 1.2, 0.05, hl + 2.0);
+                forklift.rotation.y = dock.isInbound ? -0.3 : 0.3;
+                scene.add(forklift);
+
+                const markMat = new THREE.MeshStandardMaterial({
+                    color: dock.isInbound ? 0xff6644 : 0x4488ff,
+                    transparent: true,
+                    opacity: 0.3,
+                    depthWrite: false,
+                    polygonOffset: true,
+                    polygonOffsetFactor: -3,
+                    polygonOffsetUnits: -3
+                });
+                const mark = new THREE.Mesh(
+                    new THREE.PlaneGeometry(dock.width * 0.8, 1.0),
+                    markMat
+                );
+                mark.rotation.x = -Math.PI / 2;
+                mark.position.set(doorX, 0.02, hl + 1.0);
+                mark.renderOrder = 0;
+                scene.add(mark);
+
+                currentX = rightEdge;
+            });
+
+            if (hw - currentX > 0.1) {
+                const segWidth = hw - currentX;
+                const seg = new THREE.Mesh(
+                    new THREE.BoxGeometry(segWidth, wallHeight, WALL_THICK),
+                    wallMatLight
+                );
+                seg.position.set(currentX + segWidth / 2, wallHeight / 2, hl);
+                seg.castShadow = true;
+                seg.receiveShadow = true;
+                seg.renderOrder = 1;
+                scene.add(seg);
+            }
+
+            const wallSide1 = new THREE.Mesh(new THREE.BoxGeometry(WALL_THICK, wallHeight, L), wallMat);
+            wallSide1.position.set(-hw, wallHeight / 2, 0);
+            wallSide1.castShadow = true;
+            wallSide1.receiveShadow = true;
+            wallSide1.renderOrder = 1;
+            scene.add(wallSide1);
+
+            const wallSide2 = new THREE.Mesh(new THREE.BoxGeometry(WALL_THICK, wallHeight, L), wallMat);
+            wallSide2.position.set(hw, wallHeight / 2, 0);
+            wallSide2.castShadow = true;
+            wallSide2.receiveShadow = true;
+            wallSide2.renderOrder = 1;
+            scene.add(wallSide2);
+
+            // 屋顶
+            const roofMat = new THREE.MeshStandardMaterial({
+                color: 0x4a5a6a,
+                roughness: 0.8,
+                metalness: 0.1,
+                transparent: true,
+                opacity: 0.30,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(W + 0.6, 0.3, L + 0.6), roofMat);
+            roof.position.set(0, wallHeight + 0.15, 0);
+            roof.receiveShadow = true;
+            roof.castShadow = true;
+            roof.renderOrder = 4;
+            scene.add(roof);
+
+            // 立柱
+            const pillarMat = new THREE.MeshStandardMaterial({
+                color: 0x8a9aaa,
+                roughness: 0.5,
+                metalness: 0.3,
+                depthWrite: false
+            });
+            const pillarPositions = [
+                [-hw + 1.5, -hl + 1.5],
+                [-hw + 1.5, hl - 1.5],
+                [hw - 1.5, -hl + 1.5],
+                [hw - 1.5, hl - 1.5],
+                [-hw + 1.5, 0],
+                [hw - 1.5, 0],
+                [0, -hl + 1.5],
+                [0, hl - 1.5]
+            ];
+            pillarPositions.forEach(([px, pz]) => {
+                const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, wallHeight, 8), pillarMat);
+                pillar.position.set(px, wallHeight / 2, pz);
+                pillar.castShadow = true;
+                pillar.renderOrder = 1;
+                scene.add(pillar);
+            });
+
+            // 窗户
+            const windowMat = new THREE.MeshStandardMaterial({
+                color: 0x88ccff,
+                emissive: 0x4488aa,
+                emissiveIntensity: 0.1,
+                transparent: true,
+                opacity: 0.4,
+                depthWrite: false
+            });
+            const windowPositions = [];
+            const winCandidates = [
+                [-hw + 2, 2.5, -hl + 3],
+                [-hw + 2, 2.5, -hl + 7],
+                [-hw + 2, 2.5, hl - 3],
+                [-hw + 2, 2.5, hl - 7],
+                [hw - 2, 2.5, -hl + 3],
+                [hw - 2, 2.5, -hl + 7],
+                [hw - 2, 2.5, hl - 3],
+                [hw - 2, 2.5, hl - 7],
+                [0, 2.5, -hl + 5],
+                [0, 2.5, -hl + 9]
+            ];
+            winCandidates.forEach(([wx, wy, wz]) => {
+                let isNearDock = false;
+                for (let d of docks) {
+                    if (Math.abs(wx - d.x) < 1.5 && Math.abs(wz - hl) < 1.0) {
+                        isNearDock = true;
+                        break;
+                    }
+                }
+                if (!isNearDock) {
+                    windowPositions.push([wx, wy, wz]);
+                }
+            });
+
+            windowPositions.forEach(([wx, wy, wz]) => {
+                const win = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.8), windowMat);
+                win.position.set(wx, wy, wz);
+                if (Math.abs(wx) > Math.abs(wz) + 1) {
+                    win.rotation.y = Math.PI / 2 * (wx > 0 ? 1 : -1);
+                }
+                win.renderOrder = 2;
+                scene.add(win);
+            });
+
+            // 功能区
+            layout.forEach((item) => {
+                const colorHex = parseInt(item.color.replace('#', ''), 16);
+                const xPos = item.x;
+                const zPos = item.z;
+                const height = Math.max(0.5, Math.min(item.height, 5));
+
+                const geo = new THREE.BoxGeometry(item.width * 0.90, height, item.depth * 0.90);
+                const mat = createBlockMaterial(colorHex, 0.85);
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(xPos, height / 2 + 0.05, zPos);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                mesh.renderOrder = 2;
+                scene.add(mesh);
+
+                const edges = new THREE.EdgesGeometry(geo);
+                const lineMat = new THREE.LineBasicMaterial({
+                    color: 0x88bbdd,
+                    transparent: true,
+                    opacity: 0.15,
+                    depthTest: true
+                });
+                const wireframe = new THREE.LineSegments(edges, lineMat);
+                wireframe.position.copy(mesh.position);
+                wireframe.renderOrder = 3;
+                scene.add(wireframe);
+            });
+
+            // 动线
+            paths.forEach((path) => {
+                const pts = path.points;
+                if (pts.length < 2) return;
+
+                const color = path.color || 0xff4444;
+                const isDashed = path.dashed || false;
+
+                const positions = [];
+                pts.forEach(p => { positions.push(p.x, 0.15, p.z); });
+
+                const geoLine = new THREE.BufferGeometry();
+                geoLine.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+                let lineMat2;
+                if (isDashed) {
+                    lineMat2 = new THREE.LineDashedMaterial({
+                        color: color,
+                        dashSize: 0.4,
+                        gapSize: 0.3,
+                        transparent: true,
+                        opacity: 0.7,
+                        depthTest: true
+                    });
+                } else {
+                    lineMat2 = new THREE.LineBasicMaterial({
+                        color: color,
+                        transparent: true,
+                        opacity: 0.8,
+                        depthTest: true
+                    });
+                }
+                const line = new THREE.Line(geoLine, lineMat2);
+                if (isDashed) line.computeLineDistances();
+                line.renderOrder = 3;
+                scene.add(line);
+
+                for (let i = 1; i < pts.length; i++) {
+                    const from = pts[i - 1];
+                    const to = pts[i];
+                    const dx = to.x - from.x;
+                    const dz = to.z - from.z;
+                    const len = Math.sqrt(dx * dx + dz * dz);
+                    if (len < 0.5) continue;
+
+                    const arrowPos = { x: from.x + dx * 0.7, z: from.z + dz * 0.7 };
+                    const arrow = new THREE.ArrowHelper(
+                        new THREE.Vector3(dx / len, 0, dz / len),
+                        new THREE.Vector3(arrowPos.x, 0.35, arrowPos.z),
+                        0.6,
+                        color,
+                        0.3,
+                        0.2
+                    );
+                    scene.add(arrow);
+                }
+            });
+
+            // 地面标线
+            const floorLineMat = new THREE.MeshStandardMaterial({
+                color: 0x446688,
+                transparent: true,
+                opacity: 0.10,
+                depthWrite: false,
+                polygonOffset: true,
+                polygonOffsetFactor: -3,
+                polygonOffsetUnits: -3
+            });
+            const aisleLine = new THREE.Mesh(
+                new THREE.PlaneGeometry(W * 0.85, 0.05),
+                floorLineMat
+            );
+            aisleLine.rotation.x = -Math.PI / 2;
+            aisleLine.position.set(0, 0.02, 0);
+            aisleLine.renderOrder = 0;
+            scene.add(aisleLine);
+
+            // 调整相机
+            const maxDim = Math.max(W, L);
+            const dist = maxDim * 1.3 + 15;
+            if (camera) {
+                camera.position.set(dist * 0.6, dist * 0.4, dist * 0.7);
+                controls.target.set(0, 0, 0);
+                controls.update();
+            }
+
+            document.getElementById('statusText').textContent =
+                `✅ 3D渲染完成 · ${layout.length}功能区 · ${docks.length}道口 (精简参数版)`;
+        }
+
+        // ============================================================
+        //  主计算
+        // ============================================================
+
+        function calculateAndRender() {
+            const params = getFullParams();
+            if (params.fullInbound <= 0 && params.fullOutbound <= 0 &&
+                params.emptyInbound <= 0 && params.emptyOutbound <= 0) {
+                alert('请至少输入满箱或空箱的流量！');
+                return;
+            }
+            const enabled = Object.values(params.enabledFunctions).filter(v => v).length;
+            if (enabled === 0) {
+                alert('请至少选择一个功能区！');
+                return;
+            }
+            const result = calculateWarehouse(params);
+            updateResults(result);
+            document.querySelector('.panel-right').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ============================================================
+        //  事件绑定
+        // ============================================================
+
+        document.getElementById('calcBtn').addEventListener('click', calculateAndRender);
+
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            document.getElementById('fullInbound').value = 350;
+            document.getElementById('fullOutbound').value = 300;
+            document.getElementById('emptyInbound').value = 80;
+            document.getElementById('emptyOutbound').value = 70;
+            document.getElementById('repackVolume').value = 120;
+            document.getElementById('fullTurnover').value = 5;
+            document.getElementById('emptyTurnover').value = 3;
+            document.getElementById('fullStackHeight').value = 2.0;
+            document.getElementById('emptyStackHeight').value = 2.8;
+            document.getElementById('emptyVolumeFactor').value = 0.4;
+            document.getElementById('aisleRatio').value = 25;
+            document.getElementById('dockOperTime').value = 30;
+            document.getElementById('workHours').value = 16;
+            document.getElementById('dockWidth').value = 3.5;
+            document.getElementById('avgLoadPerTruck').value = 25;
+            document.querySelectorAll('#funcGrid .func-item input[type="checkbox"]').forEach(cb => cb.checked = true);
+
+            document.getElementById('totalArea').innerHTML = `0 <span class="unit">m²</span>`;
+            document.getElementById('totalDim').textContent = '-';
+            document.getElementById('fullStorageArea').innerHTML = `0 <span class="unit">m²</span>`;
+            document.getElementById('fullStoragePct').textContent = '-';
+            document.getElementById('emptyStorageArea').innerHTML = `0 <span class="unit">m²</span>`;
+            document.getElementById('emptyStoragePct').textContent = '-';
+            document.getElementById('workArea').innerHTML = `0 <span class="unit">m²</span>`;
+            document.getElementById('workPct').textContent = '-';
+            document.getElementById('aisleArea').innerHTML = `0 <span class="unit">m²</span>`;
+            document.getElementById('aislePct').textContent = '-';
+            document.getElementById('dockCount').textContent = '0';
+            document.getElementById('dockDetail').textContent = '-';
+            document.getElementById('dockTotal').textContent = '0';
+            document.getElementById('dockInbound').textContent = '0';
+            document.getElementById('dockOutbound').textContent = '0';
+            document.getElementById('dockWidthDisplay').textContent = '3.5';
+            document.getElementById('dockDailyCapacity').textContent = '0';
+            document.getElementById('areaDetail').innerHTML =
+                `<div style="grid-column:1/-1;font-size:8px;color:#7a8eaa;font-weight:600;padding-bottom:1px;">📋 各功能区面积明细</div>
+                <div class="area-item" style="border-bottom:none;color:#8aa0b8;font-size:9px;grid-column:1/-1;text-align:center;">请点击「计算 & 生成3D」查看</div>`;
+            document.getElementById('colorLegend').innerHTML = '';
+            document.getElementById('statusText').textContent = '已重置';
+
+            if (scene) {
+                const toRemove = [];
+                scene.children.forEach(child => {
+                    if (child.type === 'AmbientLight' || child.type === 'DirectionalLight') return;
+                    if (child.type === 'GridHelper') return;
+                    if (child.type === 'Mesh' && child.material && child.material.type === 'ShadowMaterial')
+                        return;
+                    toRemove.push(child);
+                });
+                toRemove.forEach(child => {
+                    if (child.parent) scene.remove(child);
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) child.material.dispose();
+                });
+                const emptyGeo = new THREE.BoxGeometry(10, 0.5, 10);
+                const emptyMat = new THREE.MeshStandardMaterial({
+                    color: 0x334455,
+                    transparent: true,
+                    opacity: 0.3,
+                    wireframe: true,
+                    depthWrite: false
+                });
+                const emptyMesh = new THREE.Mesh(emptyGeo, emptyMat);
+                emptyMesh.position.set(0, 0.25, 0);
+                emptyMesh.receiveShadow = true;
+                emptyMesh.renderOrder = 0;
+                scene.add(emptyMesh);
+            }
+        });
+
+        document.getElementById('toggleAllFunc').addEventListener('click', function() {
+            const checkboxes = document.querySelectorAll('#funcGrid .func-item input[type="checkbox"]');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => cb.checked = !allChecked);
+            this.textContent = allChecked ? '全选' : '取消全选';
+        });
+
+        // ============================================================
+        //  初始化
+        // ============================================================
+
+        window.addEventListener('load', function() {
+            setTimeout(initThree, 500);
+            setTimeout(() => {
+                if (!is3DInitialized) {
+                    console.log('3D初始化超时，重试...');
+                    initThree();
+                }
+            }, 3000);
+        });
+
+        window.addEventListener('resize', function() {
+            if (threeContainer && renderer) {
+                const rect = threeContainer.getBoundingClientRect();
+                const w = rect.width || 800;
+                const h = rect.height || 400;
+                if (camera) { camera.aspect = w / h;
+                    camera.updateProjectionMatrix(); }
+                if (renderer) renderer.setSize(w, h);
+            }
+        });
+
+        console.log('🏗️ 仓库规划工具 (精简参数版) 已加载');
+        console.log('📌 固定参数: 翻包系数=0.35, 道口利用系数=0.85, 进货道口占比=55%');
+        console.log('📥 用户只需填写流量、周转、堆高等核心参数');
+    </script>
+</body>
+</html>
