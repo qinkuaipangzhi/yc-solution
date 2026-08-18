@@ -2725,24 +2725,32 @@
         function resetMapFilter() { filterMap('all'); }
 
         // ============================================================
-        //  导出
+        //  ★★★ 导出（已添加推荐仓库经纬度） ★★★
         // ============================================================
         function exportResults() {
             if (!analysisResults) { showToast('请先执行分析', true); return; }
             const r = analysisResults;
-            const data = [];
 
+            // 构建站点 -> 推荐仓库映射 (包含仓库名称、经度、纬度)
             const siteToWarehouse = {};
-            r.recommendations.forEach((rec) => {
+            r.recommendations.forEach((rec, idx) => {
                 const label = rec.label || (rec.type === 'origin' ? '前置仓' : '末端仓');
+                const recLng = rec.lng;
+                const recLat = rec.lat;
                 rec.sites.forEach(s => {
                     const key = s.name + '_' + s.lat + '_' + s.lng;
-                    siteToWarehouse[key] = label;
+                    siteToWarehouse[key] = {
+                        name: label,
+                        lng: recLng,
+                        lat: recLat
+                    };
                 });
             });
 
+            const data = [];
             sites.forEach(s => {
                 const key = s.name + '_' + s.lat + '_' + s.lng;
+                const wh = siteToWarehouse[key] || { name: '未分配', lng: '', lat: '' };
                 data.push({
                     '站点代码': s.code || '',
                     '站点名称': s.name,
@@ -2753,7 +2761,9 @@
                     '月出货量(m³)': s.monthQty || 0,
                     '周出货量(m³)': s.weekQty || 0,
                     '日出货量(m³)': s.dayQty || 0,
-                    '服务仓': siteToWarehouse[key] || '未分配'
+                    '服务仓': wh.name,
+                    '仓库经度': wh.lng,
+                    '仓库纬度': wh.lat
                 });
             });
 
@@ -2761,7 +2771,7 @@
             let csv = headers.join(',') + '\n';
             data.forEach(row => {
                 csv += headers.map(h => {
-                    let val = row[h] || '';
+                    let val = row[h] !== undefined && row[h] !== '' ? row[h] : '';
                     if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
                         val = '"' + val.replace(/"/g, '""') + '"';
                     }
@@ -2778,7 +2788,7 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast('📥 导出成功！');
+            showToast('📥 导出成功！已包含推荐仓库经纬度');
         }
 
         // ============================================================
@@ -2840,7 +2850,7 @@
         // ============================================================
         renderTable();
         showToast('📥 上传数据或点击「示例」快速体验');
-        console.log('📌 仓库选址工具已加载 (含BI图表，地图固定显示)');
+        console.log('📌 仓库选址工具已加载 (导出已包含推荐仓库经纬度)');
     </script>
 </body>
 </html>
