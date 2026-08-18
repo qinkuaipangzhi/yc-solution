@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>供应链网络可视化 - 物流工具箱</title>
+    <!-- SheetJS 核心库 -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js">
+    </script>
+    <!-- Leaflet CSS + JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+    <style>
+        /* ===== 样式 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #eef2f9 0%, #dce3ec 100%);
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            height: calc(100vh - 32px);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a5f, #0f2b44);
+            border-radius: 1.2rem;
+            padding: 14px 28px;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header h1 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .header p { opacity: 0.7; font-size: 12px; }
+        .header .badge-group { display: flex; gap: 6px; flex-wrap: wrap; }
+        .header .badge { background: rgba(255,255,255,0.10); padding: 2px 12px; border-radius: 30px; font-size: 10px; white-space: nowrap; }
+        .header .badge.network { background: #2a7f6e; color: white; }
+
+        .main-grid { display: grid; grid-template-columns: 380px 1fr; gap: 14px; flex: 1; min-height: 0; }
+        @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } }
+
+        .card-left { background: white; border-radius: 1.2rem; padding: 14px 16px; border: 1px solid #e2edf5; box-shadow: 0 2px 8px rgba(0,0,0,0.04); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+        .card-left .card-title { font-size: 13px; font-weight: 600; color: #1f3a5f; display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-bottom: 6px; flex-wrap: wrap; }
+        .card-left .card-title .sub { font-weight: 400; font-size: 10px; color: #7a8eaa; }
+        .card-left .card-title .right-actions { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; }
+
+        .upload-zone { border: 2px dashed #c8d8e8; border-radius: 0.8rem; padding: 10px 14px; text-align: center; cursor: pointer; transition: 0.2s; background: #fafcff; position: relative; flex-shrink: 0; }
+        .upload-zone:hover { border-color: #1a5d8c; background: #f2f8ff; }
+        .upload-zone.dragover { border-color: #1a5d8c; background: #e8f0fa; }
+        .upload-zone .icon { font-size: 18px; }
+        .upload-zone .title { font-size: 11px; font-weight: 600; color: #1f3a5f; }
+        .upload-zone .sub { font-size: 9px; color: #8aa0b8; }
+        .upload-zone .formats { font-size: 8px; color: #aab8c8; margin-top: 2px; }
+        .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+        .file-status { display: flex; align-items: center; gap: 6px; margin-top: 4px; padding: 3px 10px; background: #e8f5ee; border-radius: 6px; border: 1px solid #b8ddd0; font-size: 9px; color: #1e6657; flex-shrink: 0; }
+        .file-status .file-name { font-weight: 600; }
+        .file-status .remove-file { margin-left: auto; background: none; border: none; color: #b13b3b; cursor: pointer; font-size: 12px; padding: 0 4px; }
+
+        .stats-mini { display: flex; gap: 8px; flex-wrap: wrap; padding: 4px 8px; background: #f8fafd; border-radius: 6px; border: 1px solid #e8eef5; margin-top: 4px; flex-shrink: 0; }
+        .stats-mini .stat-item { font-size: 9px; color: #2c3e66; }
+        .stats-mini .stat-item .num { font-weight: 700; color: #1f3a5f; }
+        .stats-mini .stat-item .label { color: #8aa0b8; }
+
+        .search-bar { display: flex; gap: 6px; margin-top: 6px; flex-shrink: 0; align-items: center; flex-wrap: wrap; }
+        .search-bar .search-input-wrap { flex: 1; position: relative; min-width: 80px; }
+        .search-bar .search-input-wrap input { width: 100%; padding: 4px 8px 4px 28px; border: 1.5px solid #dce6f0; border-radius: 30px; font-size: 10px; background: #fafcff; transition: 0.2s; outline: none; }
+        .search-bar .search-input-wrap input:focus { border-color: #1a5d8c; box-shadow: 0 0 0 3px rgba(26,93,140,0.08); }
+        .search-bar .search-input-wrap .search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #8aa0b8; }
+        .search-bar .search-input-wrap .clear-search { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #b13b3b; cursor: pointer; font-size: 12px; display: none; padding: 0 4px; }
+        .search-bar .search-input-wrap .clear-search.visible { display: block; }
+        .search-bar .toggle-label { display: flex; align-items: center; gap: 4px; font-size: 9px; color: #4a6a8a; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+        .search-bar .toggle-label input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-color: #1a5d8c; }
+        .search-results-count { font-size: 9px; color: #8aa0b8; flex-shrink: 0; }
+
+        .legend-tree { flex: 1; overflow-y: auto; min-height: 0; margin-top: 6px; border: 1px solid #e8eef5; border-radius: 8px; padding: 6px 8px; background: #fafcff; }
+        .legend-tree::-webkit-scrollbar { width: 4px; }
+        .legend-tree::-webkit-scrollbar-thumb { background: #c8d8e8; border-radius: 8px; }
+        .legend-tree .tree-item { cursor: pointer; user-select: none; padding: 2px 4px; border-radius: 4px; transition: 0.15s; display: flex; align-items: center; gap: 6px; font-size: 11px; color: #2c3e66; }
+        .legend-tree .tree-item:hover { background: #f0f6fe; }
+        .legend-tree .tree-item .tree-icon { font-size: 16px; width: 24px; text-align: center; flex-shrink: 0; }
+        .legend-tree .tree-item .tree-label { flex: 1; font-weight: 500; }
+        .legend-tree .tree-item .tree-count { font-size: 9px; color: #8aa0b8; background: #f0f4f8; padding: 0 6px; border-radius: 10px; }
+        .legend-tree .tree-item .tree-check { color: #2a7f6e; font-size: 12px; display: none; }
+        .legend-tree .tree-item.active .tree-check { display: inline; }
+        .legend-tree .tree-item.active { background: #e8f0fa; font-weight: 600; }
+        .legend-tree .tree-item .tree-dot { width: 20px; height: 20px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; background: #f8fafd; }
+
+        .legend-tree .tree-root { font-weight: 700; color: #1f3a5f; padding: 4px 4px 6px 4px; border-bottom: 2px solid #e8eef5; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+        .legend-tree .tree-root .root-count { font-size: 9px; color: #8aa0b8; font-weight: 400; }
+        .legend-tree .tree-empty { text-align: center; color: #a0b8cc; font-size: 10px; padding: 20px 0; }
+
+        .table-wrap { overflow-x: auto; border-radius: 6px; border: 1px solid #e8eef5; flex: 0 0 auto; max-height: 100px; overflow-y: auto; margin-top: 4px; }
+        .table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+        .table-wrap::-webkit-scrollbar-thumb { background: #c8d8e8; border-radius: 8px; }
+
+        .data-table { width: 100%; font-size: 9px; border-collapse: collapse; min-width: 650px; }
+        .data-table th { background: #f5f8fc; color: #2c4a6e; font-weight: 600; padding: 2px 5px; text-align: left; border-bottom: 2px solid #dce6f0; position: sticky; top: 0; z-index: 5; font-size: 8px; white-space: nowrap; }
+        .data-table td { padding: 2px 5px; border-bottom: 1px solid #e8eef5; color: #2c3e66; font-size: 9px; }
+        .data-table tr:hover td { background: #f0f6fe; }
+        .data-table .empty-row td { text-align: center; color: #a0b8cc; padding: 12px; font-size: 10px; }
+        .data-table .row-highlight td { background: #fff8e1 !important; }
+
+        .type-tag { display: inline-block; padding: 0 5px; border-radius: 30px; font-size: 7px; font-weight: 600; }
+        .type-tag.pickup { background: #fff3e0; color: #e67e22; }
+        .type-tag.destination { background: #fce4e4; color: #b13b3b; }
+        .type-tag.front { background: #d4e4f0; color: #1a5d8c; }
+        .type-tag.rear { background: #d4ece4; color: #1e6657; }
+
+        .table-toolbar { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; align-items: center; padding-top: 3px; border-top: 1px solid #e8eef5; flex-shrink: 0; }
+        .table-toolbar .info-text { font-size: 9px; color: #7a8eaa; }
+        .table-toolbar .info-text strong { color: #1f3a5f; }
+
+        .btn { border: none; padding: 3px 10px; border-radius: 60px; font-weight: 600; font-size: 9px; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+        .btn-success { background: #2a7f6e; color: white; }
+        .btn-success:hover { background: #1e6657; transform: translateY(-1px); }
+        .btn-success:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-outline { background: #eef3fc; color: #1f4970; border: 1px solid #cde0ee; }
+        .btn-outline:hover { background: #e2ebf5; }
+        .btn-danger { background: #fce4e4; color: #b13b3b; border: 1px solid #f5c2c2; }
+        .btn-danger:hover { background: #fccfcf; }
+        .btn-sm { padding: 2px 6px; font-size: 8px; }
+        .btn-primary { background: #1a5d8c; color: white; }
+        .btn-primary:hover { background: #0e466b; }
+
+        .card-right { background: white; border-radius: 1.2rem; padding: 14px 16px; border: 1px solid #e2edf5; box-shadow: 0 2px 8px rgba(0,0,0,0.04); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+        .card-right .card-title { font-size: 13px; font-weight: 600; color: #1f3a5f; display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-bottom: 6px; flex-wrap: wrap; }
+        .card-right .card-title .sub { font-weight: 400; font-size: 10px; color: #7a8eaa; }
+        .card-right .card-title .right-actions { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; }
+
+        #mapContainer { border-radius: 10px; border: 1px solid #e2edf5; flex: 1; min-height: 300px; overflow: hidden; background: #d4d9c8; position: relative; }
+        #mapContainer .map-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: #6a7a5a; font-size: 12px; background: #d4d9c8; flex-direction: column; }
+        #mapContainer .map-placeholder .icon { font-size: 36px; margin-bottom: 8px; }
+        #mapContainer .leaflet-container { height: 100%; width: 100%; background: #d4d9c8; }
+
+        .map-layer-control { position: absolute; bottom: 12px; right: 12px; z-index: 1000; background: rgba(255,255,255,0.92); border-radius: 6px; padding: 4px 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); font-size: 8px; color: #4a6a8a; border: 1px solid #e2edf5; backdrop-filter: blur(4px); }
+        .map-layer-control .layer-status { display: flex; align-items: center; gap: 4px; }
+        .map-layer-control .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; }
+        .map-layer-control .dot.success { background: #2a7f6e; }
+        .map-layer-control .dot.fail { background: #b13b3b; }
+        .map-layer-control .dot.loading { background: #f5c842; animation: blink 0.8s infinite; }
+        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #1e6657; color: white; padding: 8px 20px; border-radius: 60px; font-weight: 600; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.2); z-index: 999; animation: fadeInDown 0.3s ease; display: none; }
+        .toast.show { display: block; }
+        .toast.error { background: #b13b3b; }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateX(-50%) translateY(-16px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+        .footer-note { margin-top: 4px; font-size: 8px; color: #8aa0b8; text-align: center; border-top: 1px solid #e8eef5; padding-top: 4px; flex-shrink: 0; }
+
+        .map-label { background: rgba(0,0,0,0.75); color: white; padding: 1px 6px; border-radius: 4px; font-size: 8px; font-weight: 600; white-space: nowrap; border: 1px solid rgba(255,255,255,0.2); pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        .map-label.pickup { border-color: #e67e22; }
+        .map-label.destination { border-color: #b13b3b; }
+        .map-label.front { border-color: #1a5d8c; }
+        .map-label.rear { border-color: #2a7f6e; }
+
+        .custom-node-icon { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+
+        @media (max-width: 768px) {
+            .container { height: auto; min-height: 100vh; }
+            .main-grid { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+            .card-left { max-height: 440px; }
+            #mapContainer { min-height: 320px; height: 320px; }
+            .legend-tree { max-height: 100px; }
+            .table-wrap { max-height: 70px; }
+        }
+        @media (max-width: 480px) {
+            body { padding: 8px; }
+            .header h1 { font-size: 16px; }
+            .header .badge-group { display: none; }
+            .card-left, .card-right { padding: 10px 12px; }
+            .card-left { max-height: 420px; }
+            #mapContainer { min-height: 220px; height: 220px; }
+            .btn { font-size: 8px; padding: 2px 6px; }
+            .data-table { font-size: 8px; min-width: 500px; }
+            .legend-tree .tree-item { font-size: 10px; }
+            .search-bar .search-input-wrap input { font-size: 9px; padding: 3px 6px 3px 22px; }
+            .search-bar .search-input-wrap .search-icon { font-size: 10px; left: 6px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="toast" class="toast"></div>
+
+        <!-- ===== 头部 ===== -->
+        <div class="header">
+            <div class="header-left">
+                <h1>🌐 供应链网络可视化</h1>
+                <p>提货点 · 目的点 · 前置仓 · 末端仓</p>
+            </div>
+            <div class="badge-group">
+                <span class="badge network">🔗 仓-点连线</span>
+                <span class="badge">🏗️ 前置仓</span>
+                <span class="badge">🏁 末端仓</span>
+                <span class="badge">📦 提货点</span>
+                <span class="badge">🎯 目的点</span>
+            </div>
+        </div>
+
+        <!-- ===== 主布局 ===== -->
+        <div class="main-grid">
+            <!-- ===== 左侧面板 ===== -->
+            <div class="card-left">
+                <div class="card-title">
+                    📥 数据导入
+                    <span class="sub">Excel/CSV</span>
+                    <span class="right-actions">
+                        <button class="btn btn-outline btn-sm" id="sampleBtn">📋 示例</button>
+                        <button class="btn btn-danger btn-sm" id="clearBtn">🗑️ 清空</button>
+                    </span>
+                </div>
+
+                <div class="upload-zone" id="uploadZone">
+                    <div class="icon">📂</div>
+                    <div class="title">拖拽或点击上传</div>
+                    <div class="sub">.xlsx, .xls, .csv</div>
+                    <div class="formats">提货点代码,提货点名称,提货点地址,提货点经度,提货点纬度,前置仓代码,前置仓经度,前置仓纬度,目的点代码,目的点名称,目的点地址,目的点经度,目的点纬度,末端仓代码,末端仓经度,末端仓纬度</div>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+                </div>
+
+                <div id="fileStatus" style="display:none;"></div>
+
+                <!-- 统计 -->
+                <div class="stats-mini">
+                    <span class="stat-item">📍 节点 <span class="num" id="nodeCount">0</span></span>
+                    <span class="stat-item">📦 提货点 <span class="num" id="pickupCount">0</span></span>
+                    <span class="stat-item">🎯 目的点 <span class="num" id="destinationCount">0</span></span>
+                    <span class="stat-item">🏗️ 前置仓 <span class="num" id="frontCount">0</span></span>
+                    <span class="stat-item">🏁 末端仓 <span class="num" id="rearCount">0</span></span>
+                    <span class="stat-item">🔗 连线 <span class="num" id="routeCount">0</span></span>
+                    <span class="stat-item" style="color:#d48c2c;">⚡ 重叠 <span class="num" id="overlapCount">0</span></span>
+                </div>
+
+                <!-- ★★★ 搜索栏 ★★★ -->
+                <div class="search-bar">
+                    <div class="search-input-wrap">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" placeholder="搜索名称/代码..." autocomplete="off">
+                        <button class="clear-search" id="clearSearchBtn">✕</button>
+                    </div>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="showLabelsToggle">
+                        🏷️ 标签
+                    </label>
+                    <span class="search-results-count" id="searchCount"></span>
+                </div>
+
+                <!-- ★★★ 树形图例 ★★★ -->
+                <div class="legend-tree" id="legendTree">
+                    <div class="tree-root">
+                        <span>📊 全部节点</span>
+                        <span class="root-count" id="rootCount">0 个</span>
+                    </div>
+                    <div id="legendTreeBody">
+                        <div class="tree-empty">请加载数据</div>
+                    </div>
+                </div>
+
+                <!-- 数据表格 -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin:4px 0 2px; flex-shrink:0;">
+                    <span style="font-weight:600; font-size:10px; color:#1f3a5f;">📋 节点列表（去重后）</span>
+                    <span style="font-size:8px; color:#7a8eaa;" id="rowCount">共 0 行</span>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>代码</th>
+                                <th>名称</th>
+                                <th>类型</th>
+                                <th>经度</th>
+                                <th>纬度</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr class="empty-row"><td colspan="6">📭 暂无数据</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-toolbar">
+                    <span class="info-text">💡 点击图例过滤 · 自动去重</span>
+                    <span style="margin-left:auto;font-size:8px;color:#8aa0b8;">
+                        <span class="type-tag pickup">📦 提货点</span>
+                        <span class="type-tag destination">🎯 目的点</span>
+                        <span class="type-tag front">🏗️ 前置仓</span>
+                        <span class="type-tag rear">🏁 末端仓</span>
+                    </span>
+                </div>
+
+                <div style="display:flex; gap:4px; margin-top:4px; flex-shrink:0; flex-wrap:wrap;">
+                    <button class="btn btn-success" id="visualizeBtn" disabled style="flex:1;">🌐 可视化</button>
+                    <button class="btn btn-primary" id="exportBtn" disabled style="flex:0.5;">📥 导出</button>
+                </div>
+            </div>
+
+            <!-- ===== 右侧：地图 ===== -->
+            <div class="card-right">
+                <div class="card-title">
+                    🗺️ 供应链网络
+                    <span class="sub">— 4种节点 · 图例过滤</span>
+                    <span class="right-actions">
+                        <span style="font-size:9px;color:#8aa0b8;" id="mapStatus">等待数据</span>
+                        <button class="btn btn-outline btn-sm" id="fitViewBtn" style="display:none;">🎯 适应</button>
+                    </span>
+                </div>
+
+                <div id="mapContainer">
+                    <div class="map-placeholder">
+                        <div class="icon">🌐</div>
+                        <div>请上传数据后点击「可视化」</div>
+                        <div style="font-size:10px;margin-top:4px;">4种节点 · 图例过滤</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="font-size:8px; color:#8aa0b8; text-align:center; flex-shrink:0; padding:2px 0;">
+            🔒 所有数据仅在浏览器本地处理 · 自动去重 · 图例过滤 · 4种节点类型
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  ★★★ 地图图层配置（远山黛背景） ★★★
+        // ============================================================
+        const TILE_LAYERS = [{
+            name: '高德地图-远山黛',
+            url: 'https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+            options: { maxZoom: 18, attribution: '© 高德地图' }
+        }, {
+            name: '高德卫星图',
+            url: 'https://webst01.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',
+            options: { maxZoom: 18, attribution: '© 高德地图' }
+        }, {
+            name: 'OpenStreetMap',
+            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            options: { maxZoom: 19, attribution: '© OpenStreetMap', subdomains: ['a', 'b', 'c'] }
+        }];
+
+        // ============================================================
+        //  ★★★ 站点图标配置（缩小尺寸） ★★★
+        // ============================================================
+        function createNodeIcon(type, emoji, bgColor, isLarge = false) {
+            const size = isLarge ? 22 : 18;
+            const fontSize = isLarge ? 14 : 10;
+
+            const html = `
+                <div style="
+                    width: ${size}px;
+                    height: ${size}px;
+                    background: ${bgColor};
+                    border: 2px solid white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: ${fontSize}px;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+                    transition: 0.2s;
+                    font-family: 'Segoe UI', sans-serif;
+                    position: relative;
+                ">
+                    ${emoji}
+                </div>
+            `;
+
+            return L.divIcon({
+                html: html,
+                className: 'custom-node-icon',
+                iconSize: [size, size],
+                iconAnchor: [size / 2, size / 2],
+                popupAnchor: [0, -size / 2 - 4]
+            });
+        }
+
+        // ============================================================
+        //  状态管理
+        // ============================================================
+        let nodes = [];
+        let routes = [];
+        let filteredNodes = [];
+        let currentFilter = 'all';
+        let searchKeyword = '';
+        let showLabels = false;
+        let mapInstance = null;
+        let mapMarkers = []; // 存储所有标记
+        let routeLines = [];
+        let labelLayers = [];
+        let overlapCount = 0;
+
+        // ============================================================
+        //  类型配置
+        // ============================================================
+        const TYPE_CONFIG = {
+            pickup: { label: '📦 提货点', emoji: '📦', color: '#e67e22', bgColor: '#fff3e0' },
+            destination: { label: '🎯 目的点', emoji: '🎯', color: '#b13b3b', bgColor: '#fce4e4' },
+            front: { label: '🏗️ 前置仓', emoji: '🏗️', color: '#1a5d8c', bgColor: '#d4e4f0' },
+            rear: { label: '🏁 末端仓', emoji: '🏁', color: '#2a7f6e', bgColor: '#d4ece4' }
+        };
+
+        function getTypeLabel(type) {
+            return TYPE_CONFIG[type]?.label || type;
+        }
+
+        function getTypeColor(type) {
+            return TYPE_CONFIG[type]?.color || '#888888';
+        }
+
+        function getTypeEmoji(type) {
+            return TYPE_CONFIG[type]?.emoji || '📍';
+        }
+
+        // ============================================================
+        //  DOM 引用
+        // ============================================================
+        const tableBody = document.getElementById('tableBody');
+        const rowCount = document.getElementById('rowCount');
+        const nodeCount = document.getElementById('nodeCount');
+        const pickupCount = document.getElementById('pickupCount');
+        const destinationCount = document.getElementById('destinationCount');
+        const frontCount = document.getElementById('frontCount');
+        const rearCount = document.getElementById('rearCount');
+        const routeCountEl = document.getElementById('routeCount');
+        const overlapCountEl = document.getElementById('overlapCount');
+        const fileInput = document.getElementById('fileInput');
+        const uploadZone = document.getElementById('uploadZone');
+        const fileStatus = document.getElementById('fileStatus');
+        const sampleBtn = document.getElementById('sampleBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const visualizeBtn = document.getElementById('visualizeBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const fitViewBtn = document.getElementById('fitViewBtn');
+        const mapStatus = document.getElementById('mapStatus');
+        const toast = document.getElementById('toast');
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const showLabelsToggle = document.getElementById('showLabelsToggle');
+        const searchCount = document.getElementById('searchCount');
+        const legendTreeBody = document.getElementById('legendTreeBody');
+        const rootCount = document.getElementById('rootCount');
+
+        // ============================================================
+        //  工具函数
+        // ============================================================
+        function showToast(msg, isError = false) {
+            toast.textContent = msg;
+            toast.className = 'toast show' + (isError ? ' error' : '');
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => { toast.classList.remove('show'); }, 2500);
+        }
+
+        function haversineDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function escHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[m] || m);
+        }
+
+        // ============================================================
+        //  ★★★ 数据导入（使用uid确保唯一性） ★★★
+        // ============================================================
+        function parseDataFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+                        resolve(rows);
+                    } catch (err) { reject(err); }
+                };
+                reader.onerror = () => reject(new Error(`读取失败 ${file.name}`));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        async function importData(file) {
+            try {
+                const rows = await parseDataFile(file);
+                if (!rows || rows.length === 0) { showToast('文件为空或格式不正确', true); return false; }
+
+                const headers = Object.keys(rows[0] || {});
+                const colMap = {
+                    pickupCode: findCol(headers, ['提货点代码', '提货代码', 'pickupCode', 'pickup']),
+                    pickupName: findCol(headers, ['提货点名称', '提货名称', 'pickupName']),
+                    pickupAddress: findCol(headers, ['提货点地址', '提货地址', 'pickupAddress']),
+                    pickupLng: findCol(headers, ['提货点经度', '提货经度', 'pickupLng']),
+                    pickupLat: findCol(headers, ['提货点纬度', '提货纬度', 'pickupLat']),
+                    frontCode: findCol(headers, ['前置仓代码', 'frontCode', 'front']),
+                    frontLng: findCol(headers, ['前置仓经度', 'frontLng']),
+                    frontLat: findCol(headers, ['前置仓纬度', 'frontLat']),
+                    destCode: findCol(headers, ['目的点代码', '目的代码', 'destCode', 'destination']),
+                    destName: findCol(headers, ['目的点名称', '目的名称', 'destName']),
+                    destAddress: findCol(headers, ['目的点地址', '目的地址', 'destAddress']),
+                    destLng: findCol(headers, ['目的点经度', '目的经度', 'destLng']),
+                    destLat: findCol(headers, ['目的点纬度', '目的纬度', 'destLat']),
+                    rearCode: findCol(headers, ['末端仓代码', 'rearCode', 'rear']),
+                    rearLng: findCol(headers, ['末端仓经度', 'rearLng']),
+                    rearLat: findCol(headers, ['末端仓纬度', 'rearLat'])
+                };
+
+                const required = ['pickupName', 'pickupLng', 'pickupLat'];
+                const missing = required.filter(k => colMap[k] === null);
+                if (missing.length > 0) {
+                    showToast(`缺少必填列: ${missing.join(', ')}。检测到: ${headers.join(', ')}`, true);
+                    return false;
+                }
+
+                const nodeMap = {};
+                const routeList = [];
+
+                rows.forEach((row, idx) => {
+                    // ★★★ 提货点 ★★★
+                    const pickupCode = String(row[colMap.pickupCode] || '').trim() || `P${idx+1}`;
+                    const pickupName = String(row[colMap.pickupName] || '').trim();
+                    const pickupAddress = String(row[colMap.pickupAddress] || '').trim();
+                    const pickupLng = parseFloat(row[colMap.pickupLng]);
+                    const pickupLat = parseFloat(row[colMap.pickupLat]);
+
+                    if (!isNaN(pickupLng) && !isNaN(pickupLat) && pickupName) {
+                        // ★★★ 使用 type_code 作为唯一ID ★★★
+                        const uid = `pickup_${pickupCode}`;
+                        if (!nodeMap[uid]) {
+                            nodeMap[uid] = {
+                                uid: uid,
+                                code: pickupCode,
+                                name: pickupName,
+                                address: pickupAddress,
+                                lat: pickupLat,
+                                lng: pickupLng,
+                                type: 'pickup'
+                            };
+                        }
+                    }
+
+                    // ★★★ 前置仓 ★★★
+                    const frontCode = String(row[colMap.frontCode] || '').trim();
+                    const frontLng = parseFloat(row[colMap.frontLng]);
+                    const frontLat = parseFloat(row[colMap.frontLat]);
+                    if (frontCode && !isNaN(frontLng) && !isNaN(frontLat)) {
+                        const uid = `front_${frontCode}`;
+                        if (!nodeMap[uid]) {
+                            nodeMap[uid] = {
+                                uid: uid,
+                                code: frontCode,
+                                name: `前置仓 ${frontCode}`,
+                                address: '',
+                                lat: frontLat,
+                                lng: frontLng,
+                                type: 'front'
+                            };
+                        }
+                    }
+
+                    // ★★★ 目的点 ★★★
+                    const destCode = String(row[colMap.destCode] || '').trim() || `D${idx+1}`;
+                    const destName = String(row[colMap.destName] || '').trim();
+                    const destAddress = String(row[colMap.destAddress] || '').trim();
+                    const destLng = parseFloat(row[colMap.destLng]);
+                    const destLat = parseFloat(row[colMap.destLat]);
+
+                    if (!isNaN(destLng) && !isNaN(destLat) && destName) {
+                        const uid = `destination_${destCode}`;
+                        if (!nodeMap[uid]) {
+                            nodeMap[uid] = {
+                                uid: uid,
+                                code: destCode,
+                                name: destName,
+                                address: destAddress,
+                                lat: destLat,
+                                lng: destLng,
+                                type: 'destination'
+                            };
+                        }
+                    }
+
+                    // ★★★ 末端仓 ★★★
+                    const rearCode = String(row[colMap.rearCode] || '').trim();
+                    const rearLng = parseFloat(row[colMap.rearLng]);
+                    const rearLat = parseFloat(row[colMap.rearLat]);
+                    if (rearCode && !isNaN(rearLng) && !isNaN(rearLat)) {
+                        const uid = `rear_${rearCode}`;
+                        if (!nodeMap[uid]) {
+                            nodeMap[uid] = {
+                                uid: uid,
+                                code: rearCode,
+                                name: `末端仓 ${rearCode}`,
+                                address: '',
+                                lat: rearLat,
+                                lng: rearLng,
+                                type: 'rear'
+                            };
+                        }
+                    }
+
+                    // ★★★ 建立连线 ★★★
+                    if (frontCode) {
+                        const frontUid = `front_${frontCode}`;
+                        const pickupUid = `pickup_${pickupCode}`;
+                        if (nodeMap[frontUid] && nodeMap[pickupUid]) {
+                            routeList.push({
+                                from: pickupUid,
+                                to: frontUid,
+                                fromType: 'pickup',
+                                toType: 'front'
+                            });
+                        }
+                    }
+                    if (rearCode) {
+                        const rearUid = `rear_${rearCode}`;
+                        const destUid = `destination_${destCode}`;
+                        if (nodeMap[rearUid] && nodeMap[destUid]) {
+                            routeList.push({
+                                from: destUid,
+                                to: rearUid,
+                                fromType: 'destination',
+                                toType: 'rear'
+                            });
+                        }
+                    }
+                    if (frontCode && rearCode) {
+                        const frontUid = `front_${frontCode}`;
+                        const rearUid = `rear_${rearCode}`;
+                        if (nodeMap[frontUid] && nodeMap[rearUid]) {
+                            routeList.push({
+                                from: frontUid,
+                                to: rearUid,
+                                fromType: 'front',
+                                toType: 'rear'
+                            });
+                        }
+                    }
+                });
+
+                const finalNodes = Object.values(nodeMap);
+
+                // ★★★ 构建节点映射 ★★★
+                const nodeByUid = {};
+                finalNodes.forEach(n => { nodeByUid[n.uid] = n; });
+
+                // ★★★ 去重连线 ★★★
+                const uniqueRoutes = [];
+                const routeSet = new Set();
+                routeList.forEach(r => {
+                    const key = `${r.from}_${r.to}`;
+                    if (!routeSet.has(key) && nodeByUid[r.from] && nodeByUid[r.to]) {
+                        routeSet.add(key);
+                        uniqueRoutes.push({
+                            from: r.from,
+                            to: r.to,
+                            fromNode: nodeByUid[r.from],
+                            toNode: nodeByUid[r.to],
+                            fromType: r.fromType,
+                            toType: r.toType,
+                            routeCode: `${r.fromType}_${r.toType}`
+                        });
+                    }
+                });
+
+                nodes = finalNodes;
+                routes = uniqueRoutes;
+
+                // ★★★ 计算坐标重叠数 ★★★
+                calculateOverlaps();
+
+                loadedFileName = file.name;
+                showFileStatus(file.name, nodes.length);
+                currentFilter = 'all';
+                searchKeyword = '';
+                searchInput.value = '';
+                clearSearchBtn.classList.remove('visible');
+                applyFilters();
+                renderTable();
+                updateStats();
+                updateLegendTree();
+                updateRouteStats();
+                showToast(`✅ 成功导入 ${nodes.length} 个节点，${routes.length} 条连线`);
+                return true;
+
+            } catch (err) {
+                showToast(`解析失败: ${err.message}`, true);
+                return false;
+            }
+        }
+
+        function findCol(headers, candidates) {
+            for (let c of candidates) {
+                const found = headers.find(h => h.trim() === c || h.trim().toLowerCase() === c.toLowerCase());
+                if (found) return found;
+            }
+            for (let c of candidates) {
+                const found = headers.find(h => h.includes(c) || c.includes(h));
+                if (found) return found;
+            }
+            return null;
+        }
+
+        function showFileStatus(name, count) {
+            fileStatus.style.display = 'block';
+            fileStatus.innerHTML =
+                `<span class="file-name">📄 ${name}</span><span>${count} 个节点</span><button class="remove-file" onclick="clearAll()">✕</button>`;
+        }
+
+        function calculateOverlaps() {
+            const coordMap = {};
+            nodes.forEach(node => {
+                const key = `${node.lat.toFixed(6)},${node.lng.toFixed(6)}`;
+                if (!coordMap[key]) coordMap[key] = [];
+                coordMap[key].push(node);
+            });
+            overlapCount = Object.values(coordMap).filter(arr => arr.length > 1).reduce((sum, arr) => sum + arr.length, 0);
+            overlapCountEl.textContent = overlapCount;
+        }
+
+        // ============================================================
+        //  过滤和搜索
+        // ============================================================
+        function applyFilters() {
+            filteredNodes = nodes.filter(node => {
+                if (currentFilter !== 'all' && node.type !== currentFilter) return false;
+                if (searchKeyword.trim()) {
+                    const kw = searchKeyword.trim().toLowerCase();
+                    const name = (node.name || '').toLowerCase();
+                    const code = (node.code || '').toLowerCase();
+                    if (!name.includes(kw) && !code.includes(kw)) return false;
+                }
+                return true;
+            });
+            updateSearchCount();
+            renderTable();
+            updateLegendTree();
+            if (mapInstance && nodes.length > 0) {
+                renderMapLayers();
+            }
+        }
+
+        function updateSearchCount() {
+            const count = filteredNodes.length;
+            const total = nodes.length;
+            const parts = [];
+            if (searchKeyword.trim() || currentFilter !== 'all') parts.push(`🔍 ${count}/${total}`);
+            searchCount.textContent = parts.join(' ');
+        }
+
+        function updateStats() {
+            rowCount.textContent = `共 ${nodes.length} 行`;
+            nodeCount.textContent = nodes.length;
+            const pickup = nodes.filter(n => n.type === 'pickup').length;
+            const dest = nodes.filter(n => n.type === 'destination').length;
+            const front = nodes.filter(n => n.type === 'front').length;
+            const rear = nodes.filter(n => n.type === 'rear').length;
+            pickupCount.textContent = pickup;
+            destinationCount.textContent = dest;
+            frontCount.textContent = front;
+            rearCount.textContent = rear;
+            rootCount.textContent = `${nodes.length} 个`;
+            calculateOverlaps();
+        }
+
+        function updateRouteStats() {
+            routeCountEl.textContent = routes.length;
+        }
+
+        function updateButtons() {
+            visualizeBtn.disabled = nodes.length < 2;
+            exportBtn.disabled = nodes.length === 0;
+        }
+
+        function renderTable() {
+            const data = filteredNodes.length > 0 ? filteredNodes : nodes;
+            if (data.length === 0) {
+                tableBody.innerHTML =
+                    `<tr class="empty-row"><td colspan="6">📭 ${nodes.length === 0 ? '暂无数据，请上传文件' : '没有匹配的节点'}</td></tr>`;
+                updateStats();
+                updateButtons();
+                return;
+            }
+
+            let html = '';
+            const kw = searchKeyword.trim().toLowerCase();
+            data.forEach((s, i) => {
+                const typeLabel = getTypeLabel(s.type);
+                const typeTag = `<span class="type-tag ${s.type}">${getTypeEmoji(s.type)} ${typeLabel.replace(/[^\u4e00-\u9fa5\uAC00-\uD7A3\u4E00-\u9FFF\u3000-\u303F]/g, '').trim()}</span>`;
+
+                let displayName = escHtml(s.name || s.code);
+                if (kw && displayName.toLowerCase().includes(kw)) {
+                    const idx = displayName.toLowerCase().indexOf(kw);
+                    displayName = escHtml(displayName.substring(0, idx)) +
+                        `<mark style="background:#fff8e1;padding:0 2px;border-radius:2px;">${escHtml(displayName.substring(idx, idx + kw.length))}</mark>` +
+                        escHtml(displayName.substring(idx + kw.length));
+                }
+
+                html += `<tr>
+                    <td>${i + 1}</td>
+                    <td><strong>${escHtml(s.code || '-')}</strong></td>
+                    <td>${displayName}</td>
+                    <td>${typeTag}</td>
+                    <td>${s.lng}</td>
+                    <td>${s.lat}</td>
+                </tr>`;
+            });
+            tableBody.innerHTML = html;
+            updateStats();
+            updateButtons();
+        }
+
+        // ============================================================
+        //  树形图例
+        // ============================================================
+        function updateLegendTree() {
+            if (nodes.length === 0) {
+                legendTreeBody.innerHTML = `<div class="tree-empty">请加载数据</div>`;
+                return;
+            }
+
+            const types = [
+                { key: 'pickup', label: '📦 提货点', emoji: '📦' },
+                { key: 'destination', label: '🎯 目的点', emoji: '🎯' },
+                { key: 'front', label: '🏗️ 前置仓', emoji: '🏗️' },
+                { key: 'rear', label: '🏁 末端仓', emoji: '🏁' }
+            ];
+
+            let html = '';
+            types.forEach(t => {
+                const count = nodes.filter(n => n.type === t.key).length;
+                const filteredCount = filteredNodes.filter(n => n.type === t.key).length;
+                const isActive = currentFilter === t.key;
+                const isPartial = currentFilter === 'all' && searchKeyword.trim() && filteredCount < count;
+
+                html += `
+                    <div class="tree-item ${isActive ? 'active' : ''}" onclick="filterByType('${t.key}')" data-type="${t.key}">
+                        <span class="tree-dot">${t.emoji}</span>
+                        <span class="tree-label">${t.label}</span>
+                        <span class="tree-count">${isPartial ? filteredCount + '/' : ''}${count}</span>
+                        <span class="tree-check">✓</span>
+                    </div>
+                `;
+            });
+
+            const isAllActive = currentFilter === 'all';
+            html += `
+                <div style="border-top:1px solid #e8eef5;margin-top:4px;padding-top:4px;">
+                    <div class="tree-item ${isAllActive ? 'active' : ''}" onclick="filterByType('all')" style="font-weight:${isAllActive ? '700' : '500'};">
+                        <span style="font-size:16px;width:24px;text-align:center;">📊</span>
+                        <span class="tree-label">全部显示</span>
+                        <span class="tree-count">${filteredNodes.length} 个</span>
+                        <span class="tree-check">✓</span>
+                    </div>
+                </div>
+            `;
+
+            html += `
+                <div style="border-top:1px solid #e8eef5;margin-top:4px;padding-top:4px;font-size:8px;color:#7a8eaa;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;">
+                    <span>🔗 连线: <strong style="color:#1f3a5f;">${routes.length}</strong> 条</span>
+                    ${overlapCount > 0 ? `<span style="color:#d48c2c;">⚡ 重叠: ${overlapCount} 个</span>` : ''}
+                </div>
+            `;
+
+            legendTreeBody.innerHTML = html;
+        }
+
+        // ============================================================
+        //  ★★★ 图例过滤函数 ★★★
+        // ============================================================
+        function filterByType(type) {
+            if (currentFilter === type) {
+                currentFilter = 'all';
+            } else {
+                currentFilter = type;
+            }
+            applyFilters();
+            if (mapInstance && nodes.length > 0) {
+                renderMapLayers();
+            }
+            updateLegendTree();
+        }
+
+        // ============================================================
+        //  搜索功能
+        // ============================================================
+        function handleSearch() {
+            searchKeyword = searchInput.value;
+            if (searchKeyword.trim()) {
+                clearSearchBtn.classList.add('visible');
+            } else {
+                clearSearchBtn.classList.remove('visible');
+            }
+            applyFilters();
+            if (mapInstance && nodes.length > 0) {
+                renderMapLayers();
+            }
+        }
+
+        function clearSearch() {
+            searchInput.value = '';
+            searchKeyword = '';
+            clearSearchBtn.classList.remove('visible');
+            applyFilters();
+            if (mapInstance && nodes.length > 0) {
+                renderMapLayers();
+            }
+            searchInput.focus();
+        }
+
+        // ============================================================
+        //  ★★★ 地图渲染 ★★★
+        // ============================================================
+        function renderMap() {
+            const mapContainer = document.getElementById('mapContainer');
+            if (mapInstance) {
+                mapInstance.remove();
+                mapInstance = null;
+            }
+            mapMarkers = [];
+            routeLines = [];
+            labelLayers = [];
+
+            if (nodes.length < 2) {
+                mapContainer.innerHTML = `
+                    <div class="map-placeholder">
+                        <div class="icon">📍</div>
+                        <div>至少需要 2 个节点才能形成网络</div>
+                        <div style="font-size:10px;margin-top:4px;">请添加更多节点</div>
+                    </div>
+                `;
+                mapStatus.textContent = '节点不足';
+                fitViewBtn.style.display = 'none';
+                return;
+            }
+
+            const displayNodes = filteredNodes.length > 0 ? filteredNodes : nodes;
+            if (displayNodes.length < 2) {
+                mapContainer.innerHTML = `
+                    <div class="map-placeholder">
+                        <div class="icon">🔍</div>
+                        <div>当前筛选结果不足 2 个节点</div>
+                        <div style="font-size:10px;margin-top:4px;">请调整筛选条件</div>
+                    </div>
+                `;
+                mapStatus.textContent = '筛选结果不足';
+                fitViewBtn.style.display = 'none';
+                return;
+            }
+
+            const centerLat = displayNodes.reduce((s, p) => s + p.lat, 0) / displayNodes.length;
+            const centerLng = displayNodes.reduce((s, p) => s + p.lng, 0) / displayNodes.length;
+
+            mapContainer.innerHTML = '';
+            mapInstance = L.map(mapContainer, {
+                center: [centerLat, centerLng],
+                zoom: 8,
+                zoomControl: true,
+                fadeAnimation: true,
+                attributionControl: true,
+                backgroundColor: '#d4d9c8'
+            });
+
+            const controlDiv = document.createElement('div');
+            controlDiv.className = 'map-layer-control';
+            controlDiv.id = 'layerControl';
+            controlDiv.innerHTML =
+                `<div class="layer-status"><span class="dot loading" id="layerDot"></span><span id="layerStatusText">加载地图...</span></div>`;
+            mapContainer.appendChild(controlDiv);
+
+            let layerLoaded = false;
+            let currentIdx = 0;
+
+            function tryLoadLayer(index) {
+                if (index >= TILE_LAYERS.length) {
+                    document.getElementById('layerDot').className = 'dot fail';
+                    document.getElementById('layerStatusText').textContent = '⚠️ 地图加载失败';
+                    return;
+                }
+                const layer = TILE_LAYERS[index];
+                document.getElementById('layerDot').className = 'dot loading';
+                document.getElementById('layerStatusText').textContent = `加载 ${layer.name}...`;
+
+                const tileLayer = L.tileLayer(layer.url, layer.options);
+                let loaded = false;
+                const onLoad = () => {
+                    if (!loaded) { loaded = true;
+                        document.getElementById('layerDot').className = 'dot success';
+                        document.getElementById('layerStatusText').textContent = `✅ ${layer.name}`;
+                        layerLoaded = true; }
+                };
+                const onError = () => {
+                    if (!loaded) {
+                        loaded = true;
+                        if (mapInstance) mapInstance.removeLayer(tileLayer);
+                        setTimeout(() => { if (!layerLoaded) tryLoadLayer(index + 1); }, 500);
+                    }
+                };
+                tileLayer.on('load', onLoad);
+                tileLayer.on('tileload', onLoad);
+                tileLayer.on('tileerror', onError);
+                setTimeout(() => { if (!loaded) onError(); }, 8000);
+                tileLayer.addTo(mapInstance);
+            }
+            tryLoadLayer(0);
+
+            renderMapLayers();
+
+            try {
+                if (mapMarkers.length > 0) {
+                    const group = L.featureGroup(mapMarkers);
+                    mapInstance.fitBounds(group.getBounds(), { padding: [50, 50] });
+                }
+            } catch (e) {
+                mapInstance.setView([centerLat, centerLng], 8);
+            }
+
+            fitViewBtn.style.display = 'inline-block';
+            mapStatus.textContent = `✅ ${displayNodes.length} 个节点 · ${routeLines.length} 条连线`;
+
+            setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 300);
+            setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 800);
+        }
+
+        // ★★★ ★★★ 渲染地图图层（修复图例联动） ★★★ ★★★
+        function renderMapLayers() {
+            if (!mapInstance) return;
+
+            // ★★★ 清除所有旧标记 ★★★
+            mapMarkers.forEach(m => { try { mapInstance.removeLayer(m); } catch (e) {} });
+            routeLines.forEach(l => { try { mapInstance.removeLayer(l); } catch (e) {} });
+            labelLayers.forEach(l => { try { mapInstance.removeLayer(l); } catch (e) {} });
+            mapMarkers = [];
+            routeLines = [];
+            labelLayers = [];
+
+            // ★★★ 获取当前要显示的节点 ★★★
+            let displayNodes = [];
+            if (currentFilter === 'all') {
+                displayNodes = nodes;
+            } else {
+                displayNodes = nodes.filter(n => n.type === currentFilter);
+            }
+
+            // 如果筛选后没有节点，显示全部
+            if (displayNodes.length === 0) {
+                displayNodes = nodes;
+            }
+
+            // ★★★ 调试输出 ★★★
+            console.log('当前筛选类型:', currentFilter);
+            console.log('显示节点数量:', displayNodes.length);
+            console.log('节点列表:', displayNodes.map(n => n.uid + ' ' + n.type + ' ' + n.code));
+
+            // ★★★ 处理坐标重叠：为同一坐标的节点分配偏移 ★★★
+            const coordGroups = {};
+            displayNodes.forEach(node => {
+                const key = `${node.lat.toFixed(6)},${node.lng.toFixed(6)}`;
+                if (!coordGroups[key]) coordGroups[key] = [];
+                coordGroups[key].push(node);
+            });
+
+            // ★★★ 创建节点标记（每个节点独立） ★★★
+            displayNodes.forEach((node, index) => {
+                const key = `${node.lat.toFixed(6)},${node.lng.toFixed(6)}`;
+                const group = coordGroups[key] || [node];
+                const indexInGroup = group.indexOf(node);
+                const totalInGroup = group.length;
+
+                // 计算偏移量
+                let offsetLat = 0;
+                let offsetLng = 0;
+                if (totalInGroup > 1) {
+                    const angle = (indexInGroup / totalInGroup) * 2 * Math.PI;
+                    const radius = 0.008; // 约0.8km
+                    offsetLat = Math.cos(angle) * radius;
+                    offsetLng = Math.sin(angle) * radius;
+                }
+
+                const isLarge = node.type === 'front' || node.type === 'rear';
+                const emoji = getTypeEmoji(node.type);
+                const color = getTypeColor(node.type);
+                const icon = createNodeIcon(node.type, emoji, color, isLarge);
+                const typeLabel = getTypeLabel(node.type);
+
+                const displayLat = node.lat + offsetLat;
+                const displayLng = node.lng + offsetLng;
+
+                // ★★★ 在弹窗中显示重叠信息 ★★★
+                const overlapInfo = totalInGroup > 1 ?
+                    `<div style="color:#d48c2c;font-size:11px;margin-top:4px;">⚡ 该位置共有 ${totalInGroup} 个节点</div>` :
+                    '';
+
+                const popupContent = `
+                    <div style="font-size:13px;line-height:1.8;min-width:160px;">
+                        <div style="font-size:16px;font-weight:700;color:#1f3a5f;">${emoji} ${escHtml(node.name || node.code)}</div>
+                        ${node.code ? `<div style="color:#7a8eaa;">📋 代码: ${escHtml(node.code)}</div>` : ''}
+                        <div style="color:#4a6a8a;">📌 类型: ${typeLabel}</div>
+                        <div style="color:#4a6a8a;">📍 ${node.lat}, ${node.lng}</div>
+                        ${overlapInfo}
+                        ${node.address ? `<div style="color:#7a8eaa;font-size:12px;">🏠 ${escHtml(node.address)}</div>` : ''}
+                        <div style="color:#8aa0b8;font-size:10px;margin-top:4px;">UID: ${node.uid}</div>
+                    </div>
+                `;
+
+                const marker = L.marker([displayLat, displayLng], { icon: icon })
+                    .addTo(mapInstance)
+                    .bindPopup(popupContent);
+
+                mapMarkers.push(marker);
+
+                // ★★★ 标签 ★★★
+                if (showLabels) {
+                    const labelClass = `map-label ${node.type}`;
+                    const labelText = node.code || node.name || '未知';
+                    const labelIcon = L.divIcon({
+                        className: labelClass,
+                        html: labelText,
+                        iconSize: [null, null],
+                        iconAnchor: [0, isLarge ? -22 : -18]
+                    });
+                    const labelMarker = L.marker([displayLat, displayLng], {
+                        icon: labelIcon,
+                        interactive: false
+                    }).addTo(mapInstance);
+                    labelLayers.push(labelMarker);
+                }
+            });
+
+            // ★★★ 绘制路线（仅全部显示时绘制连线） ★★★
+            if (currentFilter === 'all') {
+                const displayUids = new Set(displayNodes.map(n => n.uid));
+                const displayRoutes = routes.filter(r =>
+                    displayUids.has(r.from) && displayUids.has(r.to)
+                );
+
+                const colors = ['#1a5d8c', '#2a7f6e', '#6c5b7b', '#48DBFB', '#FECA57'];
+                let colorIdx = 0;
+
+                const routeTypeMap = {};
+                displayRoutes.forEach(r => {
+                    const key = `${r.fromType}_${r.toType}`;
+                    if (!routeTypeMap[key]) routeTypeMap[key] = [];
+                    routeTypeMap[key].push(r);
+                });
+
+                Object.keys(routeTypeMap).forEach(key => {
+                    const color = colors[colorIdx % colors.length];
+                    colorIdx++;
+                    const routeList = routeTypeMap[key];
+
+                    routeList.forEach(route => {
+                        const fromNode = route.fromNode;
+                        const toNode = route.toNode;
+                        const dist = haversineDistance(fromNode.lat, fromNode.lng, toNode.lat, toNode.lng);
+
+                        const line = L.polyline([
+                            [fromNode.lat, fromNode.lng],
+                            [toNode.lat, toNode.lng]
+                        ], {
+                            color: color,
+                            weight: 2,
+                            opacity: 0.6,
+                            smoothFactor: 1,
+                            dashArray: null
+                        }).addTo(mapInstance)
+                        .bindPopup(`
+                            <div style="font-size:12px;line-height:1.6;">
+                                <strong>${getTypeEmoji(route.fromType)} ${escHtml(fromNode.name || fromNode.code)}</strong> 
+                                <span style="color:#8aa0b8;">→</span> 
+                                <strong>${getTypeEmoji(route.toType)} ${escHtml(toNode.name || toNode.code)}</strong>
+                                <br>📏 距离: <strong>${dist.toFixed(1)} km</strong>
+                                <br>📋 ${fromNode.code || ''} → ${toNode.code || ''}
+                            </div>
+                        `);
+
+                        routeLines.push(line);
+                    });
+                });
+
+                document.getElementById('routeCount').textContent = displayRoutes.length;
+            } else {
+                // 非全部显示时，清除连线计数
+                document.getElementById('routeCount').textContent = 0;
+            }
+
+            // ★★★ 更新地图状态 ★★★
+            mapStatus.textContent = `✅ ${displayNodes.length} 个节点 · ${routeLines.length} 条连线`;
+        }
+
+        // ============================================================
+        //  可视化网络
+        // ============================================================
+        function visualizeNetwork() {
+            if (nodes.length < 2) {
+                showToast('至少需要 2 个节点才能形成网络', true);
+                return;
+            }
+            renderMap();
+            showToast(`🌐 已可视化 ${nodes.length} 个节点，${routes.length} 条连线`);
+        }
+
+        // ============================================================
+        //  适应视图
+        // ============================================================
+        function fitView() {
+            if (mapInstance) {
+                try {
+                    const allLayers = [];
+                    mapInstance.eachLayer(layer => {
+                        if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                            allLayers.push(layer);
+                        }
+                    });
+                    if (allLayers.length > 0) {
+                        const group = L.featureGroup(allLayers);
+                        mapInstance.fitBounds(group.getBounds(), { padding: [50, 50] });
+                    }
+                } catch (e) {}
+            }
+        }
+
+        // ============================================================
+        //  标签开关
+        // ============================================================
+        showLabelsToggle.addEventListener('change', function() {
+            showLabels = this.checked;
+            if (mapInstance && nodes.length > 0) {
+                renderMapLayers();
+            }
+        });
+
+        // ============================================================
+        //  导出结果
+        // ============================================================
+        function exportResults() {
+            if (nodes.length === 0) { showToast('没有可导出的数据', true); return; }
+
+            const data = [];
+            nodes.forEach((n, idx) => {
+                data.push({
+                    '类型': '节点',
+                    '序号': idx + 1,
+                    '站点代码': n.code || '',
+                    '站点名称': n.name || '',
+                    '站点类型': getTypeLabel(n.type),
+                    '经度': n.lng,
+                    '纬度': n.lat,
+                    '站点地址': n.address || ''
+                });
+            });
+
+            routes.forEach((r, idx) => {
+                data.push({
+                    '类型': '连线',
+                    '序号': idx + 1,
+                    '起点类型': getTypeLabel(r.fromType),
+                    '起点代码': r.fromNode.code || '',
+                    '起点名称': r.fromNode.name || '',
+                    '终点类型': getTypeLabel(r.toType),
+                    '终点代码': r.toNode.code || '',
+                    '终点名称': r.toNode.name || '',
+                    '距离(km)': haversineDistance(r.fromNode.lat, r.fromNode.lng, r.toNode.lat, r.toNode.lng)
+                        .toFixed(2)
+                });
+            });
+
+            const headers = Object.keys(data[0] || {});
+            let csv = headers.join(',') + '\n';
+            data.forEach(row => {
+                csv += headers.map(h => {
+                    let val = row[h] || '';
+                    if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
+                        val = '"' + val.replace(/"/g, '""') + '"';
+                    }
+                    return val;
+                }).join(',') + '\n';
+            });
+
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `供应链网络_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('📥 导出成功！');
+        }
+
+        // ============================================================
+        //  加载示例数据
+        // ============================================================
+        function loadSampleData() {
+            if (nodes.length > 0 && !confirm('加载示例数据将覆盖当前数据，是否继续？')) return;
+            nodes = [];
+            routes = [];
+            loadedFileName = '';
+
+            const sampleRows = [{
+                pickupCode: 'P001',
+                pickupName: '上海提货点A',
+                pickupAddress: '上海市浦东新区',
+                pickupLng: 121.4737,
+                pickupLat: 31.2304,
+                frontCode: 'F001',
+                frontLng: 121.4737,
+                frontLat: 31.2304,
+                destCode: 'D001',
+                destName: '合肥目的点A',
+                destAddress: '合肥市高新区',
+                destLng: 117.2272,
+                destLat: 31.8206,
+                rearCode: 'R001',
+                rearLng: 118.7969,
+                rearLat: 32.0603
+            }, {
+                pickupCode: 'P002',
+                pickupName: '杭州提货点B',
+                pickupAddress: '杭州市滨江区',
+                pickupLng: 120.1551,
+                pickupLat: 30.2741,
+                frontCode: 'F001',
+                frontLng: 121.4737,
+                frontLat: 31.2304,
+                destCode: 'D002',
+                destName: '芜湖目的点B',
+                destAddress: '芜湖市鸠江区',
+                destLng: 118.3622,
+                destLat: 31.3656,
+                rearCode: 'R001',
+                rearLng: 118.7969,
+                rearLat: 32.0603
+            }, {
+                pickupCode: 'P003',
+                pickupName: '南京提货点C',
+                pickupAddress: '南京市江宁区',
+                pickupLng: 118.7969,
+                pickupLat: 32.0603,
+                frontCode: 'F001',
+                frontLng: 121.4737,
+                frontLat: 31.2304,
+                destCode: 'D003',
+                destName: '徐州目的点C',
+                destAddress: '徐州市鼓楼区',
+                destLng: 117.2543,
+                destLat: 34.2055,
+                rearCode: 'R001',
+                rearLng: 118.7969,
+                rearLat: 32.0603
+            }, {
+                pickupCode: 'P004',
+                pickupName: '北京提货点D',
+                pickupAddress: '北京市通州区',
+                pickupLng: 116.4074,
+                pickupLat: 39.9042,
+                frontCode: 'F002',
+                frontLng: 116.4074,
+                frontLat: 39.9042,
+                destCode: 'D004',
+                destName: '天津目的点D',
+                destAddress: '天津市滨海新区',
+                destLng: 117.2009,
+                destLat: 39.0842,
+                rearCode: 'R002',
+                rearLng: 117.2009,
+                rearLat: 39.0842
+            }, {
+                pickupCode: 'P005',
+                pickupName: '石家庄提货点E',
+                pickupAddress: '石家庄市长安区',
+                pickupLng: 114.5149,
+                pickupLat: 38.0428,
+                frontCode: 'F002',
+                frontLng: 116.4074,
+                frontLat: 39.9042,
+                destCode: 'D005',
+                destName: '石家庄目的点E',
+                destAddress: '石家庄市长安区',
+                destLng: 114.5149,
+                destLat: 38.0428,
+                rearCode: 'R002',
+                rearLng: 114.5149,
+                rearLat: 38.0428
+            }];
+
+            const nodeMap = {};
+            const routeList = [];
+
+            sampleRows.forEach(row => {
+                // ★★★ 提货点 ★★★
+                if (row.pickupCode && !isNaN(row.pickupLng) && !isNaN(row.pickupLat)) {
+                    const uid = `pickup_${row.pickupCode}`;
+                    if (!nodeMap[uid]) {
+                        nodeMap[uid] = {
+                            uid: uid,
+                            code: row.pickupCode,
+                            name: row.pickupName || row.pickupCode,
+                            address: row.pickupAddress || '',
+                            lat: row.pickupLat,
+                            lng: row.pickupLng,
+                            type: 'pickup'
+                        };
+                    }
+                }
+
+                // ★★★ 前置仓 ★★★
+                if (row.frontCode && !isNaN(row.frontLng) && !isNaN(row.frontLat)) {
+                    const uid = `front_${row.frontCode}`;
+                    if (!nodeMap[uid]) {
+                        nodeMap[uid] = {
+                            uid: uid,
+                            code: row.frontCode,
+                            name: `前置仓 ${row.frontCode}`,
+                            address: '',
+                            lat: row.frontLat,
+                            lng: row.frontLng,
+                            type: 'front'
+                        };
+                    }
+                }
+
+                // ★★★ 目的点 ★★★
+                if (row.destCode && !isNaN(row.destLng) && !isNaN(row.destLat)) {
+                    const uid = `destination_${row.destCode}`;
+                    if (!nodeMap[uid]) {
+                        nodeMap[uid] = {
+                            uid: uid,
+                            code: row.destCode,
+                            name: row.destName || row.destCode,
+                            address: row.destAddress || '',
+                            lat: row.destLat,
+                            lng: row.destLng,
+                            type: 'destination'
+                        };
+                    }
+                }
+
+                // ★★★ 末端仓 ★★★
+                if (row.rearCode && !isNaN(row.rearLng) && !isNaN(row.rearLat)) {
+                    const uid = `rear_${row.rearCode}`;
+                    if (!nodeMap[uid]) {
+                        nodeMap[uid] = {
+                            uid: uid,
+                            code: row.rearCode,
+                            name: `末端仓 ${row.rearCode}`,
+                            address: '',
+                            lat: row.rearLat,
+                            lng: row.rearLng,
+                            type: 'rear'
+                        };
+                    }
+                }
+
+                // ★★★ 连线 ★★★
+                const frontUid = `front_${row.frontCode}`;
+                const pickupUid = `pickup_${row.pickupCode}`;
+                if (nodeMap[frontUid] && nodeMap[pickupUid]) {
+                    routeList.push({ from: pickupUid, to: frontUid, fromType: 'pickup', toType: 'front' });
+                }
+
+                const rearUid = `rear_${row.rearCode}`;
+                const destUid = `destination_${row.destCode}`;
+                if (nodeMap[rearUid] && nodeMap[destUid]) {
+                    routeList.push({ from: destUid, to: rearUid, fromType: 'destination', toType: 'rear' });
+                }
+
+                if (nodeMap[frontUid] && nodeMap[rearUid]) {
+                    routeList.push({ from: frontUid, to: rearUid, fromType: 'front', toType: 'rear' });
+                }
+            });
+
+            const finalNodes = Object.values(nodeMap);
+            const nodeByUid = {};
+            finalNodes.forEach(n => { nodeByUid[n.uid] = n; });
+
+            const uniqueRoutes = [];
+            const routeSet = new Set();
+            routeList.forEach(r => {
+                const key = `${r.from}_${r.to}`;
+                if (!routeSet.has(key) && nodeByUid[r.from] && nodeByUid[r.to]) {
+                    routeSet.add(key);
+                    uniqueRoutes.push({
+                        from: r.from,
+                        to: r.to,
+                        fromNode: nodeByUid[r.from],
+                        toNode: nodeByUid[r.to],
+                        fromType: r.fromType,
+                        toType: r.toType,
+                        routeCode: `${r.fromType}_${r.toType}`
+                    });
+                }
+            });
+
+            nodes = finalNodes;
+            routes = uniqueRoutes;
+            calculateOverlaps();
+
+            fileStatus.style.display = 'none';
+            currentFilter = 'all';
+            searchKeyword = '';
+            searchInput.value = '';
+            clearSearchBtn.classList.remove('visible');
+            applyFilters();
+            renderTable();
+            updateStats();
+            updateLegendTree();
+            updateRouteStats();
+            clearMap();
+            mapStatus.textContent = '示例数据已加载，点击可视化';
+            showToast(`✅ 已加载 ${nodes.length} 个节点，${routes.length} 条连线，${overlapCount} 个坐标重叠`);
+        }
+
+        function clearAll() {
+            if (nodes.length === 0) return;
+            if (!confirm('确定要清空所有数据吗？')) return;
+            nodes = [];
+            routes = [];
+            loadedFileName = '';
+            fileStatus.style.display = 'none';
+            currentFilter = 'all';
+            searchKeyword = '';
+            searchInput.value = '';
+            clearSearchBtn.classList.remove('visible');
+            applyFilters();
+            renderTable();
+            updateStats();
+            updateLegendTree();
+            updateRouteStats();
+            clearMap();
+            mapStatus.textContent = '等待数据';
+            showToast('已清空所有数据');
+        }
+
+        function clearMap() {
+            if (mapInstance) {
+                mapInstance.remove();
+                mapInstance = null;
+            }
+            mapMarkers = [];
+            routeLines = [];
+            labelLayers = [];
+            const container = document.getElementById('mapContainer');
+            container.innerHTML = `
+                <div class="map-placeholder">
+                    <div class="icon">🌐</div>
+                    <div>请上传数据后点击「可视化」</div>
+                    <div style="font-size:10px;margin-top:4px;">4种节点 · 图例过滤</div>
+                </div>
+            `;
+            fitViewBtn.style.display = 'none';
+            document.getElementById('routeCount').textContent = '0';
+            overlapCountEl.textContent = '0';
+        }
+
+        // ============================================================
+        //  文件上传事件
+        // ============================================================
+        function handleFile(file) {
+            if (!file) return;
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!['xlsx', 'xls', 'csv'].includes(ext)) {
+                showToast('请上传 .xlsx, .xls 或 .csv 格式文件', true);
+                return;
+            }
+            importData(file);
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) { handleFile(e.target.files[0]); }
+            fileInput.value = '';
+        });
+
+        uploadZone.addEventListener('dragover', (e) => { e.preventDefault();
+            uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragleave', (e) => { e.preventDefault();
+            uploadZone.classList.remove('dragover'); });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) { handleFile(e.dataTransfer.files[0]); }
+        });
+        uploadZone.addEventListener('click', (e) => { if (e.target.tagName !== 'INPUT') fileInput.click(); });
+
+        // ============================================================
+        //  事件绑定
+        // ============================================================
+        sampleBtn.addEventListener('click', loadSampleData);
+        clearBtn.addEventListener('click', clearAll);
+        visualizeBtn.addEventListener('click', visualizeNetwork);
+        exportBtn.addEventListener('click', exportResults);
+        fitViewBtn.addEventListener('click', fitView);
+        searchInput.addEventListener('input', handleSearch);
+        clearSearchBtn.addEventListener('click', clearSearch);
+
+        searchInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') clearSearch(); });
+
+        // ============================================================
+        //  暴露全局函数
+        // ============================================================
+        window.filterByType = filterByType;
+        window.loadSampleData = loadSampleData;
+        window.clearAll = clearAll;
+        window.visualizeNetwork = visualizeNetwork;
+        window.exportResults = exportResults;
+        window.fitView = fitView;
+
+        // ============================================================
+        //  初始化
+        // ============================================================
+        renderTable();
+        updateStats();
+        updateLegendTree();
+        updateRouteStats();
+        showToast('📥 请上传 Excel/CSV 文件，或点击「示例」快速体验');
+        mapStatus.textContent = '等待数据';
+        fitViewBtn.style.display = 'none';
+    </script>
+</body>
+</html>
