@@ -1,0 +1,2485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚚 到货窗口排程 - 周视图 (含保存/加载)</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js">
+    </script>
+    <style>
+        /* ===== 基础样式（与之前保持一致） ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+        body {
+            background: #f0f4f9;
+            padding: 16px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a5f, #0f2b44);
+            border-radius: 14px;
+            padding: 14px 24px;
+            color: white;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header h1 small {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.7;
+        }
+        .header .badge-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .header .badge {
+            background: rgba(255, 255, 255, 0.12);
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        .header .badge.green {
+            background: #2a7f6e;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            background: white;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid #e2edf5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        .toolbar .group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .toolbar .group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1f3a5f;
+        }
+        .upload-zone {
+            border: 2px dashed #c8d8e8;
+            border-radius: 8px;
+            padding: 4px 14px;
+            font-size: 12px;
+            color: #4a6a8a;
+            cursor: pointer;
+            transition: 0.2s;
+            background: #fafcff;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .upload-zone:hover {
+            border-color: #1a5d8c;
+            background: #f2f8ff;
+        }
+        .upload-zone input[type="file"] {
+            display: none;
+        }
+        .file-status {
+            font-size: 11px;
+            padding: 2px 12px;
+            border-radius: 30px;
+            background: #e8f5ee;
+            color: #1e6657;
+        }
+        .file-status.empty {
+            background: #f0f4f9;
+            color: #8aa0b8;
+        }
+        .btn {
+            border: none;
+            padding: 5px 16px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-success {
+            background: #2a7f6e;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #1e6657;
+        }
+        .btn-success:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-outline {
+            background: #eef3fc;
+            color: #1f4970;
+            border: 1px solid #cde0ee;
+        }
+        .btn-outline:hover {
+            background: #e2ebf5;
+        }
+        .btn-danger {
+            background: #fce4e4;
+            color: #b13b3b;
+            border: 1px solid #f5c2c2;
+        }
+        .btn-danger:hover {
+            background: #fccfcf;
+        }
+        .btn-sm {
+            padding: 3px 12px;
+            font-size: 11px;
+        }
+        .btn-download {
+            background: #e8f0fa;
+            color: #1a5d8c;
+            border: 1px solid #cde0ee;
+        }
+        .btn-download:hover {
+            background: #d4e6fa;
+        }
+        .btn-save {
+            background: #2a7f6e;
+            color: white;
+        }
+        .btn-save:hover {
+            background: #1e6657;
+        }
+        .btn-save:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 14px;
+            height: calc(100vh - 260px);
+            min-height: 400px;
+        }
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+                min-height: auto;
+            }
+        }
+
+        .task-pool {
+            background: white;
+            border-radius: 14px;
+            border: 1px solid #e2edf5;
+            padding: 12px 14px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .task-pool .pool-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f3a5f;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .task-pool .pool-title .count {
+            font-size: 11px;
+            font-weight: 400;
+            color: #7a8eaa;
+        }
+
+        .warehouse-info {
+            background: #f8fafd;
+            border-radius: 8px;
+            padding: 6px 12px;
+            margin-bottom: 8px;
+            border: 1px solid #e2edf5;
+            font-size: 11px;
+            color: #1f3a5f;
+            flex-shrink: 0;
+        }
+        .warehouse-info .label {
+            font-weight: 600;
+            color: #4a6a8a;
+            font-size: 10px;
+        }
+
+        .task-scroll {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+            padding-right: 4px;
+        }
+        .task-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .task-scroll::-webkit-scrollbar-thumb {
+            background: #c8d8e8;
+            border-radius: 8px;
+        }
+
+        .task-group {
+            margin-bottom: 8px;
+        }
+        .task-group .group-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #4a6a8a;
+            padding: 3px 6px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f5f8fc;
+            border-bottom: 2px solid #e2edf5;
+            margin-bottom: 4px;
+            flex-shrink: 0;
+        }
+        .task-group .group-title .badge {
+            font-size: 9px;
+            padding: 0 8px;
+            border-radius: 30px;
+            color: white;
+        }
+        .task-group .group-title .badge.daily-badge {
+            background: #e74c3c;
+        }
+        .task-group .group-title .badge.weekly-badge {
+            background: #2ecc71;
+        }
+        .task-group .group-title .badge.monthly-badge {
+            background: #3498db;
+        }
+        .task-group .group-title .group-count {
+            font-size: 9px;
+            color: #8aa0b8;
+            margin-left: auto;
+        }
+        .task-group .empty-hint {
+            font-size: 10px;
+            color: #b0c0d0;
+            padding: 4px 8px;
+            font-style: italic;
+        }
+
+        .task-item {
+            background: #f8fafd;
+            border: 2px solid #d4e6fa;
+            border-radius: 8px;
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            cursor: grab;
+            transition: 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+            position: relative;
+        }
+        .task-item:hover {
+            border-color: #1a5d8c;
+            background: #eef4fb;
+        }
+        .task-item:active {
+            cursor: grabbing;
+            opacity: 0.6;
+        }
+        .task-item .task-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .task-item .task-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .task-item .task-info .route {
+            font-weight: 700;
+            font-size: 11px;
+            color: #1f3a5f;
+        }
+        .task-item .task-info .detail {
+            font-size: 9px;
+            color: #7a8eaa;
+        }
+        .task-item .task-badge {
+            font-size: 7px;
+            padding: 1px 8px;
+            border-radius: 30px;
+            font-weight: 600;
+            flex-shrink: 0;
+            color: white;
+        }
+        .task-item .task-badge.daily {
+            background: #e74c3c;
+        }
+        .task-item .task-badge.weekly {
+            background: #2ecc71;
+        }
+        .task-item .task-badge.monthly {
+            background: #3498db;
+        }
+        .task-item.dragging {
+            opacity: 0.3;
+            border-style: dashed;
+        }
+        .task-item.scheduled {
+            opacity: 0.5;
+            cursor: default;
+            border-color: #dce6f0;
+            background: #f5f7fa;
+        }
+
+        .legend-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            padding: 4px 0 2px;
+            font-size: 9px;
+            color: #4a6a8a;
+            border-top: 1px solid #e8eef5;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+        .legend-row .lg-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .legend-row .lg-color {
+            width: 16px;
+            height: 10px;
+            border-radius: 2px;
+        }
+        .legend-row .lg-color.daily {
+            background: #e74c3c;
+        }
+        .legend-row .lg-color.weekly {
+            background: #2ecc71;
+        }
+        .legend-row .lg-color.monthly {
+            background: #3498db;
+        }
+
+        .calendar-wrapper {
+            background: white;
+            border-radius: 14px;
+            border: 1px solid #e2edf5;
+            padding: 12px 16px 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+        .calendar-header .title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f3a5f;
+        }
+        .calendar-header .title span {
+            font-weight: 400;
+            color: #7a8eaa;
+            font-size: 13px;
+        }
+        .calendar-header .actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+        @media (max-width: 768px) {
+            .summary-cards {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        .summary-card {
+            background: #f8fafd;
+            border-radius: 6px;
+            padding: 4px 8px;
+            border: 1px solid #e2edf5;
+            text-align: center;
+            min-width: 0;
+        }
+        .summary-card .day-label {
+            font-size: 8px;
+            font-weight: 600;
+            color: #4a6a8a;
+            display: block;
+            white-space: nowrap;
+        }
+        .summary-card .day-label.weekend {
+            color: #b13b3b;
+        }
+        .summary-card .stats-row-mini {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            font-size: 7px;
+            color: #4a6a8a;
+            flex-wrap: wrap;
+        }
+        .summary-card .stats-row-mini .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 1px;
+        }
+        .summary-card .stats-row-mini .num {
+            font-weight: 700;
+            font-size: 8px;
+        }
+        .summary-card .stats-row-mini .num.used {
+            color: #1a5d8c;
+        }
+        .summary-card .stats-row-mini .num.free {
+            color: #27ae60;
+        }
+        .summary-card .stats-row-mini .num.total {
+            color: #7a8eaa;
+        }
+        .summary-card .stats-row-mini .num.util {
+            color: #e67e22;
+        }
+        .summary-card .util-bar-mini {
+            width: 100%;
+            height: 3px;
+            background: #e8eef5;
+            border-radius: 2px;
+            margin-top: 2px;
+            overflow: hidden;
+        }
+        .summary-card .util-bar-mini .fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        .copy-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            margin-bottom: 6px;
+            background: #f8fafd;
+            border-radius: 6px;
+            border: 1px solid #e2edf5;
+            flex-shrink: 0;
+        }
+        .copy-toolbar .copy-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #1f3a5f;
+        }
+        .copy-toolbar .day-btn {
+            border: none;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 9px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #eef3fc;
+            color: #1f4970;
+            transition: 0.15s;
+        }
+        .copy-toolbar .day-btn:hover {
+            background: #d4e6fa;
+        }
+        .copy-toolbar .day-btn.active {
+            background: #1a5d8c;
+            color: white;
+        }
+        .copy-toolbar .day-btn.weekend-btn {
+            color: #b13b3b;
+        }
+        .copy-toolbar .copy-action-btn {
+            border: none;
+            padding: 2px 14px;
+            border-radius: 30px;
+            font-size: 9px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #2a7f6e;
+            color: white;
+            transition: 0.15s;
+        }
+        .copy-toolbar .copy-action-btn:hover {
+            background: #1e6657;
+        }
+        .copy-toolbar .sep {
+            color: #d0d8e0;
+            font-size: 12px;
+        }
+
+        .dock-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            background: #f1f5f9;
+            border-radius: 0.6rem;
+            padding: 4px;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+        .dock-tab {
+            border: none;
+            padding: 4px 14px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 11px;
+            cursor: pointer;
+            background: transparent;
+            color: #4a6a8a;
+            transition: 0.2s;
+        }
+        .dock-tab:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .dock-tab.active {
+            background: white;
+            color: #1a5d8c;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .calendar-scroll {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+            padding-right: 4px;
+        }
+        .calendar-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .calendar-scroll::-webkit-scrollbar-thumb {
+            background: #c8d8e8;
+            border-radius: 8px;
+        }
+
+        .week-schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+            min-width: 700px;
+        }
+        .week-schedule-table th {
+            background: #f5f8fc;
+            color: #4a6a8a;
+            font-weight: 600;
+            padding: 4px 2px;
+            text-align: center;
+            border-bottom: 2px solid #dce6f0;
+            font-size: 9px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+        .week-schedule-table th.weekend {
+            background: #f0f4f9;
+            color: #b13b3b;
+        }
+        .week-schedule-table td {
+            border: 1px solid #e8eef5;
+            padding: 1px 1px;
+            text-align: center;
+            vertical-align: middle;
+            min-width: 32px;
+            max-width: 45px;
+            height: 38px;
+            font-size: 7px;
+            line-height: 1.1;
+            transition: 0.1s;
+            position: relative;
+        }
+        .week-schedule-table td.weekend {
+            background: #f8fafc;
+        }
+        .week-schedule-table td.drop-zone {
+            background: #fafcff;
+            cursor: pointer;
+        }
+        .week-schedule-table td.drop-zone.drag-over {
+            background: #d4e6fa;
+            border-color: #1a5d8c;
+            border-width: 2px;
+        }
+        .week-schedule-table td.drop-zone.has-task {
+            background: #d4e6fa;
+            border-left: 3px solid #1a5d8c;
+            cursor: default;
+        }
+        .week-schedule-table td.drop-zone.break-zone {
+            background: #fde8d0;
+            cursor: not-allowed;
+        }
+        .week-schedule-table td.drop-zone.copy-source {
+            outline: 3px solid #ff6b35;
+            outline-offset: -2px;
+            background: #fff0e8;
+        }
+        .week-schedule-table td .time-col {
+            font-weight: 600;
+            color: #4a6a8a;
+            background: #f5f8fc;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            font-size: 8px;
+            padding: 1px 3px;
+            white-space: nowrap;
+            min-width: 32px;
+            text-align: center;
+            border-right: 2px solid #dce6f0;
+        }
+        .week-schedule-table td .time-col.break-time {
+            background: #fde8d0;
+            color: #8a6d3b;
+        }
+        .week-schedule-table td .time-col.outside-time {
+            background: #f5f7fa;
+            color: #d0d8e0;
+        }
+
+        .week-schedule-table .cell-task {
+            border-radius: 2px;
+            color: white;
+            font-weight: 500;
+            font-size: 6px;
+            padding: 1px 2px;
+            margin: 0;
+            display: block;
+            width: 100%;
+            text-align: center;
+            cursor: default;
+            border-left: 2px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+        }
+        .week-schedule-table .cell-task .sub-info {
+            font-size: 5px;
+            font-weight: 400;
+            display: block;
+            line-height: 1;
+            opacity: 0.85;
+        }
+        .week-schedule-table .cell-task.daily {
+            background: #e74c3c;
+            border-left-color: #c0392b;
+        }
+        .week-schedule-table .cell-task.weekly {
+            background: #2ecc71;
+            border-left-color: #27ae60;
+            color: #1a3a2a;
+        }
+        .week-schedule-table .cell-task.weekly .sub-info {
+            color: #1a3a2a;
+        }
+        .week-schedule-table .cell-task.monthly {
+            background: #3498db;
+            border-left-color: #2980b9;
+        }
+
+        .week-schedule-table .cell-task .cancel-btn {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #b13b3b;
+            color: white;
+            border: 1.5px solid white;
+            font-size: 8px;
+            font-weight: 700;
+            line-height: 10px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+            z-index: 20;
+            transition: 0.15s;
+            display: none;
+        }
+        .week-schedule-table .cell-task:hover .cancel-btn {
+            display: block;
+        }
+        .week-schedule-table .cell-task .cancel-btn:hover {
+            background: #8a2a2a;
+            transform: scale(1.15);
+        }
+
+        .week-schedule-table .cell-break {
+            background: #fde8d0;
+            border-radius: 2px;
+            color: #8a6d3b;
+            font-weight: 500;
+            font-size: 6px;
+            padding: 1px 2px;
+            margin: 0;
+            display: block;
+            text-align: center;
+            border-left: 2px solid #d48c2c;
+        }
+        .week-schedule-table .cell-idle {
+            color: #d0d8e0;
+            font-size: 7px;
+        }
+        .week-schedule-table .drop-hint {
+            color: #8aa0b8;
+            font-size: 6px;
+        }
+
+        .stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 6px 0 2px;
+            border-top: 1px solid #e8eef5;
+            margin-top: 6px;
+            font-size: 10px;
+            color: #4a6a8a;
+            flex-shrink: 0;
+        }
+        .stats-row .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .stats-row .stat-item .num {
+            font-weight: 700;
+            color: #1f3a5f;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 12px;
+            color: #8aa0b8;
+        }
+        .empty-state .icon-big {
+            font-size: 40px;
+            margin-bottom: 8px;
+        }
+        .empty-state h3 {
+            color: #1f3a5f;
+            font-size: 16px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e6657;
+            color: white;
+            padding: 8px 24px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 13px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            z-index: 999;
+            animation: fadeInDown 0.3s ease;
+            display: none;
+        }
+        .toast.show {
+            display: block;
+        }
+        .toast.error {
+            background: #b13b3b;
+        }
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* ===== 保存/加载区域 - 优化版 ===== */
+        .save-load-area {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            background: #f8fafd;
+            border-radius: 8px;
+            padding: 4px 10px;
+            border: 1px solid #e2edf5;
+            flex-shrink: 0;
+        }
+        .save-load-area input[type="text"] {
+            border: 1px solid #d0d8e0;
+            border-radius: 20px;
+            padding: 2px 12px;
+            font-size: 11px;
+            width: 140px;
+            background: white;
+        }
+        .save-load-area input[type="text"]:focus {
+            border-color: #1a5d8c;
+            outline: none;
+        }
+
+        /* 记录选择器 - 带删除按钮 */
+        .record-select-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #d0d8e0;
+            padding: 1px 2px 1px 10px;
+            max-width: 220px;
+        }
+        .record-select-wrapper select {
+            border: none;
+            padding: 2px 4px 2px 0;
+            font-size: 11px;
+            background: transparent;
+            min-width: 80px;
+            max-width: 160px;
+            outline: none;
+            cursor: pointer;
+        }
+        .record-select-wrapper select:focus {
+            outline: none;
+        }
+        .record-select-wrapper .del-record-btn {
+            border: none;
+            background: transparent;
+            color: #b13b3b;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0 6px;
+            line-height: 1;
+            border-radius: 50%;
+            transition: 0.15s;
+            display: none;
+        }
+        .record-select-wrapper .del-record-btn:hover {
+            background: #fce4e4;
+            transform: scale(1.1);
+        }
+        .record-select-wrapper .del-record-btn.show {
+            display: block;
+        }
+
+        .save-load-area .sep-text {
+            color: #d0d8e0;
+            font-size: 12px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+                min-height: auto;
+            }
+            .task-pool {
+                height: auto;
+                max-height: 50vh;
+            }
+            .calendar-wrapper {
+                height: auto;
+                min-height: 50vh;
+            }
+            .summary-cards {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        @media (max-width: 640px) {
+            .header h1 {
+                font-size: 16px;
+            }
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .week-schedule-table td {
+                min-width: 22px;
+                height: 30px;
+                font-size: 5px;
+                padding: 0 1px;
+            }
+            .week-schedule-table .time-col {
+                font-size: 6px;
+                min-width: 22px;
+                padding: 0 2px;
+            }
+            .week-schedule-table th {
+                font-size: 6px;
+                padding: 2px 1px;
+            }
+            .task-item .task-info .detail {
+                font-size: 8px;
+            }
+            .copy-toolbar {
+                flex-wrap: wrap;
+                gap: 3px;
+                padding: 4px 6px;
+            }
+            .copy-toolbar .day-btn {
+                font-size: 7px;
+                padding: 1px 6px;
+            }
+            .copy-toolbar .copy-label {
+                font-size: 8px;
+            }
+            .dock-tabs {
+                gap: 2px;
+                padding: 2px;
+            }
+            .dock-tab {
+                font-size: 9px;
+                padding: 2px 10px;
+            }
+            .task-pool {
+                max-height: 40vh;
+            }
+            .calendar-wrapper {
+                min-height: 40vh;
+            }
+            .summary-cards {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .summary-card .stats-row-mini {
+                font-size: 6px;
+                gap: 3px;
+            }
+            .summary-card .stats-row-mini .num {
+                font-size: 7px;
+            }
+            .save-load-area input[type="text"] {
+                width: 80px;
+                font-size: 10px;
+            }
+            .record-select-wrapper {
+                max-width: 140px;
+                padding: 1px 2px 1px 6px;
+            }
+            .record-select-wrapper select {
+                font-size: 9px;
+                max-width: 100px;
+            }
+            .record-select-wrapper .del-record-btn {
+                font-size: 11px;
+                padding: 0 4px;
+            }
+        }
+        @media (min-width: 1200px) {
+            .week-schedule-table td {
+                min-width: 40px;
+                max-width: 55px;
+                height: 45px;
+                font-size: 8px;
+            }
+            .week-schedule-table .cell-task {
+                font-size: 7px;
+                padding: 2px 3px;
+            }
+            .week-schedule-table .cell-task .sub-info {
+                font-size: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="toast" class="toast"></div>
+
+        <div class="header">
+            <h1>🚚 到货窗口排程 <small>周视图 · 道口Tab切换</small></h1>
+            <div class="badge-group">
+                <span class="badge green">⚡ 周视图</span>
+                <span class="badge">📅 周一至周日</span>
+                <span class="badge">🔄 拖拽替换</span>
+                <span class="badge">📋 一键复制</span>
+                <span class="badge">❌ 悬停取消</span>
+                <span class="badge">📑 道口Tab</span>
+                <span class="badge">📊 摘要统计</span>
+                <span class="badge">🍽️ 固定交接班</span>
+                <span class="badge">💾 保存/加载</span>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <div class="group">
+                <label>📦 运输数据</label>
+                <div class="upload-zone" id="uploadTransport">
+                    📤 上传 Excel
+                    <input type="file" id="transportInput" accept=".xlsx,.xls,.csv">
+                </div>
+                <span class="file-status empty" id="transportStatus">未加载</span>
+                <button class="btn btn-download btn-sm" id="downloadTransportSample">📄 样例</button>
+            </div>
+            <div class="group">
+                <label>🏗️ 仓库数据</label>
+                <div class="upload-zone" id="uploadWarehouse">
+                    📤 上传 Excel
+                    <input type="file" id="warehouseInput" accept=".xlsx,.xls,.csv">
+                </div>
+                <span class="file-status empty" id="warehouseStatus">未加载</span>
+                <button class="btn btn-download btn-sm" id="downloadWarehouseSample">📄 样例</button>
+            </div>
+            <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="btn btn-success" id="loadSampleBtn">📋 示例数据</button>
+                <button class="btn btn-danger btn-sm" id="clearBtn">✕ 清空</button>
+                <button class="btn btn-outline btn-sm" id="exportBtn" disabled>📥 导出</button>
+            </div>
+        </div>
+
+        <!-- ===== 优化后的保存/加载区域 ===== -->
+        <div class="save-load-area">
+            <span style="font-size:11px;font-weight:600;color:#1f3a5f;">💾 保存</span>
+            <input type="text" id="saveNameInput" placeholder="排程名称" value="">
+            <button class="btn btn-save btn-sm" id="saveScheduleBtn">💾 保存</button>
+
+            <span class="sep-text">|</span>
+
+            <span style="font-size:11px;font-weight:600;color:#1f3a5f;">📂 加载</span>
+            <div class="record-select-wrapper" id="recordSelectWrapper">
+                <select id="loadSelect">
+                    <option value="">-- 无记录 --</option>
+                </select>
+                <button class="del-record-btn" id="delRecordBtn" title="删除此记录">✕</button>
+            </div>
+            <button class="btn btn-outline btn-sm" id="loadScheduleBtn">📂 加载</button>
+
+            <span style="font-size:9px;color:#8aa0b8;margin-left:2px;">(记录按时间倒序)</span>
+        </div>
+
+        <div class="main-layout">
+            <!-- 左侧：任务池 -->
+            <div class="task-pool" id="taskPool">
+                <div class="pool-title">
+                    📦 待排程任务
+                    <span class="count" id="taskCount">0 个任务</span>
+                </div>
+                <div id="warehouseInfo" class="warehouse-info" style="display:none;">
+                    <div class="label">🏗️ 当前仓库配置</div>
+                    <div id="warehouseDetail">未加载</div>
+                </div>
+                <div class="task-scroll" id="taskScroll">
+                    <div id="taskList">
+                        <div class="empty-state" style="padding:20px 0;">
+                            <div class="icon-big" style="font-size:28px;">📭</div>
+                            <p style="font-size:11px;">暂无任务<br>请导入运输数据或加载示例</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="legend-row">
+                    <span class="lg-item"><span class="lg-color daily"></span> 日维度</span>
+                    <span class="lg-item"><span class="lg-color weekly"></span> 周维度</span>
+                    <span class="lg-item"><span class="lg-color monthly"></span> 月维度</span>
+                    <span class="lg-item" style="color:#8aa0b8;">💡 拖拽占用 · 悬停X取消</span>
+                </div>
+            </div>
+
+            <!-- 右侧：日历 -->
+            <div class="calendar-wrapper">
+                <div class="calendar-header">
+                    <div class="title">📋 到货窗口周视图 <span>— 道口Tab切换 · 一键复制</span></div>
+                    <div class="actions">
+                        <button class="btn btn-outline btn-sm" id="resetCalendarBtn">🔄 重置日历</button>
+                    </div>
+                </div>
+
+                <div class="summary-cards" id="summaryCards"></div>
+
+                <div class="copy-toolbar" id="copyToolbar">
+                    <span class="copy-label">📋 复制：</span>
+                    <button class="day-btn active" data-day="0">周一</button>
+                    <button class="day-btn" data-day="1">周二</button>
+                    <button class="day-btn" data-day="2">周三</button>
+                    <button class="day-btn" data-day="3">周四</button>
+                    <button class="day-btn" data-day="4">周五</button>
+                    <button class="day-btn weekend-btn" data-day="5">周六</button>
+                    <button class="day-btn weekend-btn" data-day="6">周日</button>
+                    <span class="sep">→</span>
+                    <button class="day-btn" data-target="0">周一</button>
+                    <button class="day-btn" data-target="1">周二</button>
+                    <button class="day-btn" data-target="2">周三</button>
+                    <button class="day-btn" data-target="3">周四</button>
+                    <button class="day-btn" data-target="4">周五</button>
+                    <button class="day-btn weekend-btn" data-target="5">周六</button>
+                    <button class="day-btn weekend-btn" data-target="6">周日</button>
+                    <button class="copy-action-btn" id="copyActionBtn">📋 执行</button>
+                </div>
+
+                <div class="dock-tabs" id="dockTabs"></div>
+
+                <div class="calendar-scroll" id="calendarScroll">
+                    <div id="calendarBody">
+                        <div class="empty-state">
+                            <div class="icon-big">📅</div>
+                            <h3>等待仓库和任务数据</h3>
+                            <p>请先导入仓库数据，再导入运输任务，然后拖拽排程</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="stats-row" id="statsRow">
+                    <span class="stat-item">📌 已占用: <span class="num" id="occupiedCount">0</span> 个窗口</span>
+                    <span class="stat-item">📊 利用率: <span class="num" id="utilizationRate">0%</span></span>
+                    <span class="stat-item" style="color:#8aa0b8;">💡 选择来源日 → 选择目标日 → 执行复制</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  状态
+        // ============================================================
+        var tasks = [];
+        var warehouseData = null;
+        var schedule = {};
+        var taskIdCounter = 0;
+        var currentDocks = 0;
+        var currentUnloadMin = 30;
+        var currentDate = '2026-08-19';
+        var currentDockTab = 0;
+
+        var BREAK_1_START = 11 * 60;
+        var BREAK_1_END = 12 * 60;
+        var BREAK_2_START = 16 * 60;
+        var BREAK_2_END = 17 * 60;
+
+        var copySourceDay = 0;
+        var copyTargetDay = 1;
+
+        // DOM
+        var toast = document.getElementById('toast');
+        var transportInput = document.getElementById('transportInput');
+        var warehouseInput = document.getElementById('warehouseInput');
+        var transportStatus = document.getElementById('transportStatus');
+        var warehouseStatus = document.getElementById('warehouseStatus');
+        var taskList = document.getElementById('taskList');
+        var taskCount = document.getElementById('taskCount');
+        var calendarBody = document.getElementById('calendarBody');
+        var dockTabs = document.getElementById('dockTabs');
+        var summaryCards = document.getElementById('summaryCards');
+        var occupiedCount = document.getElementById('occupiedCount');
+        var utilizationRate = document.getElementById('utilizationRate');
+        var warehouseInfo = document.getElementById('warehouseInfo');
+        var warehouseDetail = document.getElementById('warehouseDetail');
+        var loadSampleBtn = document.getElementById('loadSampleBtn');
+        var clearBtn = document.getElementById('clearBtn');
+        var exportBtn = document.getElementById('exportBtn');
+        var resetCalendarBtn = document.getElementById('resetCalendarBtn');
+        var downloadTransportSample = document.getElementById('downloadTransportSample');
+        var downloadWarehouseSample = document.getElementById('downloadWarehouseSample');
+        var copyActionBtn = document.getElementById('copyActionBtn');
+
+        // 保存/加载相关
+        var saveNameInput = document.getElementById('saveNameInput');
+        var saveScheduleBtn = document.getElementById('saveScheduleBtn');
+        var loadSelect = document.getElementById('loadSelect');
+        var loadScheduleBtn = document.getElementById('loadScheduleBtn');
+        var delRecordBtn = document.getElementById('delRecordBtn');
+
+        // ============================================================
+        //  工具函数
+        // ============================================================
+        function showToast(msg, isError) {
+            toast.textContent = msg;
+            toast.className = 'toast show' + (isError ? ' error' : '');
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(function() { toast.classList.remove('show'); }, 2500);
+        }
+
+        function timeToMinutes(t) {
+            if (!t) return null;
+            var s = String(t).trim();
+            var parts = s.split(':');
+            if (parts.length < 2) return null;
+            var h = parseInt(parts[0]);
+            var m = parseInt(parts[1]);
+            if (isNaN(h) || isNaN(m)) return null;
+            return h * 60 + m;
+        }
+
+        function minutesToTime(m) {
+            var totalMinutes = Math.round(m);
+            totalMinutes = ((totalMinutes % 1440) + 1440) % 1440;
+            var h = Math.floor(totalMinutes / 60);
+            var min = totalMinutes % 60;
+            return String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+        }
+
+        function isBreakHour(h) {
+            return (h >= 11 && h < 12) || (h >= 16 && h < 17);
+        }
+
+        function getWeekDays() {
+            var base = new Date(currentDate);
+            var dayOfWeek = base.getDay();
+            var mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            var monday = new Date(base);
+            monday.setDate(base.getDate() + mondayOffset);
+            var days = [];
+            for (var i = 0; i < 7; i++) {
+                var d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                days.push({
+                    dateStr: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate())
+                        .padStart(2, '0'),
+                    dayIndex: i,
+                    dayName: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'][i],
+                    isWeekend: i >= 5
+                });
+            }
+            return days;
+        }
+
+        var weekDays = getWeekDays();
+
+        // ============================================================
+        //  解析导入 (与之前相同)
+        // ============================================================
+        function findCol(headers, candidates) {
+            for (var ci = 0; ci < candidates.length; ci++) {
+                var c = candidates[ci];
+                for (var hi = 0; hi < headers.length; hi++) {
+                    if (headers[hi].trim() === c || headers[hi].trim().toLowerCase() === c.toLowerCase()) {
+                        return headers[hi];
+                    }
+                }
+            }
+            for (var ci = 0; ci < candidates.length; ci++) {
+                var c = candidates[ci];
+                for (var hi = 0; hi < headers.length; hi++) {
+                    if (headers[hi].includes(c) || c.includes(headers[hi])) {
+                        return headers[hi];
+                    }
+                }
+            }
+            return null;
+        }
+
+        function parseTransportData(rows) {
+            var headers = Object.keys(rows[0] || {});
+            var colMap = {
+                warehouse: findCol(headers, ['仓库代码', '仓库', 'warehouse']),
+                route: findCol(headers, ['到货路线代码', '路线代码', 'route', '路线']),
+                vehicle: findCol(headers, ['到货车型', '车型', 'vehicle']),
+                volume: findCol(headers, ['到货体积', '体积', 'volume']),
+                window: findCol(headers, ['预计到货窗口', '窗口', 'window', '到货时间']),
+                dimension: findCol(headers, ['到货维度', '维度', 'dimension']),
+                frequency: findCol(headers, ['到货频次', '频次', 'frequency'])
+            };
+            var required = ['warehouse', 'window'];
+            var missing = [];
+            for (var ri = 0; ri < required.length; ri++) {
+                if (colMap[required[ri]] === null) missing.push(required[ri]);
+            }
+            if (missing.length > 0) {
+                showToast('运输数据缺少列: ' + missing.join(', '), true);
+                return null;
+            }
+            var result = [];
+            for (var ri = 0; ri < rows.length; ri++) {
+                var row = rows[ri];
+                var warehouse = String(row[colMap.warehouse] || '').trim();
+                var route = String(row[colMap.route] || '').trim() || 'N/A';
+                var vehicle = String(row[colMap.vehicle] || '').trim() || '标准';
+                var volume = parseFloat(row[colMap.volume]) || 0;
+                var windowStr = String(row[colMap.window] || '').trim();
+                var dimension = String(row[colMap.dimension] || '').trim() || '日';
+                var frequency = parseInt(row[colMap.frequency]) || 1;
+                if (!warehouse || !windowStr) continue;
+                var winMin = timeToMinutes(windowStr);
+                if (winMin === null) continue;
+                result.push({
+                    warehouse: warehouse,
+                    route: route,
+                    vehicle: vehicle,
+                    volumePerTrip: volume,
+                    windowMin: winMin,
+                    windowStr: windowStr,
+                    dimension: dimension,
+                    frequency: frequency,
+                    raw: row
+                });
+            }
+            return result;
+        }
+
+        function parseWarehouseData(rows) {
+            var headers = Object.keys(rows[0] || {});
+            var colMap = {
+                warehouse: findCol(headers, ['仓库代码', '仓库', 'warehouse']),
+                docks: findCol(headers, ['道口数量', '道口', 'docks']),
+                hours: findCol(headers, ['仓库工作时长', '工作时长', 'hours']),
+                openTime: findCol(headers, ['开门时间', '开门', 'open']),
+                unloadTime: findCol(headers, ['单车平均卸货时间', '卸货时间', 'unload'])
+            };
+            var required = ['warehouse', 'docks', 'hours', 'openTime'];
+            var missing = [];
+            for (var ri = 0; ri < required.length; ri++) {
+                if (colMap[required[ri]] === null) missing.push(required[ri]);
+            }
+            if (missing.length > 0) {
+                showToast('仓库数据缺少列: ' + missing.join(', '), true);
+                return null;
+            }
+            var result = [];
+            for (var ri = 0; ri < rows.length; ri++) {
+                var row = rows[ri];
+                var warehouse = String(row[colMap.warehouse] || '').trim();
+                var docks = parseInt(row[colMap.docks]) || 1;
+                var hoursStr = String(row[colMap.hours] || '').trim();
+                var openStr = String(row[colMap.openTime] || '').trim();
+                var unloadMin = parseInt(row[colMap.unloadTime]) || 30;
+                if (!warehouse || !hoursStr || !openStr) continue;
+                var hoursMatch = hoursStr.match(/(\d+)/);
+                var workHours = hoursMatch ? parseInt(hoursMatch[1]) : 8;
+                var openMin = timeToMinutes(openStr);
+                if (openMin === null) continue;
+                var closeMin = openMin + workHours * 60;
+                result.push({
+                    warehouse: warehouse,
+                    docks: Math.max(1, docks),
+                    workHours: workHours,
+                    openMin: openMin,
+                    closeMin: closeMin,
+                    openStr: openStr,
+                    closeStr: minutesToTime(closeMin),
+                    unloadMin: Math.max(1, unloadMin),
+                    raw: row
+                });
+            }
+            return result;
+        }
+
+        function importTransportFile(file) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var data = new Uint8Array(e.target.result);
+                    var workbook = XLSX.read(data, { type: 'array' });
+                    var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    var rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+                    if (!rows || rows.length === 0) { showToast('文件为空', true); return; }
+                    var parsed = parseTransportData(rows);
+                    if (parsed) {
+                        var expandedTasks = [];
+                        parsed.forEach(function(spec) {
+                            var count = spec.frequency;
+                            for (var i = 0; i < count; i++) {
+                                expandedTasks.push({
+                                    id: 'task_' + (++taskIdCounter),
+                                    warehouse: spec.warehouse,
+                                    route: spec.route,
+                                    vehicle: spec.vehicle,
+                                    volume: spec.volumePerTrip,
+                                    windowMin: spec.windowMin,
+                                    windowStr: spec.windowStr,
+                                    dimension: spec.dimension,
+                                    frequency: spec.frequency,
+                                    label: spec.route + ' (' + spec.dimension + ')',
+                                    assignedDay: i,
+                                    totalDays: count
+                                });
+                            }
+                        });
+                        tasks = expandedTasks;
+                        transportStatus.textContent = '✅ ' + expandedTasks.length + ' 个任务';
+                        transportStatus.className = 'file-status';
+                        showToast('✅ 导入 ' + expandedTasks.length + ' 个任务', false);
+                        renderTasks();
+                        renderCalendar();
+                        updateStats();
+                        exportBtn.disabled = false;
+                    }
+                } catch (err) {
+                    showToast('解析失败: ' + err.message, true);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function importWarehouseFile(file) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var data = new Uint8Array(e.target.result);
+                    var workbook = XLSX.read(data, { type: 'array' });
+                    var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    var rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+                    if (!rows || rows.length === 0) { showToast('文件为空', true); return; }
+                    var parsed = parseWarehouseData(rows);
+                    if (parsed && parsed.length > 0) {
+                        var w = parsed[0];
+                        warehouseData = w;
+                        currentDocks = w.docks;
+                        currentUnloadMin = w.unloadMin;
+                        warehouseStatus.textContent = '✅ ' + w.warehouse + ' (' + w.docks + '道口)';
+                        warehouseStatus.className = 'file-status';
+                        warehouseInfo.style.display = 'block';
+                        warehouseDetail.innerHTML = '<span style="font-weight:600;">' + w.warehouse +
+                            '</span> · ' + w.docks + '个道口 · ' +
+                            w.openStr + ' - ' + w.closeStr + ' · 卸货' + w.unloadMin + 'min';
+                        showToast('✅ 仓库数据: ' + w.warehouse + ' (' + w.docks + '道口)', false);
+                        renderCalendar();
+                        updateStats();
+                        exportBtn.disabled = false;
+                    }
+                } catch (err) {
+                    showToast('解析失败: ' + err.message, true);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ============================================================
+        //  示例数据
+        // ============================================================
+        function loadSampleData() {
+            warehouseData = {
+                warehouse: 'WX-KD',
+                docks: 3,
+                workHours: 11,
+                openMin: 480,
+                closeMin: 1140,
+                openStr: '8:00',
+                closeStr: '19:00',
+                unloadMin: 30
+            };
+            currentDocks = 3;
+            currentUnloadMin = 30;
+            warehouseStatus.textContent = '✅ WX-KD (3道口)';
+            warehouseStatus.className = 'file-status';
+            warehouseInfo.style.display = 'block';
+            warehouseDetail.innerHTML = '<span style="font-weight:600;">WX-KD</span> · 3个道口 · 8:00 - 19:00 · 卸货30min';
+
+            tasks = [];
+            taskIdCounter = 0;
+            schedule = {};
+
+            var sampleData = [
+                { warehouse: 'WX-KD', route: 'R001', vehicle: '9.6M', volumePerTrip: 32, windowMin: 600,
+                    windowStr: '10:00', dimension: '日', frequency: 3 },
+                { warehouse: 'WX-KD', route: 'R002', vehicle: '9.6M', volumePerTrip: 35, windowMin: 870,
+                    windowStr: '14:30', dimension: '周', frequency: 2 },
+                { warehouse: 'WX-KD', route: 'R003', vehicle: '9.6M', volumePerTrip: 28, windowMin: 540,
+                    windowStr: '09:00', dimension: '日', frequency: 3 },
+                { warehouse: 'WX-KD', route: 'R004', vehicle: '12.5M', volumePerTrip: 42, windowMin: 540,
+                    windowStr: '09:00', dimension: '周', frequency: 5 },
+                { warehouse: 'WX-KD', route: 'R005', vehicle: '12.5M', volumePerTrip: 46, windowMin: 540,
+                    windowStr: '09:00', dimension: '日', frequency: 1 },
+                { warehouse: 'WX-KD', route: 'R006', vehicle: '12.5M', volumePerTrip: 44, windowMin: 540,
+                    windowStr: '09:00', dimension: '月', frequency: 4 },
+                { warehouse: 'WX-KD', route: 'R007', vehicle: '12.5M', volumePerTrip: 39, windowMin: 540,
+                    windowStr: '09:00', dimension: '日', frequency: 5 },
+                { warehouse: 'WX-KD', route: 'R008', vehicle: '12.5M', volumePerTrip: 42, windowMin: 540,
+                    windowStr: '09:00', dimension: '周', frequency: 3 },
+                { warehouse: 'WX-KD', route: 'R009', vehicle: '12.5M', volumePerTrip: 43, windowMin: 540,
+                    windowStr: '09:00', dimension: '周', frequency: 4 },
+                { warehouse: 'WX-KD', route: 'R010', vehicle: '12.5M', volumePerTrip: 38, windowMin: 540,
+                    windowStr: '09:00', dimension: '日', frequency: 2 },
+                { warehouse: 'WX-KD', route: 'R011', vehicle: '12.5M', volumePerTrip: 45, windowMin: 540,
+                    windowStr: '09:00', dimension: '日', frequency: 3 },
+                { warehouse: 'WX-KD', route: 'R012', vehicle: '12.5M', volumePerTrip: 44, windowMin: 540,
+                    windowStr: '09:00', dimension: '周', frequency: 6 },
+                { warehouse: 'WX-KD', route: 'R013', vehicle: '12.5M', volumePerTrip: 41, windowMin: 540,
+                    windowStr: '09:00', dimension: '月', frequency: 8 },
+                { warehouse: 'WX-KD', route: 'R014', vehicle: '12.5M', volumePerTrip: 42, windowMin: 540,
+                    windowStr: '09:00', dimension: '日', frequency: 1 }
+            ];
+
+            sampleData.forEach(function(spec) {
+                var count = spec.frequency;
+                for (var i = 0; i < count; i++) {
+                    tasks.push({
+                        id: 'task_' + (++taskIdCounter),
+                        warehouse: spec.warehouse,
+                        route: spec.route,
+                        vehicle: spec.vehicle,
+                        volume: spec.volumePerTrip,
+                        windowMin: spec.windowMin,
+                        windowStr: spec.windowStr,
+                        dimension: spec.dimension,
+                        frequency: spec.frequency,
+                        label: spec.route + ' (' + spec.dimension + ')',
+                        assignedDay: i,
+                        totalDays: count
+                    });
+                }
+            });
+
+            transportStatus.textContent = '✅ ' + tasks.length + ' 个任务';
+            transportStatus.className = 'file-status';
+            showToast('✅ 加载示例数据: ' + tasks.length + ' 个任务', false);
+            renderTasks();
+            renderCalendar();
+            updateStats();
+            exportBtn.disabled = false;
+            refreshLoadSelect();
+            // 自动填入默认名称
+            saveNameInput.value = '排程_' + new Date().toLocaleString().replace(/[\/:]/g, '-');
+        }
+
+        // ============================================================
+        //  取消占用
+        // ============================================================
+        function removeTaskFromSlot(key) {
+            if (!schedule[key]) return false;
+            var taskId = schedule[key];
+            var task = findTaskById(taskId);
+            delete schedule[key];
+            renderTasks();
+            renderCalendar();
+            updateStats();
+            if (task) {
+                showToast('❌ 已取消 ' + task.route + ' 的窗口占用', false);
+            } else {
+                showToast('❌ 已取消窗口占用', false);
+            }
+            return true;
+        }
+
+        // ============================================================
+        //  查找任务
+        // ============================================================
+        function findTaskById(taskId) {
+            for (var i = 0; i < tasks.length; i++) {
+                if (tasks[i].id === taskId) return tasks[i];
+            }
+            return null;
+        }
+
+        // ============================================================
+        //  检查任务是否已排程
+        // ============================================================
+        function isTaskScheduled(taskId) {
+            for (var key in schedule) {
+                if (schedule[key] === taskId) return true;
+            }
+            return false;
+        }
+
+        // ============================================================
+        //  获取任务颜色类
+        // ============================================================
+        function getTaskColorClass(dimension) {
+            if (dimension === '日') return 'daily';
+            if (dimension === '周') return 'weekly';
+            return 'monthly';
+        }
+
+        // ============================================================
+        //  渲染任务列表
+        // ============================================================
+        function renderTasks() {
+            if (tasks.length === 0) {
+                taskList.innerHTML = '<div class="empty-state" style="padding:20px 0;"><div class="icon-big" style="font-size:28px;">📭</div><p style="font-size:11px;">暂无任务<br>请导入运输数据或加载示例</p></div>';
+                taskCount.textContent = '0 个任务';
+                return;
+            }
+
+            var groups = { '日': [], '周': [], '月': [] };
+            tasks.forEach(function(task) {
+                var dim = task.dimension || '日';
+                if (!groups[dim]) groups[dim] = [];
+                groups[dim].push(task);
+            });
+
+            var html = '';
+            var dimMap = {
+                '日': { label: '日维度', badgeClass: 'daily-badge', icon: '🔴' },
+                '周': { label: '周维度', badgeClass: 'weekly-badge', icon: '🟢' },
+                '月': { label: '月维度', badgeClass: 'monthly-badge', icon: '🔵' }
+            };
+
+            ['日', '周', '月'].forEach(function(dim) {
+                var taskList = groups[dim] || [];
+                var info = dimMap[dim] || { label: dim, badgeClass: '', icon: '' };
+                var scheduledCount = taskList.filter(function(t) { return isTaskScheduled(t.id); }).length;
+
+                html += '<div class="task-group">';
+                html += '<div class="group-title">';
+                html += info.icon + ' ' + info.label;
+                html += '<span class="badge ' + info.badgeClass + '">' + dim + '</span>';
+                html += '<span class="group-count">' + taskList.length + ' 个任务 (' + scheduledCount + ' 已排程)</span>';
+                html += '</div>';
+
+                if (taskList.length === 0) {
+                    html += '<div class="empty-hint">暂无 ' + dim + ' 维度任务</div>';
+                } else {
+                    taskList.forEach(function(task) {
+                        var dimClass = task.dimension === '日' ? 'daily' : (task.dimension === '周' ? 'weekly' :
+                            'monthly');
+                        var dimLabel = task.dimension === '日' ? '日' : (task.dimension === '周' ? '周' : '月');
+                        var alreadyScheduled = isTaskScheduled(task.id);
+                        var scheduledClass = alreadyScheduled ? 'scheduled' : '';
+
+                        html += '<div class="task-item ' + scheduledClass + '" ' + (alreadyScheduled ? '' :
+                            'draggable="true" data-task-id="' + task.id + '">');
+                        html += '<span class="task-icon">🚛</span>';
+                        html += '<div class="task-info"><div class="route">' + task.route + (alreadyScheduled ?
+                            ' <span style="font-weight:400;font-size:9px;color:#8aa0b8;">✅ 已排程</span>' :
+                            '') + '</div>';
+                        html += '<div class="detail"><span>🚚 ' + task.vehicle + '</span><span>📦 ' + task
+                            .volume + 'm³</span><span>⏰ ' + task.windowStr + '</span></div></div>';
+                        html += '<span class="task-badge ' + dimClass + '">' + dimLabel + '</span>';
+                        html += '</div>';
+                    });
+                }
+                html += '</div>';
+            });
+
+            taskList.innerHTML = html;
+            taskCount.textContent = tasks.length + ' 个任务';
+
+            document.querySelectorAll('.task-item[draggable="true"]').forEach(function(el) {
+                el.addEventListener('dragstart', function(e) {
+                    var taskId = this.dataset.taskId;
+                    e.dataTransfer.setData('text/plain', taskId);
+                    e.dataTransfer.effectAllowed = 'move';
+                    this.classList.add('dragging');
+                });
+                el.addEventListener('dragend', function(e) {
+                    this.classList.remove('dragging');
+                    document.querySelectorAll('.drop-zone').forEach(function(zone) {
+                        zone.classList.remove('drag-over');
+                    });
+                });
+            });
+        }
+
+        // ============================================================
+        //  渲染摘要统计
+        // ============================================================
+        function renderSummary() {
+            if (!warehouseData || currentDocks === 0) {
+                summaryCards.innerHTML = '';
+                return;
+            }
+
+            var openMin = warehouseData.openMin || 480;
+            var closeMin = warehouseData.closeMin || 1140;
+            var weekDays = getWeekDays();
+            var dock = currentDockTab;
+
+            var html = '';
+            for (var day = 0; day < 7; day++) {
+                var isWeekend = weekDays[day].isWeekend;
+                var totalSlots = 0;
+                var usedSlots = 0;
+                var breakSlots = 0;
+
+                for (var h = 0; h < 24; h++) {
+                    var hourMin = h * 60;
+                    if (hourMin < openMin || hourMin >= closeMin) continue;
+                    totalSlots++;
+                    if (isBreakHour(h)) breakSlots++;
+                    var key = day + '|' + dock + '|' + h;
+                    if (schedule[key]) usedSlots++;
+                }
+
+                var availableSlots = totalSlots - breakSlots;
+                var freeSlots = availableSlots - usedSlots;
+                var utilRate = availableSlots > 0 ? (usedSlots / availableSlots * 100) : 0;
+
+                var color = utilRate > 70 ? '#2a7f6e' : (utilRate > 40 ? '#f0ad4e' : '#b0c0d0');
+
+                html += '<div class="summary-card">';
+                html += '<span class="day-label ' + (isWeekend ? 'weekend' : '') + '">' + weekDays[day].dayName + '</span>';
+                html += '<div class="stats-row-mini">';
+                html += '<span class="stat-item"><span class="num total">' + availableSlots + '</span> 可用</span>';
+                html += '<span class="stat-item"><span class="num used">' + usedSlots + '</span> 占用</span>';
+                html += '<span class="stat-item"><span class="num free">' + freeSlots + '</span> 空闲</span>';
+                html += '<span class="stat-item"><span class="num util">' + utilRate.toFixed(0) + '%</span></span>';
+                html += '</div>';
+                html += '<div class="util-bar-mini"><div class="fill" style="width:' + Math.min(100, utilRate) +
+                    '%;background:' + color + ';"></div></div>';
+                html += '</div>';
+            }
+
+            summaryCards.innerHTML = html;
+        }
+
+        // ============================================================
+        //  渲染道口Tab
+        // ============================================================
+        function renderDockTabs() {
+            if (currentDocks === 0) {
+                dockTabs.innerHTML = '';
+                return;
+            }
+
+            var html = '';
+            for (var d = 0; d < currentDocks; d++) {
+                var active = d === currentDockTab ? 'active' : '';
+                html += '<button class="dock-tab ' + active + '" data-dock="' + d + '">🚪 道口' + (d + 1) + '</button>';
+            }
+            dockTabs.innerHTML = html;
+
+            document.querySelectorAll('.dock-tab').forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    var dock = parseInt(this.dataset.dock);
+                    currentDockTab = dock;
+                    document.querySelectorAll('.dock-tab').forEach(function(t) { t.classList.remove(
+                        'active'); });
+                    this.classList.add('active');
+                    renderCalendar();
+                });
+            });
+        }
+
+        // ============================================================
+        //  渲染日历（周视图 - 单道口）
+        // ============================================================
+        function renderCalendar() {
+            if (!warehouseData) {
+                calendarBody.innerHTML =
+                    '<div class="empty-state"><div class="icon-big">🏗️</div><h3>等待仓库数据</h3><p>请先导入仓库数据</p></div>';
+                return;
+            }
+
+            if (currentDocks === 0) {
+                calendarBody.innerHTML =
+                    '<div class="empty-state"><div class="icon-big">🚪</div><h3>无道口配置</h3><p>请检查仓库数据中的道口数量</p></div>';
+                return;
+            }
+
+            renderDockTabs();
+            renderSummary();
+
+            var hours = [];
+            for (var h = 0; h < 24; h++) {
+                hours.push(String(h).padStart(2, '0') + ':00');
+            }
+
+            var openMin = warehouseData.openMin || 480;
+            var closeMin = warehouseData.closeMin || 1140;
+            var weekDays = getWeekDays();
+
+            var dock = currentDockTab;
+
+            var html = '<table class="week-schedule-table"><thead><tr><th style="min-width:32px;position:sticky;left:0;z-index:15;background:#f5f8fc;">时间</th>';
+            for (var day = 0; day < 7; day++) {
+                var isWeekend = weekDays[day].isWeekend;
+                html += '<th style="min-width:32px;padding:2px 1px;' + (isWeekend ? 'background:#f0f4f9;color:#b13b3b;' :
+                    '') + '">' + weekDays[day].dayName + '<br><span style="font-weight:400;font-size:7px;color:#7a8eaa;">' +
+                    weekDays[day].dateStr + '</span></th>';
+            }
+            html += '</tr></thead><tbody>';
+
+            for (var h = 0; h < 24; h++) {
+                var isBreak = isBreakHour(h);
+                var timeLabel = hours[h];
+                var breakClass = isBreak ? 'break-time' : '';
+
+                var hourMin = h * 60;
+                var isOutside = hourMin < openMin || hourMin >= closeMin;
+
+                html += '<tr>';
+                html += '<td class="time-col ' + breakClass + (isOutside ? ' outside-time' : '') +
+                    '" style="position:sticky;left:0;z-index:4;">' + timeLabel + '</td>';
+
+                for (var day = 0; day < 7; day++) {
+                    var key = day + '|' + dock + '|' + h;
+                    var taskId = schedule[key] || null;
+                    var isAvailable = !isBreak && !isOutside;
+
+                    var cellClass = 'drop-zone';
+                    if (taskId) cellClass += ' has-task';
+                    else if (isBreak) cellClass += ' break-zone';
+                    else if (isOutside) cellClass += ' break-zone';
+                    else cellClass += ' available';
+
+                    if (day === copySourceDay && taskId) {
+                        cellClass += ' copy-source';
+                    }
+
+                    var isWeekend = weekDays[day].isWeekend;
+                    html += '<td class="' + cellClass + (isWeekend ? ' weekend' : '') +
+                        '" data-day="' + day + '" data-dock="' + dock + '" data-hour="' + h + '" data-key="' + key +
+                        '" ' + (isAvailable ? '' : 'style="cursor:not-allowed;background:' + (isBreak ?
+                            '#fde8d0' : '#f5f7fa') + ';"') + '>';
+
+                    if (isBreak) {
+                        html += '<div class="cell-break">🍽️</div>';
+                    } else if (isOutside) {
+                        html += '<span class="cell-idle">·</span>';
+                    } else if (taskId) {
+                        var task = findTaskById(taskId);
+                        if (task) {
+                            var dimIcon = task.dimension === '日' ? '' : (task.dimension === '周' ? '📆' : '📊');
+                            var colorClass = getTaskColorClass(task.dimension);
+                            html += '<div class="cell-task ' + colorClass + '" data-task-id="' + taskId +
+                                '" data-key="' + key + '">';
+                            html += '<strong>' + task.route + '</strong>';
+                            html += '<span class="sub-info">' + task.vehicle + '</span>';
+                            html += '<span class="cancel-btn" data-key="' + key + '" title="取消占用">✕</span>';
+                            html += '</div>';
+                        } else {
+                            delete schedule[key];
+                            html += '<span class="cell-idle">·</span>';
+                        }
+                    } else {
+                        html += '<span class="drop-hint">📥</span>';
+                    }
+
+                    html += '</td>';
+                }
+
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            html += '<div style="font-size:9px;color:#8aa0b8;padding:4px 0;text-align:center;">🚪 当前显示: 道口' + (dock +
+                1) + ' / 共 ' + currentDocks + ' 个道口</div>';
+
+            calendarBody.innerHTML = html;
+
+            // 拖拽事件
+            document.querySelectorAll('.drop-zone.available, .drop-zone.has-task').forEach(function(zone) {
+                zone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    this.classList.add('drag-over');
+                });
+                zone.addEventListener('dragleave', function(e) {
+                    this.classList.remove('drag-over');
+                });
+                zone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('drag-over');
+                    var taskId = e.dataTransfer.getData('text/plain');
+                    if (!taskId) return;
+
+                    var task = findTaskById(taskId);
+                    if (!task) {
+                        showToast('任务不存在', true);
+                        return;
+                    }
+
+                    if (isTaskScheduled(taskId)) {
+                        showToast('该任务已排程，不能重复占用', true);
+                        return;
+                    }
+
+                    var day = parseInt(this.dataset.day);
+                    var dock = parseInt(this.dataset.dock);
+                    var hour = parseInt(this.dataset.hour);
+                    var key = day + '|' + dock + '|' + hour;
+
+                    if (isBreakHour(hour)) {
+                        showToast('该时段为交接班休息时间，不能排程', true);
+                        return;
+                    }
+
+                    var hourMin = hour * 60;
+                    if (hourMin < warehouseData.openMin || hourMin >= warehouseData.closeMin) {
+                        showToast('该时段不在营业时间内', true);
+                        return;
+                    }
+
+                    var existingTaskId = schedule[key];
+                    var replacedTask = null;
+                    if (existingTaskId) {
+                        replacedTask = findTaskById(existingTaskId);
+                        delete schedule[key];
+                        if (replacedTask) {
+                            showToast('🔄 已替换 ' + replacedTask.route + ' 为 ' + task.route, false);
+                        }
+                    }
+
+                    schedule[key] = taskId;
+
+                    renderTasks();
+                    renderCalendar();
+                    updateStats();
+                    if (!replacedTask) {
+                        var dayName = weekDays[day].dayName;
+                        showToast('✅ ' + task.route + ' 已占用 ' + dayName + ' 道口' + (dock + 1) + ' ' + minutesToTime(
+                            hour * 60), false);
+                    }
+                });
+            });
+
+            // X按钮取消
+            document.querySelectorAll('.cancel-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    var key = this.dataset.key;
+                    if (key && schedule[key]) {
+                        removeTaskFromSlot(key);
+                    }
+                });
+            });
+        }
+
+        // ============================================================
+        //  复制排程
+        // ============================================================
+        function copySchedule() {
+            if (copySourceDay === copyTargetDay) {
+                showToast('来源日与目标日相同，请选择不同的日期', true);
+                return;
+            }
+
+            var hasSource = false;
+            for (var key in schedule) {
+                if (key.startsWith(copySourceDay + '|')) {
+                    hasSource = true;
+                    break;
+                }
+            }
+            if (!hasSource) {
+                showToast('来源日（' + weekDays[copySourceDay].dayName + '）没有排程，无法复制', true);
+                return;
+            }
+
+            var hasTarget = false;
+            for (var key in schedule) {
+                if (key.startsWith(copyTargetDay + '|')) {
+                    hasTarget = true;
+                    break;
+                }
+            }
+            if (hasTarget) {
+                if (!confirm('目标日（' + weekDays[copyTargetDay].dayName + '）已有排程，确定要覆盖吗？')) {
+                    return;
+                }
+            }
+
+            var keysToRemove = [];
+            for (var key in schedule) {
+                if (key.startsWith(copyTargetDay + '|')) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(function(key) {
+                delete schedule[key];
+            });
+
+            var copiedCount = 0;
+            for (var key in schedule) {
+                if (key.startsWith(copySourceDay + '|')) {
+                    var parts = key.split('|');
+                    var dock = parts[1];
+                    var hour = parts[2];
+                    var taskId = schedule[key];
+                    var newKey = copyTargetDay + '|' + dock + '|' + hour;
+                    schedule[newKey] = taskId;
+                    copiedCount++;
+                }
+            }
+
+            renderTasks();
+            renderCalendar();
+            updateStats();
+            showToast('✅ 已从 ' + weekDays[copySourceDay].dayName + ' 复制 ' + copiedCount + ' 个排程到 ' + weekDays[copyTargetDay]
+                .dayName, false);
+        }
+
+        // ============================================================
+        //  更新统计
+        // ============================================================
+        function updateStats() {
+            if (!warehouseData || currentDocks === 0) {
+                occupiedCount.textContent = '0';
+                utilizationRate.textContent = '0%';
+                return;
+            }
+
+            var openMin = warehouseData.openMin || 480;
+            var closeMin = warehouseData.closeMin || 1140;
+            var totalSlots = 0;
+            var breakSlots = 0;
+            var totalDays = 7;
+
+            for (var h = 0; h < 24; h++) {
+                var hourMin = h * 60;
+                if (hourMin < openMin || hourMin >= closeMin) continue;
+                totalSlots += currentDocks * totalDays;
+                if (isBreakHour(h)) breakSlots += currentDocks * totalDays;
+            }
+
+            var availableSlots = totalSlots - breakSlots;
+            var occupied = 0;
+            for (var key in schedule) {
+                if (schedule.hasOwnProperty(key)) {
+                    var parts = key.split('|');
+                    var h = parseInt(parts[2]);
+                    var hourMin = h * 60;
+                    if (hourMin >= openMin && hourMin < closeMin && !isBreakHour(h)) {
+                        occupied++;
+                    }
+                }
+            }
+            occupiedCount.textContent = occupied;
+            var rate = availableSlots > 0 ? (occupied / availableSlots * 100) : 0;
+            utilizationRate.textContent = rate.toFixed(1) + '%';
+        }
+
+        // ============================================================
+        //  重置日历
+        // ============================================================
+        function resetCalendar() {
+            if (Object.keys(schedule).length === 0) {
+                showToast('日历已是空闲状态', false);
+                return;
+            }
+            if (!confirm('确定要清空所有已占用的窗口吗？')) return;
+            schedule = {};
+            renderTasks();
+            renderCalendar();
+            updateStats();
+            showToast('🔄 已重置所有窗口占用', false);
+        }
+
+        // ============================================================
+        //  清空所有
+        // ============================================================
+        function clearAll() {
+            if (tasks.length === 0 && Object.keys(schedule).length === 0 && !warehouseData) return;
+            if (!confirm('确定清空所有数据和排程？')) return;
+            tasks = [];
+            schedule = {};
+            warehouseData = null;
+            currentDocks = 0;
+            taskIdCounter = 0;
+            transportStatus.textContent = '未加载';
+            transportStatus.className = 'file-status empty';
+            warehouseStatus.textContent = '未加载';
+            warehouseStatus.className = 'file-status empty';
+            warehouseInfo.style.display = 'none';
+            renderTasks();
+            renderCalendar();
+            updateStats();
+            exportBtn.disabled = true;
+            showToast('已清空所有数据', false);
+            refreshLoadSelect();
+        }
+
+        // ============================================================
+        //  导出排程
+        // ============================================================
+        function exportSchedule() {
+            var rows = [];
+            var weekDays = getWeekDays();
+
+            for (var key in schedule) {
+                if (!schedule.hasOwnProperty(key)) continue;
+                var parts = key.split('|');
+                var day = parseInt(parts[0]);
+                var dock = parseInt(parts[1]) + 1;
+                var hour = parseInt(parts[2]);
+                var taskId = schedule[key];
+                var task = findTaskById(taskId);
+                if (!task) continue;
+
+                var unloadMin = warehouseData ? warehouseData.unloadMin || 30 : 30;
+                rows.push({
+                    '星期': weekDays[day].dayName,
+                    '日期': weekDays[day].dateStr,
+                    '仓库': task.warehouse || (warehouseData ? warehouseData.warehouse : ''),
+                    '路线代码': task.route,
+                    '车型': task.vehicle,
+                    '体积(m³)': task.volume,
+                    '维度': task.dimension,
+                    '道口': '道口' + dock,
+                    '计划到达': minutesToTime(hour * 60),
+                    '计划离开': minutesToTime(hour * 60 + unloadMin),
+                    '状态': '已排程'
+                });
+            }
+
+            tasks.forEach(function(task) {
+                if (!isTaskScheduled(task.id)) {
+                    rows.push({
+                        '星期': '-',
+                        '日期': '-',
+                        '仓库': task.warehouse || (warehouseData ? warehouseData.warehouse : ''),
+                        '路线代码': task.route,
+                        '车型': task.vehicle,
+                        '体积(m³)': task.volume,
+                        '维度': task.dimension,
+                        '道口': '未排程',
+                        '计划到达': task.windowStr,
+                        '计划离开': '-',
+                        '状态': '待排程'
+                    });
+                }
+            });
+
+            if (rows.length === 0) { showToast('无数据可导出', true); return; }
+
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.json_to_sheet(rows);
+            XLSX.utils.book_append_sheet(wb, ws, '周排程结果');
+            var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            var blob = new Blob([wbout], { type: 'application/octet-stream' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = '周排程结果.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('📥 导出 ' + rows.length + ' 条记录', false);
+        }
+
+        // ============================================================
+        //  样例文件下载
+        // ============================================================
+        function downloadTransportSample() {
+            var rows = [
+                ['仓库代码', '到货路线代码', '到货车型', '到货体积', '预计到货窗口', '到货维度', '到货频次'],
+                ['WX-KD', 'R001', '9.6M', '32', '10:00', '日', '3'],
+                ['WX-KD', 'R002', '9.6M', '35', '14:30', '周', '2'],
+                ['WX-KD', 'R003', '9.6M', '28', '09:00', '日', '3'],
+                ['WX-KD', 'R004', '12.5M', '42', '09:00', '周', '5'],
+                ['WX-KD', 'R005', '12.5M', '46', '09:00', '日', '1'],
+                ['WX-KD', 'R006', '12.5M', '44', '09:00', '月', '4'],
+                ['WX-KD', 'R007', '12.5M', '39', '09:00', '日', '5'],
+                ['WX-KD', 'R008', '12.5M', '42', '09:00', '周', '3'],
+                ['WX-KD', 'R009', '12.5M', '43', '09:00', '周', '4'],
+                ['WX-KD', 'R010', '12.5M', '38', '09:00', '日', '2'],
+                ['WX-KD', 'R011', '12.5M', '45', '09:00', '日', '3'],
+                ['WX-KD', 'R012', '12.5M', '44', '09:00', '周', '6'],
+                ['WX-KD', 'R013', '12.5M', '41', '09:00', '月', '8'],
+                ['WX-KD', 'R014', '12.5M', '42', '09:00', '日', '1']
+            ];
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(rows);
+            XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+            var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            var blob = new Blob([wbout], { type: 'application/octet-stream' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = '运输数据样例.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('📥 已下载 运输数据样例.xlsx', false);
+        }
+
+        function downloadWarehouseSample() {
+            var rows = [
+                ['仓库代码', '道口数量', '仓库工作时长', '开门时间', '单车平均卸货时间'],
+                ['WX-KD', '3', '11小时/天', '8:00', '30']
+            ];
+            var wb = XLSX.utils.book_new();
+            var ws = XLSX.utils.aoa_to_sheet(rows);
+            XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+            var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            var blob = new Blob([wbout], { type: 'application/octet-stream' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = '仓库数据样例.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('📥 已下载 仓库数据样例.xlsx', false);
+        }
+
+        // ============================================================
+        //  【核心】保存/加载/删除 排程 (localStorage) - 优化版
+        // ============================================================
+        function getSavedList() {
+            try {
+                return JSON.parse(localStorage.getItem('schedule_save_list_v2') || '[]');
+            } catch (e) { return []; }
+        }
+
+        function setSavedList(list) {
+            localStorage.setItem('schedule_save_list_v2', JSON.stringify(list));
+        }
+
+        function refreshLoadSelect() {
+            var list = getSavedList();
+            // 按时间倒序排列（最新的在前）
+            list.sort(function(a, b) { return b.timestamp - a.timestamp; });
+
+            var select = loadSelect;
+            select.innerHTML = '<option value="">-- 无记录 --</option>';
+            if (list.length === 0) {
+                delRecordBtn.classList.remove('show');
+                return;
+            }
+            list.forEach(function(item) {
+                var opt = document.createElement('option');
+                opt.value = item.id;
+                var info = item.taskCount !== undefined ? ' · ' + item.taskCount + '任务' : '';
+                var dockInfo = item.docks !== undefined ? ' · ' + item.docks + '道口' : '';
+                opt.textContent = item.name + ' (' + item.date + ')' + info + dockInfo;
+                select.appendChild(opt);
+            });
+            // 选中第一个
+            select.value = list[0].id;
+            delRecordBtn.classList.add('show');
+            // 更新删除按钮状态
+            updateDeleteBtn();
+        }
+
+        function updateDeleteBtn() {
+            var hasValue = loadSelect.value && loadSelect.value !== '';
+            delRecordBtn.style.display = hasValue ? 'block' : 'none';
+        }
+
+        // 监听select变化，显示/隐藏删除按钮
+        loadSelect.addEventListener('change', updateDeleteBtn);
+
+        function saveSchedule() {
+            if (!warehouseData) {
+                showToast('请先加载仓库数据', true);
+                return;
+            }
+            if (tasks.length === 0) {
+                showToast('请先加载运输任务', true);
+                return;
+            }
+            var name = saveNameInput.value.trim();
+            if (!name) {
+                name = '排程_' + new Date().toLocaleString().replace(/[\/:]/g, '-');
+                saveNameInput.value = name;
+            }
+
+            var list = getSavedList();
+            var id = 'save_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+            var data = {
+                id: id,
+                name: name,
+                date: new Date().toLocaleString(),
+                timestamp: Date.now(),
+                warehouseData: warehouseData,
+                tasks: tasks,
+                schedule: schedule,
+                taskIdCounter: taskIdCounter,
+                currentDocks: currentDocks,
+                currentUnloadMin: currentUnloadMin,
+                currentDockTab: currentDockTab,
+                taskCount: tasks.length,
+                docks: currentDocks
+            };
+            list.push({
+                id: id,
+                name: name,
+                date: new Date().toLocaleString(),
+                timestamp: Date.now(),
+                taskCount: tasks.length,
+                docks: currentDocks
+            });
+            setSavedList(list);
+            localStorage.setItem('schedule_data_' + id, JSON.stringify(data));
+            refreshLoadSelect();
+            showToast('✅ 排程 "' + name + '" 已保存 (' + tasks.length + ' 个任务)', false);
+        }
+
+        function loadSchedule() {
+            var select = loadSelect;
+            var id = select.value;
+            if (!id) {
+                showToast('请先选择一个记录', true);
+                return;
+            }
+            var raw = localStorage.getItem('schedule_data_' + id);
+            if (!raw) {
+                showToast('记录不存在或已损坏', true);
+                refreshLoadSelect();
+                return;
+            }
+            try {
+                var data = JSON.parse(raw);
+                // 恢复数据
+                warehouseData = data.warehouseData;
+                tasks = data.tasks;
+                schedule = data.schedule;
+                taskIdCounter = data.taskIdCounter || 0;
+                currentDocks = data.currentDocks || 0;
+                currentUnloadMin = data.currentUnloadMin || 30;
+                currentDockTab = data.currentDockTab || 0;
+
+                // 更新UI
+                if (warehouseData) {
+                    warehouseStatus.textContent = '✅ ' + warehouseData.warehouse + ' (' + warehouseData.docks + '道口)';
+                    warehouseStatus.className = 'file-status';
+                    warehouseInfo.style.display = 'block';
+                    warehouseDetail.innerHTML = '<span style="font-weight:600;">' + warehouseData.warehouse +
+                        '</span> · ' + warehouseData.docks + '个道口 · ' +
+                        warehouseData.openStr + ' - ' + warehouseData.closeStr + ' · 卸货' + warehouseData.unloadMin + 'min';
+                    exportBtn.disabled = false;
+                } else {
+                    warehouseStatus.textContent = '未加载';
+                    warehouseStatus.className = 'file-status empty';
+                    warehouseInfo.style.display = 'none';
+                    exportBtn.disabled = true;
+                }
+
+                transportStatus.textContent = tasks.length > 0 ? '✅ ' + tasks.length + ' 个任务' : '未加载';
+                transportStatus.className = tasks.length > 0 ? 'file-status' : 'file-status empty';
+
+                showToast('📂 已加载排程 "' + data.name + '" (' + tasks.length + ' 个任务)', false);
+                renderTasks();
+                renderCalendar();
+                updateStats();
+                refreshLoadSelect();
+                // 自动填入名称
+                saveNameInput.value = data.name || '';
+            } catch (e) {
+                showToast('加载失败: ' + e.message, true);
+            }
+        }
+
+        function deleteCurrentRecord() {
+            var select = loadSelect;
+            var id = select.value;
+            if (!id) {
+                showToast('请先选择一个记录', true);
+                return;
+            }
+            // 获取记录名称用于提示
+            var selectedOption = select.options[select.selectedIndex];
+            var name = selectedOption ? selectedOption.text : '未命名';
+            if (!confirm('确定要删除 "' + name + '" 吗？')) return;
+
+            var list = getSavedList();
+            var idx = list.findIndex(function(item) { return item.id === id; });
+            if (idx > -1) {
+                list.splice(idx, 1);
+                setSavedList(list);
+            }
+            localStorage.removeItem('schedule_data_' + id);
+            refreshLoadSelect();
+            showToast('🗑️ 已删除排程记录', false);
+        }
+
+        // ============================================================
+        //  复制工具栏事件
+        // ============================================================
+        function initCopyToolbar() {
+            document.querySelectorAll('.day-btn[data-day]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var day = parseInt(this.dataset.day);
+                    document.querySelectorAll('.day-btn[data-day]').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    copySourceDay = day;
+                    renderCalendar();
+                });
+            });
+
+            document.querySelectorAll('.day-btn[data-target]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var target = parseInt(this.dataset.target);
+                    document.querySelectorAll('.day-btn[data-target]').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    copyTargetDay = target;
+                });
+            });
+
+            copyActionBtn.addEventListener('click', copySchedule);
+        }
+
+        // ============================================================
+        //  事件绑定
+        // ============================================================
+        transportInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) importTransportFile(e.target.files[0]);
+            this.value = '';
+        });
+        document.getElementById('uploadTransport').addEventListener('click', function() { transportInput.click(); });
+
+        warehouseInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) importWarehouseFile(e.target.files[0]);
+            this.value = '';
+        });
+        document.getElementById('uploadWarehouse').addEventListener('click', function() { warehouseInput.click(); });
+
+        loadSampleBtn.addEventListener('click', loadSampleData);
+        clearBtn.addEventListener('click', clearAll);
+        exportBtn.addEventListener('click', exportSchedule);
+        resetCalendarBtn.addEventListener('click', resetCalendar);
+        downloadTransportSample.addEventListener('click', downloadTransportSample);
+        downloadWarehouseSample.addEventListener('click', downloadWarehouseSample);
+
+        // 保存/加载事件
+        saveScheduleBtn.addEventListener('click', saveSchedule);
+        loadScheduleBtn.addEventListener('click', loadSchedule);
+        delRecordBtn.addEventListener('click', deleteCurrentRecord);
+
+        initCopyToolbar();
+        refreshLoadSelect();
+
+        // 初始化默认名称
+        saveNameInput.value = '排程_' + new Date().toLocaleString().replace(/[\/:]/g, '-');
+
+        // ============================================================
+        //  初始化
+        // ============================================================
+        renderTasks();
+        renderCalendar();
+        updateStats();
+        showToast('📥 请先导入数据，或点击「示例数据」', false);
+
+        console.log('🚚 到货窗口排程工具已加载 (优化保存/加载)');
+        console.log('💡 每条记录右侧带删除按钮，记录按时间倒序排列');
+    </script>
+</body>
+</html>
