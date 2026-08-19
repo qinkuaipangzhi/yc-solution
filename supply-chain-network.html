@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>供应链网络可视化 - 物流工具箱</title>
+    <title>供应链网络可视化 - 物流工具箱 (含保存/加载)</title>
     <!-- SheetJS 核心库 -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js">
     </script>
@@ -51,6 +51,7 @@
         .header .badge-group { display: flex; gap: 6px; flex-wrap: wrap; }
         .header .badge { background: rgba(255,255,255,0.10); padding: 2px 12px; border-radius: 30px; font-size: 10px; white-space: nowrap; }
         .header .badge.network { background: #2a7f6e; color: white; }
+        .header .badge.save { background: #1a5d8c; color: white; }
 
         .main-grid { display: grid; grid-template-columns: 380px 1fr; gap: 14px; flex: 1; min-height: 0; }
         @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } }
@@ -138,6 +139,10 @@
         .btn-sm { padding: 2px 6px; font-size: 8px; }
         .btn-primary { background: #1a5d8c; color: white; }
         .btn-primary:hover { background: #0e466b; }
+        .btn-save { background: #2a7f6e; color: white; }
+        .btn-save:hover { background: #1e6657; }
+        .btn-load { background: #1a5d8c; color: white; }
+        .btn-load:hover { background: #0e466b; }
 
         .card-right { background: white; border-radius: 1.2rem; padding: 14px 16px; border: 1px solid #e2edf5; box-shadow: 0 2px 8px rgba(0,0,0,0.04); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
         .card-right .card-title { font-size: 13px; font-weight: 600; color: #1f3a5f; display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-bottom: 6px; flex-wrap: wrap; }
@@ -172,6 +177,94 @@
 
         .custom-node-icon { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
 
+        /* ===== ★★★ 保存/加载区域 ★★★ ===== */
+        .save-load-area {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+            background: #f8fafd;
+            border-radius: 6px;
+            padding: 4px 8px;
+            border: 1px solid #e2edf5;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        .save-load-area .save-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #1f3a5f;
+            white-space: nowrap;
+        }
+        .save-load-area input[type="text"] {
+            border: 1px solid #d0d8e0;
+            border-radius: 20px;
+            padding: 2px 10px;
+            font-size: 10px;
+            width: 100px;
+            background: white;
+            flex-shrink: 1;
+            min-width: 60px;
+        }
+        .save-load-area input[type="text"]:focus {
+            border-color: #1a5d8c;
+            outline: none;
+        }
+        .save-load-area .btn {
+            padding: 3px 10px;
+            font-size: 9px;
+        }
+        .save-load-area .sep-text {
+            color: #d0d8e0;
+            font-size: 10px;
+        }
+        .record-select-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #d0d8e0;
+            padding: 1px 2px 1px 10px;
+            max-width: 150px;
+            flex-shrink: 1;
+            min-width: 80px;
+        }
+        .record-select-wrapper select {
+            border: none;
+            padding: 2px 4px 2px 0;
+            font-size: 10px;
+            background: transparent;
+            min-width: 60px;
+            max-width: 110px;
+            outline: none;
+            cursor: pointer;
+        }
+        .record-select-wrapper select:focus {
+            outline: none;
+        }
+        .record-select-wrapper .del-record-btn {
+            border: none;
+            background: transparent;
+            color: #b13b3b;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0 5px;
+            line-height: 1;
+            border-radius: 50%;
+            transition: 0.15s;
+            display: none;
+            flex-shrink: 0;
+        }
+        .record-select-wrapper .del-record-btn:hover {
+            background: #fce4e4;
+            transform: scale(1.1);
+        }
+        .record-select-wrapper .del-record-btn.show {
+            display: block;
+        }
+
         @media (max-width: 768px) {
             .container { height: auto; min-height: 100vh; }
             .main-grid { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
@@ -179,6 +272,9 @@
             #mapContainer { min-height: 320px; height: 320px; }
             .legend-tree { max-height: 100px; }
             .table-wrap { max-height: 70px; }
+            .save-load-area input[type="text"] { width: 70px; font-size: 9px; }
+            .record-select-wrapper { max-width: 110px; min-width: 60px; }
+            .record-select-wrapper select { font-size: 9px; max-width: 70px; min-width: 50px; }
         }
         @media (max-width: 480px) {
             body { padding: 8px; }
@@ -192,6 +288,14 @@
             .legend-tree .tree-item { font-size: 10px; }
             .search-bar .search-input-wrap input { font-size: 9px; padding: 3px 6px 3px 22px; }
             .search-bar .search-input-wrap .search-icon { font-size: 10px; left: 6px; }
+            .save-load-area { flex-wrap: wrap; gap: 3px; padding: 3px 6px; }
+            .save-load-area input[type="text"] { width: 55px; font-size: 8px; padding: 1px 6px; }
+            .record-select-wrapper { max-width: 80px; min-width: 50px; padding: 0 2px 0 5px; }
+            .record-select-wrapper select { font-size: 8px; max-width: 50px; min-width: 40px; }
+            .record-select-wrapper .del-record-btn { font-size: 10px; padding: 0 3px; }
+            .save-load-area .save-label { font-size: 8px; }
+            .save-load-area .sep-text { font-size: 8px; }
+            .save-load-area .btn { font-size: 8px; padding: 2px 6px; }
         }
     </style>
 </head>
@@ -212,6 +316,7 @@
                 <span class="badge">🏁 末端仓</span>
                 <span class="badge">📦 提货点</span>
                 <span class="badge">🎯 目的点</span>
+                <span class="badge save">💾 保存/加载</span>
             </div>
         </div>
 
@@ -249,7 +354,7 @@
                     <span class="stat-item" style="color:#d48c2c;">⚡ 重叠 <span class="num" id="overlapCount">0</span></span>
                 </div>
 
-                <!-- ★★★ 搜索栏 ★★★ -->
+                <!-- 搜索栏 -->
                 <div class="search-bar">
                     <div class="search-input-wrap">
                         <span class="search-icon">🔍</span>
@@ -263,7 +368,7 @@
                     <span class="search-results-count" id="searchCount"></span>
                 </div>
 
-                <!-- ★★★ 树形图例 ★★★ -->
+                <!-- 树形图例 -->
                 <div class="legend-tree" id="legendTree">
                     <div class="tree-root">
                         <span>📊 全部节点</span>
@@ -311,6 +416,24 @@
                     <button class="btn btn-success" id="visualizeBtn" disabled style="flex:1;">🌐 可视化</button>
                     <button class="btn btn-primary" id="exportBtn" disabled style="flex:0.5;">📥 导出</button>
                 </div>
+
+                <!-- ===== ★★★ 保存/加载区域 ★★★ ===== -->
+                <div class="save-load-area">
+                    <span class="save-label">💾 保存</span>
+                    <input type="text" id="saveNameInput" placeholder="方案名称" value="">
+                    <button class="btn btn-save btn-sm" id="savePlanBtn">保存</button>
+
+                    <span class="sep-text">|</span>
+
+                    <span class="save-label">📂 加载</span>
+                    <div class="record-select-wrapper" id="recordSelectWrapper">
+                        <select id="loadSelect">
+                            <option value="">-- 无记录 --</option>
+                        </select>
+                        <button class="del-record-btn" id="delRecordBtn" title="删除此记录">✕</button>
+                    </div>
+                    <button class="btn btn-load btn-sm" id="loadPlanBtn">加载</button>
+                </div>
             </div>
 
             <!-- ===== 右侧：地图 ===== -->
@@ -335,13 +458,13 @@
         </div>
 
         <div style="font-size:8px; color:#8aa0b8; text-align:center; flex-shrink:0; padding:2px 0;">
-            🔒 所有数据仅在浏览器本地处理 · 自动去重 · 图例过滤 · 4种节点类型
+            🔒 所有数据仅在浏览器本地处理 · 自动去重 · 图例过滤 · 4种节点类型 · 💾 支持保存/加载方案
         </div>
     </div>
 
     <script>
         // ============================================================
-        //  ★★★ 地图图层配置（远山黛背景） ★★★
+        //  地图图层配置
         // ============================================================
         const TILE_LAYERS = [{
             name: '高德地图-远山黛',
@@ -358,12 +481,11 @@
         }];
 
         // ============================================================
-        //  ★★★ 站点图标配置（缩小尺寸） ★★★
+        //  站点图标配置
         // ============================================================
         function createNodeIcon(type, emoji, bgColor, isLarge = false) {
             const size = isLarge ? 22 : 18;
             const fontSize = isLarge ? 14 : 10;
-
             const html = `
                 <div style="
                     width: ${size}px;
@@ -383,7 +505,6 @@
                     ${emoji}
                 </div>
             `;
-
             return L.divIcon({
                 html: html,
                 className: 'custom-node-icon',
@@ -403,7 +524,7 @@
         let searchKeyword = '';
         let showLabels = false;
         let mapInstance = null;
-        let mapMarkers = []; // 存储所有标记
+        let mapMarkers = [];
         let routeLines = [];
         let labelLayers = [];
         let overlapCount = 0;
@@ -418,17 +539,11 @@
             rear: { label: '🏁 末端仓', emoji: '🏁', color: '#2a7f6e', bgColor: '#d4ece4' }
         };
 
-        function getTypeLabel(type) {
-            return TYPE_CONFIG[type]?.label || type;
-        }
+        function getTypeLabel(type) { return TYPE_CONFIG[type]?.label || type; }
 
-        function getTypeColor(type) {
-            return TYPE_CONFIG[type]?.color || '#888888';
-        }
+        function getTypeColor(type) { return TYPE_CONFIG[type]?.color || '#888888'; }
 
-        function getTypeEmoji(type) {
-            return TYPE_CONFIG[type]?.emoji || '📍';
-        }
+        function getTypeEmoji(type) { return TYPE_CONFIG[type]?.emoji || '📍'; }
 
         // ============================================================
         //  DOM 引用
@@ -459,6 +574,13 @@
         const legendTreeBody = document.getElementById('legendTreeBody');
         const rootCount = document.getElementById('rootCount');
 
+        // 保存/加载 DOM
+        const saveNameInput = document.getElementById('saveNameInput');
+        const savePlanBtn = document.getElementById('savePlanBtn');
+        const loadSelect = document.getElementById('loadSelect');
+        const loadPlanBtn = document.getElementById('loadPlanBtn');
+        const delRecordBtn = document.getElementById('delRecordBtn');
+
         // ============================================================
         //  工具函数
         // ============================================================
@@ -485,7 +607,7 @@
         }
 
         // ============================================================
-        //  ★★★ 数据导入（使用uid确保唯一性） ★★★
+        //  数据导入
         // ============================================================
         function parseDataFile(file) {
             return new Promise((resolve, reject) => {
@@ -502,6 +624,18 @@
                 reader.onerror = () => reject(new Error(`读取失败 ${file.name}`));
                 reader.readAsArrayBuffer(file);
             });
+        }
+
+        function findCol(headers, candidates) {
+            for (let c of candidates) {
+                const found = headers.find(h => h.trim() === c || h.trim().toLowerCase() === c.toLowerCase());
+                if (found) return found;
+            }
+            for (let c of candidates) {
+                const found = headers.find(h => h.includes(c) || c.includes(h));
+                if (found) return found;
+            }
+            return null;
         }
 
         async function importData(file) {
@@ -540,7 +674,6 @@
                 const routeList = [];
 
                 rows.forEach((row, idx) => {
-                    // ★★★ 提货点 ★★★
                     const pickupCode = String(row[colMap.pickupCode] || '').trim() || `P${idx+1}`;
                     const pickupName = String(row[colMap.pickupName] || '').trim();
                     const pickupAddress = String(row[colMap.pickupAddress] || '').trim();
@@ -548,7 +681,6 @@
                     const pickupLat = parseFloat(row[colMap.pickupLat]);
 
                     if (!isNaN(pickupLng) && !isNaN(pickupLat) && pickupName) {
-                        // ★★★ 使用 type_code 作为唯一ID ★★★
                         const uid = `pickup_${pickupCode}`;
                         if (!nodeMap[uid]) {
                             nodeMap[uid] = {
@@ -563,7 +695,6 @@
                         }
                     }
 
-                    // ★★★ 前置仓 ★★★
                     const frontCode = String(row[colMap.frontCode] || '').trim();
                     const frontLng = parseFloat(row[colMap.frontLng]);
                     const frontLat = parseFloat(row[colMap.frontLat]);
@@ -582,7 +713,6 @@
                         }
                     }
 
-                    // ★★★ 目的点 ★★★
                     const destCode = String(row[colMap.destCode] || '').trim() || `D${idx+1}`;
                     const destName = String(row[colMap.destName] || '').trim();
                     const destAddress = String(row[colMap.destAddress] || '').trim();
@@ -604,7 +734,6 @@
                         }
                     }
 
-                    // ★★★ 末端仓 ★★★
                     const rearCode = String(row[colMap.rearCode] || '').trim();
                     const rearLng = parseFloat(row[colMap.rearLng]);
                     const rearLat = parseFloat(row[colMap.rearLat]);
@@ -623,52 +752,33 @@
                         }
                     }
 
-                    // ★★★ 建立连线 ★★★
                     if (frontCode) {
                         const frontUid = `front_${frontCode}`;
                         const pickupUid = `pickup_${pickupCode}`;
                         if (nodeMap[frontUid] && nodeMap[pickupUid]) {
-                            routeList.push({
-                                from: pickupUid,
-                                to: frontUid,
-                                fromType: 'pickup',
-                                toType: 'front'
-                            });
+                            routeList.push({ from: pickupUid, to: frontUid, fromType: 'pickup', toType: 'front' });
                         }
                     }
                     if (rearCode) {
                         const rearUid = `rear_${rearCode}`;
                         const destUid = `destination_${destCode}`;
                         if (nodeMap[rearUid] && nodeMap[destUid]) {
-                            routeList.push({
-                                from: destUid,
-                                to: rearUid,
-                                fromType: 'destination',
-                                toType: 'rear'
-                            });
+                            routeList.push({ from: destUid, to: rearUid, fromType: 'destination', toType: 'rear' });
                         }
                     }
                     if (frontCode && rearCode) {
                         const frontUid = `front_${frontCode}`;
                         const rearUid = `rear_${rearCode}`;
                         if (nodeMap[frontUid] && nodeMap[rearUid]) {
-                            routeList.push({
-                                from: frontUid,
-                                to: rearUid,
-                                fromType: 'front',
-                                toType: 'rear'
-                            });
+                            routeList.push({ from: frontUid, to: rearUid, fromType: 'front', toType: 'rear' });
                         }
                     }
                 });
 
                 const finalNodes = Object.values(nodeMap);
-
-                // ★★★ 构建节点映射 ★★★
                 const nodeByUid = {};
                 finalNodes.forEach(n => { nodeByUid[n.uid] = n; });
 
-                // ★★★ 去重连线 ★★★
                 const uniqueRoutes = [];
                 const routeSet = new Set();
                 routeList.forEach(r => {
@@ -689,8 +799,6 @@
 
                 nodes = finalNodes;
                 routes = uniqueRoutes;
-
-                // ★★★ 计算坐标重叠数 ★★★
                 calculateOverlaps();
 
                 loadedFileName = file.name;
@@ -711,18 +819,6 @@
                 showToast(`解析失败: ${err.message}`, true);
                 return false;
             }
-        }
-
-        function findCol(headers, candidates) {
-            for (let c of candidates) {
-                const found = headers.find(h => h.trim() === c || h.trim().toLowerCase() === c.toLowerCase());
-                if (found) return found;
-            }
-            for (let c of candidates) {
-                const found = headers.find(h => h.includes(c) || c.includes(h));
-                if (found) return found;
-            }
-            return null;
         }
 
         function showFileStatus(name, count) {
@@ -889,9 +985,6 @@
             legendTreeBody.innerHTML = html;
         }
 
-        // ============================================================
-        //  ★★★ 图例过滤函数 ★★★
-        // ============================================================
         function filterByType(type) {
             if (currentFilter === type) {
                 currentFilter = 'all';
@@ -933,7 +1026,7 @@
         }
 
         // ============================================================
-        //  ★★★ 地图渲染 ★★★
+        //  地图渲染
         // ============================================================
         function renderMap() {
             const mapContainer = document.getElementById('mapContainer');
@@ -1046,11 +1139,9 @@
             setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 800);
         }
 
-        // ★★★ ★★★ 渲染地图图层（修复图例联动） ★★★ ★★★
         function renderMapLayers() {
             if (!mapInstance) return;
 
-            // ★★★ 清除所有旧标记 ★★★
             mapMarkers.forEach(m => { try { mapInstance.removeLayer(m); } catch (e) {} });
             routeLines.forEach(l => { try { mapInstance.removeLayer(l); } catch (e) {} });
             labelLayers.forEach(l => { try { mapInstance.removeLayer(l); } catch (e) {} });
@@ -1058,25 +1149,16 @@
             routeLines = [];
             labelLayers = [];
 
-            // ★★★ 获取当前要显示的节点 ★★★
             let displayNodes = [];
             if (currentFilter === 'all') {
                 displayNodes = nodes;
             } else {
                 displayNodes = nodes.filter(n => n.type === currentFilter);
             }
-
-            // 如果筛选后没有节点，显示全部
             if (displayNodes.length === 0) {
                 displayNodes = nodes;
             }
 
-            // ★★★ 调试输出 ★★★
-            console.log('当前筛选类型:', currentFilter);
-            console.log('显示节点数量:', displayNodes.length);
-            console.log('节点列表:', displayNodes.map(n => n.uid + ' ' + n.type + ' ' + n.code));
-
-            // ★★★ 处理坐标重叠：为同一坐标的节点分配偏移 ★★★
             const coordGroups = {};
             displayNodes.forEach(node => {
                 const key = `${node.lat.toFixed(6)},${node.lng.toFixed(6)}`;
@@ -1084,19 +1166,17 @@
                 coordGroups[key].push(node);
             });
 
-            // ★★★ 创建节点标记（每个节点独立） ★★★
             displayNodes.forEach((node, index) => {
                 const key = `${node.lat.toFixed(6)},${node.lng.toFixed(6)}`;
                 const group = coordGroups[key] || [node];
                 const indexInGroup = group.indexOf(node);
                 const totalInGroup = group.length;
 
-                // 计算偏移量
                 let offsetLat = 0;
                 let offsetLng = 0;
                 if (totalInGroup > 1) {
                     const angle = (indexInGroup / totalInGroup) * 2 * Math.PI;
-                    const radius = 0.008; // 约0.8km
+                    const radius = 0.008;
                     offsetLat = Math.cos(angle) * radius;
                     offsetLng = Math.sin(angle) * radius;
                 }
@@ -1110,7 +1190,6 @@
                 const displayLat = node.lat + offsetLat;
                 const displayLng = node.lng + offsetLng;
 
-                // ★★★ 在弹窗中显示重叠信息 ★★★
                 const overlapInfo = totalInGroup > 1 ?
                     `<div style="color:#d48c2c;font-size:11px;margin-top:4px;">⚡ 该位置共有 ${totalInGroup} 个节点</div>` :
                     '';
@@ -1133,7 +1212,6 @@
 
                 mapMarkers.push(marker);
 
-                // ★★★ 标签 ★★★
                 if (showLabels) {
                     const labelClass = `map-label ${node.type}`;
                     const labelText = node.code || node.name || '未知';
@@ -1151,7 +1229,6 @@
                 }
             });
 
-            // ★★★ 绘制路线（仅全部显示时绘制连线） ★★★
             if (currentFilter === 'all') {
                 const displayUids = new Set(displayNodes.map(n => n.uid));
                 const displayRoutes = routes.filter(r =>
@@ -1204,11 +1281,9 @@
 
                 document.getElementById('routeCount').textContent = displayRoutes.length;
             } else {
-                // 非全部显示时，清除连线计数
                 document.getElementById('routeCount').textContent = 0;
             }
 
-            // ★★★ 更新地图状态 ★★★
             mapStatus.textContent = `✅ ${displayNodes.length} 个节点 · ${routeLines.length} 条连线`;
         }
 
@@ -1413,7 +1488,6 @@
             const routeList = [];
 
             sampleRows.forEach(row => {
-                // ★★★ 提货点 ★★★
                 if (row.pickupCode && !isNaN(row.pickupLng) && !isNaN(row.pickupLat)) {
                     const uid = `pickup_${row.pickupCode}`;
                     if (!nodeMap[uid]) {
@@ -1429,7 +1503,6 @@
                     }
                 }
 
-                // ★★★ 前置仓 ★★★
                 if (row.frontCode && !isNaN(row.frontLng) && !isNaN(row.frontLat)) {
                     const uid = `front_${row.frontCode}`;
                     if (!nodeMap[uid]) {
@@ -1445,7 +1518,6 @@
                     }
                 }
 
-                // ★★★ 目的点 ★★★
                 if (row.destCode && !isNaN(row.destLng) && !isNaN(row.destLat)) {
                     const uid = `destination_${row.destCode}`;
                     if (!nodeMap[uid]) {
@@ -1461,7 +1533,6 @@
                     }
                 }
 
-                // ★★★ 末端仓 ★★★
                 if (row.rearCode && !isNaN(row.rearLng) && !isNaN(row.rearLat)) {
                     const uid = `rear_${row.rearCode}`;
                     if (!nodeMap[uid]) {
@@ -1477,7 +1548,6 @@
                     }
                 }
 
-                // ★★★ 连线 ★★★
                 const frontUid = `front_${row.frontCode}`;
                 const pickupUid = `pickup_${row.pickupCode}`;
                 if (nodeMap[frontUid] && nodeMap[pickupUid]) {
@@ -1534,6 +1604,8 @@
             clearMap();
             mapStatus.textContent = '示例数据已加载，点击可视化';
             showToast(`✅ 已加载 ${nodes.length} 个节点，${routes.length} 条连线，${overlapCount} 个坐标重叠`);
+            refreshLoadSelect();
+            saveNameInput.value = '网络_' + new Date().toLocaleString().replace(/[\/:]/g, '-');
         }
 
         function clearAll() {
@@ -1555,6 +1627,7 @@
             clearMap();
             mapStatus.textContent = '等待数据';
             showToast('已清空所有数据');
+            refreshLoadSelect();
         }
 
         function clearMap() {
@@ -1589,6 +1662,7 @@
                 return;
             }
             importData(file);
+            refreshLoadSelect();
         }
 
         fileInput.addEventListener('change', (e) => {
@@ -1631,15 +1705,189 @@
         window.fitView = fitView;
 
         // ============================================================
+        //  ★★★ 保存/加载/删除 方案 (localStorage) ★★★
+        // ============================================================
+
+        function getSavedList() {
+            try { return JSON.parse(localStorage.getItem('supply_network_save_list') || '[]'); } catch (e) { return []; }
+        }
+
+        function setSavedList(list) {
+            localStorage.setItem('supply_network_save_list', JSON.stringify(list));
+        }
+
+        function refreshLoadSelect() {
+            var list = getSavedList();
+            list.sort(function(a, b) { return b.timestamp - a.timestamp; });
+
+            var select = loadSelect;
+            select.innerHTML = '<option value="">-- 无记录 --</option>';
+            if (list.length === 0) {
+                delRecordBtn.classList.remove('show');
+                return;
+            }
+            list.forEach(function(item) {
+                var opt = document.createElement('option');
+                opt.value = item.id;
+                var info = item.nodeCount !== undefined ? ' · ' + item.nodeCount + '节点' : '';
+                var routeInfo = item.routeCount !== undefined ? ' · ' + item.routeCount + '连线' : '';
+                opt.textContent = item.name + ' (' + item.date + ')' + info + routeInfo;
+                select.appendChild(opt);
+            });
+            select.value = list[0].id;
+            delRecordBtn.classList.add('show');
+            updateDeleteBtn();
+        }
+
+        function updateDeleteBtn() {
+            var hasValue = loadSelect.value && loadSelect.value !== '';
+            delRecordBtn.style.display = hasValue ? 'block' : 'none';
+        }
+
+        loadSelect.addEventListener('change', updateDeleteBtn);
+
+        function savePlan() {
+            if (nodes.length === 0) {
+                showToast('请先导入数据', true);
+                return;
+            }
+
+            var name = saveNameInput.value.trim();
+            if (!name) {
+                name = '网络_' + new Date().toLocaleString().replace(/[\/:]/g, '-');
+                saveNameInput.value = name;
+            }
+
+            var list = getSavedList();
+            var id = 'net_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+
+            var data = {
+                id: id,
+                name: name,
+                date: new Date().toLocaleString(),
+                timestamp: Date.now(),
+                nodes: nodes,
+                routes: routes,
+                nodeCount: nodes.length,
+                routeCount: routes.length,
+                overlapCount: overlapCount
+            };
+
+            list.push({
+                id: id,
+                name: name,
+                date: new Date().toLocaleString(),
+                timestamp: Date.now(),
+                nodeCount: nodes.length,
+                routeCount: routes.length
+            });
+            setSavedList(list);
+            localStorage.setItem('supply_network_data_' + id, JSON.stringify(data));
+            refreshLoadSelect();
+            showToast('✅ 方案 "' + name + '" 已保存 (' + nodes.length + '节点, ' + routes.length + '条连线)');
+        }
+
+        function loadPlan() {
+            var select = loadSelect;
+            var id = select.value;
+            if (!id) {
+                showToast('请先选择一个记录', true);
+                return;
+            }
+            var raw = localStorage.getItem('supply_network_data_' + id);
+            if (!raw) {
+                showToast('记录不存在或已损坏', true);
+                refreshLoadSelect();
+                return;
+            }
+            try {
+                var data = JSON.parse(raw);
+
+                // 恢复数据
+                nodes = data.nodes || [];
+                routes = data.routes || [];
+                overlapCount = data.overlapCount || 0;
+
+                // 恢复名称
+                saveNameInput.value = data.name || '';
+
+                // 更新UI
+                fileStatus.style.display = 'none';
+                loadedFileName = '';
+                currentFilter = 'all';
+                searchKeyword = '';
+                searchInput.value = '';
+                clearSearchBtn.classList.remove('visible');
+                applyFilters();
+                renderTable();
+                updateStats();
+                updateLegendTree();
+                updateRouteStats();
+                calculateOverlaps();
+
+                // 如果有节点，自动可视化
+                if (nodes.length >= 2) {
+                    setTimeout(function() {
+                        visualizeNetwork();
+                    }, 300);
+                    mapStatus.textContent = '已加载方案';
+                    showToast('📂 已加载方案 "' + data.name + '" (' + nodes.length + '节点, ' + routes.length + '条连线)');
+                } else {
+                    clearMap();
+                    mapStatus.textContent = '节点不足，请添加数据';
+                    showToast('📂 已加载方案 "' + data.name + '" (节点数不足，请添加数据)');
+                }
+
+                refreshLoadSelect();
+
+            } catch (e) {
+                showToast('加载失败: ' + e.message, true);
+            }
+        }
+
+        function deleteCurrentRecord() {
+            var select = loadSelect;
+            var id = select.value;
+            if (!id) {
+                showToast('请先选择一个记录', true);
+                return;
+            }
+            var selectedOption = select.options[select.selectedIndex];
+            var name = selectedOption ? selectedOption.text : '未命名';
+            if (!confirm('确定要删除 "' + name + '" 吗？')) return;
+
+            var list = getSavedList();
+            var idx = list.findIndex(function(item) { return item.id === id; });
+            if (idx > -1) {
+                list.splice(idx, 1);
+                setSavedList(list);
+            }
+            localStorage.removeItem('supply_network_data_' + id);
+            refreshLoadSelect();
+            showToast('🗑️ 已删除方案记录');
+        }
+
+        // ============================================================
+        //  绑定保存/加载事件
+        // ============================================================
+        savePlanBtn.addEventListener('click', savePlan);
+        loadPlanBtn.addEventListener('click', loadPlan);
+        delRecordBtn.addEventListener('click', deleteCurrentRecord);
+
+        // ============================================================
         //  初始化
         // ============================================================
         renderTable();
         updateStats();
         updateLegendTree();
         updateRouteStats();
-        showToast('📥 请上传 Excel/CSV 文件，或点击「示例」快速体验');
+        refreshLoadSelect();
+        saveNameInput.value = '网络_' + new Date().toLocaleString().replace(/[\/:]/g, '-');
+        showToast('📥 请上传 Excel/CSV 文件，或点击「示例」快速体验 · 💾 支持保存/加载方案');
         mapStatus.textContent = '等待数据';
         fitViewBtn.style.display = 'none';
+        console.log('🌐 供应链网络可视化已加载 (含保存/加载功能)');
+        console.log('💾 支持保存/加载/删除网络方案');
     </script>
 </body>
 </html>
