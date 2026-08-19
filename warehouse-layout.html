@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>仓库规划工具 - 精简参数版</title>
+    <title>仓库规划工具 - 精简参数版 (含保存/加载)</title>
     <style>
-        /* ===== 样式与之前一致 ===== */
+        /* ===== 样式 ===== */
         * {
             margin: 0;
             padding: 0;
@@ -109,6 +109,7 @@
             font-size: 10px;
             color: #7a8eaa;
         }
+
         .input-section {
             background: #f8fafd;
             border-radius: 6px;
@@ -265,6 +266,25 @@
         }
         .btn-outline:hover {
             background: #e2ebf5;
+        }
+        .btn-save {
+            background: #2a7f6e;
+            color: white;
+        }
+        .btn-save:hover {
+            background: #1e6657;
+        }
+        .btn-danger {
+            background: #fce4e4;
+            color: #b13b3b;
+            border: 1px solid #f5c2c2;
+        }
+        .btn-danger:hover {
+            background: #fccfcf;
+        }
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 11px;
         }
         .btn-group {
             display: flex;
@@ -493,6 +513,79 @@
             flex-shrink: 0;
         }
 
+        /* ===== 保存/加载区域 ===== */
+        .save-load-area {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            background: #f8fafd;
+            border-radius: 8px;
+            padding: 4px 10px;
+            border: 1px solid #e2edf5;
+            flex-shrink: 0;
+        }
+        .save-load-area input[type="text"] {
+            border: 1px solid #d0d8e0;
+            border-radius: 20px;
+            padding: 2px 12px;
+            font-size: 11px;
+            width: 140px;
+            background: white;
+        }
+        .save-load-area input[type="text"]:focus {
+            border-color: #1a5d8c;
+            outline: none;
+        }
+
+        .record-select-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #d0d8e0;
+            padding: 1px 2px 1px 10px;
+            max-width: 220px;
+        }
+        .record-select-wrapper select {
+            border: none;
+            padding: 2px 4px 2px 0;
+            font-size: 11px;
+            background: transparent;
+            min-width: 80px;
+            max-width: 160px;
+            outline: none;
+            cursor: pointer;
+        }
+        .record-select-wrapper select:focus {
+            outline: none;
+        }
+        .record-select-wrapper .del-record-btn {
+            border: none;
+            background: transparent;
+            color: #b13b3b;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0 6px;
+            line-height: 1;
+            border-radius: 50%;
+            transition: 0.15s;
+            display: none;
+        }
+        .record-select-wrapper .del-record-btn:hover {
+            background: #fce4e4;
+            transform: scale(1.1);
+        }
+        .record-select-wrapper .del-record-btn.show {
+            display: block;
+        }
+        .save-load-area .sep-text {
+            color: #d0d8e0;
+            font-size: 12px;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 6px;
@@ -520,6 +613,18 @@
             }
             .result-summary {
                 grid-template-columns: repeat(3, 1fr);
+            }
+            .save-load-area input[type="text"] {
+                width: 80px;
+                font-size: 10px;
+            }
+            .record-select-wrapper {
+                max-width: 140px;
+                padding: 1px 2px 1px 6px;
+            }
+            .record-select-wrapper select {
+                font-size: 9px;
+                max-width: 100px;
             }
         }
         @media (max-width: 480px) {
@@ -551,13 +656,14 @@
 
     <div class="container">
         <div class="header">
-            <h1>🏗️ 仓库规划工具 <span style="font-size:13px;font-weight:400;opacity:0.8;">— 精简参数版</span></h1>
+            <h1>🏗️ 仓库规划工具 <span style="font-size:13px;font-weight:400;opacity:0.8;">— 精简参数版 (含保存/加载)</span></h1>
             <div class="badge-group">
                 <span class="badge">📐 面积计算</span>
                 <span class="badge green">🚶 动线分析</span>
                 <span class="badge orange">🚛 道口规划</span>
                 <span class="badge purple">🏗️ 建筑模型</span>
                 <span class="badge">🎯 3D可视化</span>
+                <span class="badge">💾 保存/加载</span>
             </div>
         </div>
 
@@ -592,7 +698,6 @@
                     <div class="section-title">🔄 翻包作业</div>
                     <div class="input-row">
                         <div class="input-group"><label>翻包日处理量 <span class="hint">(m³)</span></label><input type="number" id="repackVolume" value="120" min="0" step="10"></div>
-                        <!-- ★★★ 翻包系数已移除，系统固定为0.35 ★★★ -->
                         <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
                             <span style="font-size:9px;color:#6a8aaa;">📌 翻包系数: 0.35 (固定)</span>
                         </div>
@@ -614,7 +719,7 @@
                     </div>
                 </div>
 
-                <!-- ★★★ 道口参数（精简版） ★★★ -->
+                <!-- 道口参数 -->
                 <div class="input-section">
                     <div class="section-title">🚛 道口参数</div>
                     <div class="input-row three-col">
@@ -636,7 +741,6 @@
                             <label>🚛 单车平均货量 <span class="hint">(m³/车)</span></label>
                             <input type="number" id="avgLoadPerTruck" value="25" min="5" max="80" step="5">
                         </div>
-                        <!-- ★★★ 固定参数显示（不可编辑） ★★★ -->
                         <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
                             <span style="font-size:9px;color:#6a8aaa;">📌 利用系数: 0.85 (固定)</span>
                         </div>
@@ -667,6 +771,25 @@
                 <div class="btn-group">
                     <button class="btn btn-primary" id="calcBtn">🧮 计算 & 生成3D</button>
                     <button class="btn btn-outline" id="resetBtn">↺ 重置</button>
+                </div>
+
+                <!-- ===== 保存/加载区域 ===== -->
+                <div class="save-load-area">
+                    <span style="font-size:11px;font-weight:600;color:#1f3a5f;">💾 保存</span>
+                    <input type="text" id="saveNameInput" placeholder="方案名称" value="">
+                    <button class="btn btn-save btn-sm" id="savePlanBtn">💾 保存</button>
+
+                    <span class="sep-text">|</span>
+
+                    <span style="font-size:11px;font-weight:600;color:#1f3a5f;">📂 加载</span>
+                    <div class="record-select-wrapper" id="recordSelectWrapper">
+                        <select id="loadSelect">
+                            <option value="">-- 无记录 --</option>
+                        </select>
+                        <button class="del-record-btn" id="delRecordBtn" title="删除此记录">✕</button>
+                    </div>
+                    <button class="btn btn-outline btn-sm" id="loadPlanBtn">📂 加载</button>
+                    <span style="font-size:9px;color:#8aa0b8;margin-left:2px;">(记录按时间倒序)</span>
                 </div>
             </div>
 
@@ -756,15 +879,14 @@
             empty: 0xff8800
         };
 
-        // ★★★ 系统固定参数 ★★★
         const FIXED_PARAMS = {
-            repackFactor: 0.35, // 翻包系数
-            dockUtilFactor: 0.85, // 道口利用系数
-            inboundDockRatio: 0.55 // 进货道口占比
+            repackFactor: 0.35,
+            dockUtilFactor: 0.85,
+            inboundDockRatio: 0.55
         };
 
         // ============================================================
-        //  计算引擎
+        //  计算引擎 (与之前一致)
         // ============================================================
 
         function calculateWarehouse(params) {
@@ -780,7 +902,6 @@
                 enabledFunctions
             } = params;
 
-            // ★★★ 使用固定参数 ★★★
             const repackFactor = FIXED_PARAMS.repackFactor;
             const dockUtilFactor = FIXED_PARAMS.dockUtilFactor;
             const inboundDockRatio = FIXED_PARAMS.inboundDockRatio;
@@ -821,7 +942,6 @@
                         area = Math.max(config.minArea, emptyOutbound * config.factor + 10);
                         break;
                     case 'repacking':
-                        // ★★★ 翻包系数使用固定值 ★★★
                         area = Math.max(config.minArea, repackVolume * repackFactor + 15);
                         break;
                     case 'office':
@@ -839,7 +959,6 @@
             const aisleArea = Math.round(totalFuncArea * (aisleRatio / 100));
             const totalArea = totalFuncArea + aisleArea;
 
-            // ★★★ 道口计算（使用固定系数） ★★★
             const totalFlow = fullInbound + fullOutbound + emptyInbound + emptyOutbound;
             const totalTrucks = Math.ceil(totalFlow / avgLoadPerTruck);
             const operTimeHours = dockOperTime / 60;
@@ -847,7 +966,6 @@
             const capacityPerDock = trucksPerDockPerDay * avgLoadPerTruck;
             const rawDocks = Math.ceil(totalFlow / capacityPerDock);
             const totalDocks = Math.max(2, rawDocks);
-            // ★★★ 进货道口占比使用固定值 ★★★
             const inboundDocks = Math.max(1, Math.round(totalDocks * inboundDockRatio));
             const outboundDocks = Math.max(1, totalDocks - inboundDocks);
 
@@ -858,7 +976,6 @@
             const width = baseWidth + margin * 2;
             const length = baseLength + margin * 2;
 
-            // 道口位置
             const dockPositions = [];
             const usableWidth = width - 1.0;
             const dockSpacing = usableWidth / (totalDocks + 1);
@@ -878,7 +995,6 @@
             }
 
             const layout = generateLayout(funcDetails, width - 1.0, length - 1.0);
-
             const flowPaths = generateFlowPaths(layout, dockPositions, {
                 fullInbound, fullOutbound, emptyInbound, emptyOutbound, repackVolume
             });
@@ -906,8 +1022,9 @@
                 totalTrucks: totalTrucks,
                 operTimeHours: operTimeHours,
                 workHours: workHours,
-                // ★★★ 输出固定参数用于显示 ★★★
-                fixedParams: FIXED_PARAMS
+                fixedParams: FIXED_PARAMS,
+                // 保存原始参数用于恢复
+                rawParams: params
             };
         }
 
@@ -922,9 +1039,7 @@
             const rows = Math.ceil(allFuncs.length / colsPerRow);
             const layout = [];
 
-            const WALL_THICKNESS = 0.3;
-            const GAP = 0.1;
-            const BOUNDARY_MARGIN = WALL_THICKNESS + GAP;
+            const BOUNDARY_MARGIN = 0.5;
 
             allFuncs.forEach((detail, idx) => {
                 const row = Math.floor(idx / colsPerRow);
@@ -1191,7 +1306,6 @@
                 `<span class="item"><span class="swatch" style="background:#ff8800;"></span>空箱</span>`;
             legendContainer.innerHTML = legendHtml;
 
-            // ★★★ 显示固定参数信息 ★★★
             const fixedInfo = result.fixedParams || FIXED_PARAMS;
             document.getElementById('statusText').textContent =
                 `✅ 完成 · ${result.enabledCount}功能区 · ${result.totalDocks}道口 · ${total} m² (固定系数: 翻包${fixedInfo.repackFactor} · 利用${fixedInfo.dockUtilFactor} · 进货占比${Math.round(fixedInfo.inboundDockRatio*100)}%)`;
@@ -1200,7 +1314,7 @@
         }
 
         // ============================================================
-        //  3D 渲染 (简化版，保持功能)
+        //  3D 渲染 (与之前一致)
         // ============================================================
 
         let scene, camera, renderer, controls;
@@ -1352,7 +1466,6 @@
             const height = rect.height || 400;
 
             if (width < 10 || height < 10) {
-                console.warn('容器尺寸异常，重试中...', width, height);
                 initAttempts++;
                 if (initAttempts < 5) {
                     setTimeout(initThree, 300);
@@ -1427,9 +1540,7 @@
                 scene.add(ground);
 
                 is3DInitialized = true;
-                console.log('✅ Three.js 初始化成功 (精简参数版)');
 
-                // 视图控制
                 document.getElementById('viewTop').addEventListener('click', () => {
                     camera.position.set(0, 60, 0.1);
                     controls.target.set(0, 0, 0);
@@ -1489,33 +1600,25 @@
             renderer.render(scene, camera);
         }
 
-        // ============================================================
-        //  生成3D仓库 (精简版)
-        // ============================================================
-
         function generate3D(result) {
             if (!is3DInitialized) {
-                console.log('3D未初始化，等待...');
                 setTimeout(() => generate3D(result), 300);
                 return;
             }
-
             requestAnimationFrame(() => {
                 _render3D(result);
             });
         }
 
         function _render3D(result) {
-            if (!scene) {
-                console.error('场景不存在');
-                return;
-            }
+            if (!scene) return;
 
             const toRemove = [];
             scene.children.forEach(child => {
                 if (child.type === 'AmbientLight' || child.type === 'DirectionalLight') return;
                 if (child.type === 'GridHelper') return;
-                if (child.type === 'Mesh' && child.material && child.material.type === 'ShadowMaterial') return;
+                if (child.type === 'Mesh' && child.material && child.material.type === 'ShadowMaterial')
+                    return;
                 toRemove.push(child);
             });
 
@@ -1539,7 +1642,6 @@
             const hw = W / 2;
             const hl = L / 2;
 
-            // 后墙
             const wall1 = new THREE.Mesh(new THREE.BoxGeometry(W, wallHeight, WALL_THICK), wallMat);
             wall1.position.set(0, wallHeight / 2, -hl);
             wall1.castShadow = true;
@@ -1547,7 +1649,6 @@
             wall1.renderOrder = 1;
             scene.add(wall1);
 
-            // 前墙 - 带道口门洞
             const doorHeight = 4.0;
             const sortedDocks = [...docks].sort((a, b) => a.x - b.x);
             let currentX = -hw;
@@ -1689,7 +1790,6 @@
             wallSide2.renderOrder = 1;
             scene.add(wallSide2);
 
-            // 屋顶
             const roofMat = new THREE.MeshStandardMaterial({
                 color: 0x4a5a6a,
                 roughness: 0.8,
@@ -1706,7 +1806,6 @@
             roof.renderOrder = 4;
             scene.add(roof);
 
-            // 立柱
             const pillarMat = new THREE.MeshStandardMaterial({
                 color: 0x8a9aaa,
                 roughness: 0.5,
@@ -1731,7 +1830,6 @@
                 scene.add(pillar);
             });
 
-            // 窗户
             const windowMat = new THREE.MeshStandardMaterial({
                 color: 0x88ccff,
                 emissive: 0x4488aa,
@@ -1776,7 +1874,6 @@
                 scene.add(win);
             });
 
-            // 功能区
             layout.forEach((item) => {
                 const colorHex = parseInt(item.color.replace('#', ''), 16);
                 const xPos = item.x;
@@ -1805,7 +1902,6 @@
                 scene.add(wireframe);
             });
 
-            // 动线
             paths.forEach((path) => {
                 const pts = path.points;
                 if (pts.length < 2) return;
@@ -1863,7 +1959,6 @@
                 }
             });
 
-            // 地面标线
             const floorLineMat = new THREE.MeshStandardMaterial({
                 color: 0x446688,
                 transparent: true,
@@ -1882,7 +1977,6 @@
             aisleLine.renderOrder = 0;
             scene.add(aisleLine);
 
-            // 调整相机
             const maxDim = Math.max(W, L);
             const dist = maxDim * 1.3 + 15;
             if (camera) {
@@ -1894,6 +1988,206 @@
             document.getElementById('statusText').textContent =
                 `✅ 3D渲染完成 · ${layout.length}功能区 · ${docks.length}道口 (精简参数版)`;
         }
+
+        // ============================================================
+        //  【核心】保存/加载/删除 方案 (localStorage)
+        // ============================================================
+
+        function getSavedList() {
+            try {
+                return JSON.parse(localStorage.getItem('warehouse_save_list_v2') || '[]');
+            } catch (e) { return []; }
+        }
+
+        function setSavedList(list) {
+            localStorage.setItem('warehouse_save_list_v2', JSON.stringify(list));
+        }
+
+        function refreshLoadSelect() {
+            var list = getSavedList();
+            list.sort(function(a, b) { return b.timestamp - a.timestamp; });
+
+            var select = loadSelect;
+            select.innerHTML = '<option value="">-- 无记录 --</option>';
+            if (list.length === 0) {
+                delRecordBtn.classList.remove('show');
+                return;
+            }
+            list.forEach(function(item) {
+                var opt = document.createElement('option');
+                opt.value = item.id;
+                var info = item.area !== undefined ? ' · ' + item.area + 'm²' : '';
+                var dockInfo = item.docks !== undefined ? ' · ' + item.docks + '道口' : '';
+                opt.textContent = item.name + ' (' + item.date + ')' + info + dockInfo;
+                select.appendChild(opt);
+            });
+            select.value = list[0].id;
+            delRecordBtn.classList.add('show');
+            updateDeleteBtn();
+        }
+
+        function updateDeleteBtn() {
+            var hasValue = loadSelect.value && loadSelect.value !== '';
+            delRecordBtn.style.display = hasValue ? 'block' : 'none';
+        }
+
+        loadSelect.addEventListener('change', updateDeleteBtn);
+
+        function savePlan() {
+            // 先获取当前参数和计算结果
+            var params = getFullParams();
+            var hasData = false;
+            for (var key in params.enabledFunctions) {
+                if (params.enabledFunctions[key]) { hasData = true; break; }
+            }
+            if (!hasData) {
+                alert('请至少选择一个功能区！');
+                return;
+            }
+
+            // 执行计算获取结果
+            var result = calculateWarehouse(params);
+
+            var name = document.getElementById('saveNameInput').value.trim();
+            if (!name) {
+                name = '方案_' + new Date().toLocaleString().replace(/[\/:]/g, '-');
+                document.getElementById('saveNameInput').value = name;
+            }
+
+            var list = getSavedList();
+            var id = 'wh_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+
+            var data = {
+                id: id,
+                name: name,
+                date: new Date().toLocaleString(),
+                timestamp: Date.now(),
+                params: params,
+                result: result,
+                area: result.totalArea,
+                docks: result.totalDocks
+            };
+
+            list.push({
+                id: id,
+                name: name,
+                date: new Date().toLocaleString(),
+                timestamp: Date.now(),
+                area: result.totalArea,
+                docks: result.totalDocks
+            });
+            setSavedList(list);
+            localStorage.setItem('warehouse_data_' + id, JSON.stringify(data));
+            refreshLoadSelect();
+            showToast('✅ 方案 "' + name + '" 已保存 (' + result.totalArea + 'm², ' + result.totalDocks + '道口)');
+        }
+
+        function loadPlan() {
+            var select = loadSelect;
+            var id = select.value;
+            if (!id) {
+                showToast('请先选择一个记录', true);
+                return;
+            }
+            var raw = localStorage.getItem('warehouse_data_' + id);
+            if (!raw) {
+                showToast('记录不存在或已损坏', true);
+                refreshLoadSelect();
+                return;
+            }
+            try {
+                var data = JSON.parse(raw);
+                var params = data.params;
+                var result = data.result;
+
+                // 恢复参数到UI
+                document.getElementById('fullInbound').value = params.fullInbound || 0;
+                document.getElementById('fullOutbound').value = params.fullOutbound || 0;
+                document.getElementById('emptyInbound').value = params.emptyInbound || 0;
+                document.getElementById('emptyOutbound').value = params.emptyOutbound || 0;
+                document.getElementById('repackVolume').value = params.repackVolume || 0;
+                document.getElementById('fullTurnover').value = params.fullTurnover || 5;
+                document.getElementById('emptyTurnover').value = params.emptyTurnover || 3;
+                document.getElementById('fullStackHeight').value = params.fullStackHeight || 2.0;
+                document.getElementById('emptyStackHeight').value = params.emptyStackHeight || 2.8;
+                document.getElementById('emptyVolumeFactor').value = params.emptyVolumeFactor || 0.4;
+                document.getElementById('aisleRatio').value = params.aisleRatio || 25;
+                document.getElementById('dockOperTime').value = params.dockOperTime || 30;
+                document.getElementById('workHours').value = params.workHours || 16;
+                document.getElementById('dockWidth').value = params.dockWidth || 3.5;
+                document.getElementById('avgLoadPerTruck').value = params.avgLoadPerTruck || 25;
+
+                // 恢复功能区勾选
+                document.querySelectorAll('#funcGrid .func-item input[type="checkbox"]').forEach(function(cb) {
+                    var funcKey = cb.dataset.func;
+                    if (params.enabledFunctions && params.enabledFunctions[funcKey] !== undefined) {
+                        cb.checked = params.enabledFunctions[funcKey];
+                    }
+                });
+
+                // 恢复名称
+                document.getElementById('saveNameInput').value = data.name || '';
+
+                // 显示结果
+                updateResults(result);
+                showToast('📂 已加载方案 "' + data.name + '" (' + result.totalArea + 'm²)');
+                refreshLoadSelect();
+            } catch (e) {
+                showToast('加载失败: ' + e.message, true);
+            }
+        }
+
+        function deleteCurrentRecord() {
+            var select = loadSelect;
+            var id = select.value;
+            if (!id) {
+                showToast('请先选择一个记录', true);
+                return;
+            }
+            var selectedOption = select.options[select.selectedIndex];
+            var name = selectedOption ? selectedOption.text : '未命名';
+            if (!confirm('确定要删除 "' + name + '" 吗？')) return;
+
+            var list = getSavedList();
+            var idx = list.findIndex(function(item) { return item.id === id; });
+            if (idx > -1) {
+                list.splice(idx, 1);
+                setSavedList(list);
+            }
+            localStorage.removeItem('warehouse_data_' + id);
+            refreshLoadSelect();
+            showToast('🗑️ 已删除方案记录');
+        }
+
+        // ============================================================
+        //  Toast 通知
+        // ============================================================
+        function showToast(msg, isError) {
+            var old = document.querySelector('.custom-toast');
+            if (old) old.remove();
+
+            var div = document.createElement('div');
+            div.className = 'custom-toast';
+            div.style.cssText =
+                'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:' + (isError ? '#b13b3b' :
+                    '#1e6657') +
+                ';color:white;padding:8px 24px;border-radius:60px;font-weight:600;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,0.15);z-index:999;animation:fadeInDown 0.3s ease;';
+            div.textContent = msg;
+            document.body.appendChild(div);
+
+            clearTimeout(div._timer);
+            div._timer = setTimeout(function() {
+                div.style.opacity = '0';
+                div.style.transition = 'opacity 0.3s';
+                setTimeout(function() { if (div.parentNode) div.remove(); }, 300);
+            }, 2500);
+        }
+
+        // 注入动画
+        var styleSheet = document.createElement("style");
+        styleSheet.textContent =
+            `@keyframes fadeInDown { from { opacity:0; transform:translateX(-50%) translateY(-12px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }`;
+        document.head.appendChild(styleSheet);
 
         // ============================================================
         //  主计算
@@ -2000,6 +2294,11 @@
             this.textContent = allChecked ? '全选' : '取消全选';
         });
 
+        // 保存/加载事件
+        document.getElementById('savePlanBtn').addEventListener('click', savePlan);
+        document.getElementById('loadPlanBtn').addEventListener('click', loadPlan);
+        document.getElementById('delRecordBtn').addEventListener('click', deleteCurrentRecord);
+
         // ============================================================
         //  初始化
         // ============================================================
@@ -2008,10 +2307,12 @@
             setTimeout(initThree, 500);
             setTimeout(() => {
                 if (!is3DInitialized) {
-                    console.log('3D初始化超时，重试...');
                     initThree();
                 }
             }, 3000);
+            refreshLoadSelect();
+            // 默认名称
+            document.getElementById('saveNameInput').value = '方案_' + new Date().toLocaleString().replace(/[\/:]/g, '-');
         });
 
         window.addEventListener('resize', function() {
@@ -2025,9 +2326,9 @@
             }
         });
 
-        console.log('🏗️ 仓库规划工具 (精简参数版) 已加载');
+        console.log('🏗️ 仓库规划工具 (精简参数版 + 保存/加载) 已加载');
         console.log('📌 固定参数: 翻包系数=0.35, 道口利用系数=0.85, 进货道口占比=55%');
-        console.log('📥 用户只需填写流量、周转、堆高等核心参数');
+        console.log('💾 支持保存/加载/删除规划方案');
     </script>
 </body>
 </html>
