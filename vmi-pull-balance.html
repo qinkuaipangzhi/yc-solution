@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仓库货量拉动 · VMI 补货模拟器</title>
+    <!-- SheetJS for Excel import/export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, system-ui, sans-serif; }
+        body { background: #f2f6fc; margin: 20px; display: flex; justify-content: center; }
+        .container { max-width: 1600px; width: 100%; background: white; padding: 20px 24px 32px; border-radius: 28px; box-shadow: 0 12px 30px rgba(0,0,0,0.07); }
+        h1 { font-size: 24px; font-weight: 600; color: #0b2b4a; display: flex; align-items: center; gap: 10px; margin: 0 0 6px 0; }
+        .sub { color: #2c5778; font-size: 14px; margin-bottom: 22px; border-left: 4px solid #2a7de1; padding-left: 16px; background: #f0f7ff; border-radius: 0 12px 12px 0; line-height: 1.7; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 16px 24px; background: #f8fbff; padding: 16px 22px; border-radius: 20px; margin-bottom: 24px; border: 1px solid #e2ebf5; align-items: flex-end; }
+        .param-group { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; }
+        .param-item { display: flex; align-items: center; gap: 6px; background: white; padding: 4px 12px 4px 10px; border-radius: 40px; border: 1px solid #d6e2f0; }
+        .param-item label { font-size: 13px; font-weight: 500; color: #1a3a57; white-space: nowrap; }
+        .param-item input { width: 64px; padding: 6px 4px; border: none; border-radius: 8px; font-size: 14px; text-align: center; background: transparent; }
+        .param-item input:focus { outline: 2px solid #2a7de1; background: white; border-radius: 8px; }
+        .date-group { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
+        .date-item { display: flex; flex-direction: column; gap: 2px; }
+        .date-item label { font-size: 11px; font-weight: 600; color: #1f4973; text-transform: uppercase; letter-spacing: 0.3px; }
+        .date-item input { padding: 6px 10px; border: 1px solid #ccd9e9; border-radius: 14px; font-size: 13px; background: white; width: 150px; }
+        .date-item .auto-date { font-size: 12px; color: #2a7de1; font-weight: 500; background: #e9f2fa; padding: 0 12px; border-radius: 40px; line-height: 28px; }
+        .btn { border: none; padding: 8px 22px; border-radius: 40px; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.15s; }
+        .btn-primary { background: #1a5fb4; color: white; box-shadow: 0 4px 8px rgba(26,95,180,0.2); }
+        .btn-primary:hover { background: #0f4a92; transform: scale(0.97); }
+        .btn-secondary { background: #eef3fa; border: 1px solid #cbd9ea; color: #1f3a57; }
+        .btn-secondary:hover { background: #dce6f2; }
+        .btn-export { background: #1a7d5a; color: white; }
+        .btn-export:hover { background: #0f6245; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #b02a37; transform: scale(0.97); }
+        .import-area { display: flex; align-items: center; gap: 12px; margin-left: auto; flex-wrap: wrap; }
+        .import-area input[type="file"] { display: none; }
+        .file-label { background: #eaf0f8; padding: 6px 16px; border-radius: 40px; border: 1px dashed #6f8fb0; font-size: 13px; cursor: pointer; transition: 0.1s; }
+        .file-label:hover { background: #d6e4f5; }
+        .badge-count { background: #d6e4f5; padding: 2px 14px; border-radius: 40px; font-size: 13px; color: #103f6b; }
+        .warning-banner { background: #fff3cd; border: 1px solid #ffc107; color: #856404; padding: 8px 16px; border-radius: 12px; font-size: 13px; margin: 6px 0 12px 0; display: none; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+        .table-wrap { overflow-x: auto; border-radius: 16px; border: 1px solid #e2ebf5; background: white; margin-top: 6px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1300px; }
+        th { background: #e8eff8; color: #103456; font-weight: 600; padding: 10px 6px; border-bottom: 2px solid #c8d8ea; text-align: center; white-space: nowrap; position: sticky; top: 0; z-index: 5; }
+        td { padding: 8px 5px; border-bottom: 1px solid #e4ecf5; text-align: center; vertical-align: middle; background: white; }
+        tr:hover td { background: #f9fcff; }
+        .col-fixed { background: #fafdff; font-weight: 500; color: #0a2a44; }
+        .editable-input { width: 52px; padding: 4px 2px; border: 1px solid #c5d5e8; border-radius: 8px; text-align: center; font-size: 12px; background: white; }
+        .editable-input:focus { border-color: #1a5fb4; outline: none; background: #f5faff; }
+        .badge { padding: 2px 12px; border-radius: 40px; font-size: 12px; font-weight: 500; }
+        .badge-success { background: #d2f0d2; color: #006b31; }
+        .badge-warning { background: #fde6c8; color: #9b5f00; }
+        .badge-danger { background: #fdd; color: #b33c3c; }
+        .indicator { display: inline-block; width: 10px; height: 10px; border-radius: 10px; margin-right: 4px; }
+        .indicator.green { background: #28a745; }
+        .indicator.yellow { background: #ffc107; }
+        .indicator.red { background: #dc3545; }
+        .footnote { margin-top: 18px; color: #3b5e7e; font-size: 13px; display: flex; flex-wrap: wrap; gap: 16px; background: #f7faff; padding: 10px 20px; border-radius: 40px; align-items: center; }
+        .empty-msg { padding: 30px; text-align: center; color: #5b7d9e; }
+        .date-calc-badge { background: #dde9f7; border-radius: 30px; padding: 2px 14px; font-size: 12px; color: #1f4b77; display: inline-flex; align-items: center; gap: 6px; }
+        .status-cell { min-width: 90px; }
+        .template-btn { background: #dde9f7; border: 1px solid #b8cde0; }
+        .template-btn:hover { background: #c8dbf0; }
+        .export-btn { background: #1a7d5a; color: white; }
+        .export-btn:hover { background: #0f6245; }
+        .demand-hint { font-size: 12px; color: #2a7de1; background: #e9f2fa; padding: 4px 14px; border-radius: 40px; }
+        .date-format-hint { font-size: 12px; color: #b33c3c; background: #fde8e8; padding: 2px 14px; border-radius: 40px; }
+        .info-badge { background: #d4e4f7; padding: 2px 12px; border-radius: 40px; font-size: 12px; color: #1a4f7a; }
+        .highlight-blue { color: #1a5fb4; font-weight: 600; }
+        .highlight-green { color: #0f6b3a; font-weight: 600; }
+        .highlight-orange { color: #b35f00; font-weight: 600; }
+    </style>
+</head>
+<body>
+<div class="container" id="app">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <h1>📦 拉动补货 · VMI 计算器</h1>
+        <span style="font-size: 13px; background: #eaf0f8; padding: 4px 18px; border-radius: 40px;">⚙️ 显示目标库存天数 · 到货日预计库存天数</span>
+    </div>
+    <div class="sub">
+        🔹 <strong>最低库存</strong> = 平均日需求 × 最低库存天数 &nbsp;|&nbsp; <strong>目标库存天数</strong> = 最低库存天数 + 运输时效 + 订单发布提前期<br>
+        🔹 <strong>补货触发</strong> = 到货日预计库存 < 目标库存 &nbsp;|&nbsp; <strong>补货数量</strong> = 目标库存 − 到货日预计库存<br>
+        🔹 <strong>到货日预计库存天数</strong> = 到货日预计库存 ÷ 平均日需求 &nbsp;|&nbsp; <strong>后N天需求</strong> = 从<b>提货日期</b>次日开始，未来 N 天的需求总和（N = 最低库存天数 + 运输时效 + 订单发布提前期）<br>
+        🔹 <span class="demand-hint">📋 导入Excel中日期列直接使用日期作为字段名，如：2026/8/1</span>
+        <span class="date-format-hint">📌 日期格式：2026/8/1（年/月/日）</span>
+        <span class="info-badge">📊 需求天数：<span id="demandDaysCount">0</span> 天</span>
+    </div>
+
+    <!-- 警告横幅 -->
+    <div class="warning-banner" id="warningBanner">
+        <span>⚠️</span>
+        <span id="warningText">需求日历天数不足，后N天需求可能不完整，请补充更多天数的需求数据。</span>
+    </div>
+
+    <!-- 工具栏 -->
+    <div class="toolbar">
+        <div class="date-group">
+            <div class="date-item">
+                <label>📅 制表日 (订单发布日)</label>
+                <input type="date" id="baseDate">
+            </div>
+            <div class="date-item">
+                <label>📦 计划提货日期</label>
+                <input type="date" id="pickupDate" style="background:#f4f9ff;" readonly>
+                <span class="date-calc-badge">⏱️ 订单发布日 + 发布提前期</span>
+            </div>
+            <div class="date-item">
+                <label>🚚 预计到货日期</label>
+                <input type="date" id="arrivalDate" style="background:#f4f9ff;" readonly>
+                <span class="date-calc-badge">⏱️ 提货日 + 运输时效</span>
+            </div>
+        </div>
+
+        <div class="param-group">
+            <div class="param-item">
+                <label>📊 最低库存 (天)</label>
+                <input type="number" id="safetyDays" value="3" min="0" max="14">
+            </div>
+            <div class="param-item">
+                <label>⏱️ 运输时效 (天)</label>
+                <input type="number" id="transitDays" value="3" min="1" max="14">
+            </div>
+            <div class="param-item">
+                <label>📅 订单发布提前期 (天)</label>
+                <input type="number" id="leadTime" value="2" min="0" max="10">
+            </div>
+            <button class="btn btn-primary" id="calcBtn">⟳ 重新计算</button>
+        </div>
+
+        <div class="import-area">
+            <span class="badge-count" id="rowCount">0 条物料</span>
+            <button class="btn btn-secondary template-btn" id="downloadTemplateBtn">📄 下载模板</button>
+            <label class="file-label" for="fileUpload">📂 导入Excel</label>
+            <input type="file" id="fileUpload" accept=".xlsx, .xls">
+            <button class="btn btn-danger" id="clearDataBtn">🗑️ 清空数据</button>
+            <button class="btn btn-export" id="exportResultBtn">📤 导出结果</button>
+        </div>
+    </div>
+
+    <!-- 表格 -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>供应商代码</th>
+                    <th>供应商名称</th>
+                    <th>物料号</th>
+                    <th>物料名称</th>
+                    <th>最低库存<br>(天)</th>
+                    <th>运输时效<br>(天)</th>
+                    <th>当前<br>库存</th>
+                    <th>在途<br>库存</th>
+                    <th>最低库存<br>(件)</th>
+                    <th>目标库存<br>天数</th>
+                    <th>目标库存<br>(件)</th>
+                    <th>到货日<br>预计库存</th>
+                    <th>到货日预计<br>库存天数</th>
+                    <th>补货<br>件数</th>
+                    <th>补货<br>箱数</th>
+                    <th>补货<br>体积(m³)</th>
+                    <th>状态</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr><td colspan="17" class="empty-msg">暂无数据，请导入Excel</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footnote">
+        <span><span class="indicator green"></span> 充足 (到货日预计库存 ≥ 目标库存) </span>
+        <span><span class="indicator yellow"></span> 补货触发 (到货日预计库存 < 目标库存) </span>
+        <span><span class="indicator red"></span> 紧急 (到货日预计库存 < 最低库存) </span>
+        <span>📐 补货体积 = 补货箱数 × 单箱体积 (m³) </span>
+        <span>📊 后N天需求从<b>提货日期</b>开始计算</span>
+        <span>⚙️ 零件级参数优先于全局参数</span>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ----- 核心数据 -----
+        let materialData = [];
+        let demandMap = {};
+        let dateColumns = [];
+
+        // DOM 引用
+        const tbody = document.getElementById('tableBody');
+        const baseDateInput = document.getElementById('baseDate');
+        const pickupDateInput = document.getElementById('pickupDate');
+        const arrivalDateInput = document.getElementById('arrivalDate');
+        const safetyDaysInput = document.getElementById('safetyDays');
+        const transitDaysInput = document.getElementById('transitDays');
+        const leadTimeInput = document.getElementById('leadTime');
+        const calcBtn = document.getElementById('calcBtn');
+        const clearDataBtn = document.getElementById('clearDataBtn');
+        const fileUpload = document.getElementById('fileUpload');
+        const rowCountSpan = document.getElementById('rowCount');
+        const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+        const exportResultBtn = document.getElementById('exportResultBtn');
+        const demandDaysSpan = document.getElementById('demandDaysCount');
+        const warningBanner = document.getElementById('warningBanner');
+        const warningText = document.getElementById('warningText');
+
+        // ----- 工具函数 -----
+        function parseDate(str) {
+            if (!str) return new Date();
+            let parts;
+            if (str.includes('/')) {
+                parts = str.split('/');
+            } else {
+                parts = str.split('-');
+            }
+            if (parts.length === 3) {
+                return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+            }
+            return new Date(str);
+        }
+        function formatDate(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth()+1).padStart(2,'0');
+            const day = String(d.getDate()).padStart(2,'0');
+            return `${y}-${m}-${day}`;
+        }
+        function formatDateSlash(d) {
+            const y = d.getFullYear();
+            const m = d.getMonth()+1;
+            const day = d.getDate();
+            return `${y}/${m}/${day}`;
+        }
+        function addDays(date, days) {
+            const d = new Date(date);
+            d.setDate(d.getDate() + days);
+            return d;
+        }
+        function diffDays(d1, d2) {
+            const t1 = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate());
+            const t2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate());
+            return Math.floor((t2 - t1) / (86400000));
+        }
+        function isValidDate(d) {
+            return d instanceof Date && !isNaN(d.getTime());
+        }
+        function getParamValue(mat, paramName, globalValue) {
+            if (mat[paramName] !== undefined && mat[paramName] !== null && mat[paramName] >= 0) {
+                return mat[paramName];
+            }
+            return globalValue;
+        }
+
+        // ----- 根据参数自动更新日期 -----
+        function updateDates() {
+            const baseStr = baseDateInput.value;
+            if (!baseStr) return;
+            const baseDate = parseDate(baseStr);
+            const leadTime = parseInt(leadTimeInput.value) || 0;
+            const transitDays = parseInt(transitDaysInput.value) || 0;
+
+            const pickupDate = addDays(baseDate, leadTime);
+            pickupDateInput.value = formatDate(pickupDate);
+            const arrivalDate = addDays(pickupDate, transitDays);
+            arrivalDateInput.value = formatDate(arrivalDate);
+        }
+
+        // ----- 判断是否为日期列 -----
+        function isDateColumn(colName) {
+            const d = parseDate(colName);
+            return isValidDate(d);
+        }
+
+        // ----- 获取日期列 -----
+        function getDateColumns(headers) {
+            const result = [];
+            headers.forEach(h => {
+                const d = parseDate(h);
+                if (isValidDate(d)) {
+                    result.push({ colName: h, date: d });
+                }
+            });
+            result.sort((a, b) => a.date - b.date);
+            return result;
+        }
+
+        // ----- Excel 导入 -----
+        function handleFileUpload(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(firstSheet);
+
+                    if (!json || json.length === 0) {
+                        alert('Excel 为空或格式不正确');
+                        return;
+                    }
+
+                    const allHeaders = Object.keys(json[0]);
+                    const dateCols = getDateColumns(allHeaders);
+                    
+                    const baseStr = baseDateInput.value;
+                    if (!baseStr) {
+                        alert('请先设置制表日');
+                        return;
+                    }
+
+                    const mapped = json.map(row => {
+                        const get = (keys) => {
+                            for (let k of keys) {
+                                if (row[k] !== undefined && row[k] !== null) return row[k];
+                            }
+                            return '';
+                        };
+                        const minStockDaysVal = parseFloat(get(['最低库存天数', 'minStockDays', 'MinStockDays']));
+                        const transitDaysVal = parseFloat(get(['运输时效', 'transitDaysParam', 'TransitDaysParam']));
+                        return {
+                            supplierCode: String(get(['供应商代码', 'supplierCode', 'SupplierCode'])),
+                            supplierName: String(get(['供应商名称', 'supplierName', 'SupplierName'])),
+                            materialId: String(get(['物料号', 'materialId', 'MaterialId', '零件号'])),
+                            materialName: String(get(['物料名称', 'materialName', 'MaterialName', '零件名称'])),
+                            qtyPerBox: parseFloat(get(['单箱数量', 'qtyPerBox', 'QtyPerBox', '单箱零件数'])) || 1,
+                            packL: parseFloat(get(['包装长mm', 'packL', 'PackL', '长'])) || 500,
+                            packW: parseFloat(get(['包装宽mm', 'packW', 'PackW', '宽'])) || 500,
+                            packH: parseFloat(get(['包装高mm', 'packH', 'PackH', '高'])) || 500,
+                            inventory: parseFloat(get(['当前库存', 'inventory', 'Inventory', '库存'])) || 0,
+                            inTransit: parseFloat(get(['在途库存', 'inTransit', 'InTransit', '在途'])) || 0,
+                            minStockDays: isNaN(minStockDaysVal) ? null : minStockDaysVal,
+                            transitDaysParam: isNaN(transitDaysVal) ? null : transitDaysVal,
+                        };
+                    });
+
+                    const valid = mapped.filter(m => m.materialId && m.materialId.trim() !== '');
+                    if (valid.length === 0) {
+                        alert('未识别到有效数据，请检查列名（需包含：物料号、单箱数量等）');
+                        return;
+                    }
+
+                    materialData = valid;
+
+                    if (dateCols.length > 0) {
+                        dateColumns = dateCols.map(c => c.date);
+                        const dateColNames = dateCols.map(c => c.colName);
+                        materialData.forEach((mat, idx) => {
+                            const row = json[idx];
+                            const demand = [];
+                            dateColNames.forEach(col => {
+                                const val = parseFloat(row[col]) || 0;
+                                demand.push(val);
+                            });
+                            demandMap[mat.materialId] = demand;
+                        });
+                        demandDaysSpan.textContent = dateColumns.length;
+                    } else {
+                        alert('未检测到日期格式的列（如：2026/8/1），请检查导入文件格式');
+                        materialData = [];
+                        demandMap = {};
+                        dateColumns = [];
+                        demandDaysSpan.textContent = '0';
+                        renderAll();
+                        return;
+                    }
+
+                    renderAll();
+                } catch (err) {
+                    alert('解析Excel失败: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ----- 下载模板 -----
+        function downloadTemplate() {
+            const baseStr = baseDateInput.value;
+            if (!baseStr) {
+                alert('请先设置制表日');
+                return;
+            }
+            const baseDate = parseDate(baseStr);
+            
+            const headers = [
+                '供应商代码', '供应商名称', '物料号', '物料名称', 
+                '单箱数量', '包装长mm', '包装宽mm', '包装高mm', 
+                '当前库存', '在途库存',
+                '最低库存天数', '运输时效'
+            ];
+            
+            const days = 31;
+            const dateHeaders = [];
+            for (let i = 0; i < days; i++) {
+                const d = addDays(baseDate, i);
+                dateHeaders.push(formatDateSlash(d));
+            }
+            
+            const allHeaders = [...headers, ...dateHeaders];
+            
+            const exampleData = [
+                ['0000132120', '汇众行星', 'P34311619', '减振器安装套筒', 100, 1200, 1000, 1000, 1000, 0, '', ''],
+                ['0000132120', '汇众行星', 'P00050002', '排气管吊钩', 120, 1200, 1000, 1000, 1000, 0, '5', ''],
+                ['0000112831', '靖江骥乾', 'P00071174', '横梁', 36, 1200, 1000, 1000, 1000, 0, '', '2'],
+                ['0000112831', '靖江骥乾', 'P00071247', '上片(右)', 100, 1200, 1000, 1000, 1000, 0, '4', '4'],
+            ];
+            
+            const fullData = exampleData.map(row => {
+                const demandRow = [];
+                for (let i = 0; i < days; i++) {
+                    demandRow.push(Math.round(150 + Math.random() * 200));
+                }
+                return [...row, ...demandRow];
+            });
+            
+            const wsData = [allHeaders, ...fullData];
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            XLSX.utils.book_append_sheet(wb, ws, '物料需求数据');
+            XLSX.writeFile(wb, '物料导入模板_含零件参数.xlsx');
+        }
+
+        // ----- 清空数据 -----
+        function clearData() {
+            if (materialData.length === 0 && Object.keys(demandMap).length === 0) {
+                return;
+            }
+            if (!confirm('确认清空所有已导入的数据吗？')) {
+                return;
+            }
+            materialData = [];
+            demandMap = {};
+            dateColumns = [];
+            demandDaysSpan.textContent = '0';
+            rowCountSpan.textContent = '0 条物料';
+            warningBanner.style.display = 'none';
+            tbody.innerHTML = `<tr><td colspan="17" class="empty-msg">暂无数据，请导入Excel</td></tr>`;
+        }
+
+        // ----- 核心计算 & 渲染表格 -----
+        function renderTable() {
+            updateDates();
+
+            const baseDateStr = baseDateInput.value;
+            const arrivalDateStr = arrivalDateInput.value;
+            const pickupDateStr = pickupDateInput.value;
+            const globalMinStockDays = parseInt(safetyDaysInput.value) || 3;
+            const globalTransitDays = parseInt(transitDaysInput.value) || 3;
+            const leadTime = parseInt(leadTimeInput.value) || 2;
+
+            if (!baseDateStr || !arrivalDateStr || !pickupDateStr) {
+                tbody.innerHTML = `<tr><td colspan="17" class="empty-msg">请填写完整日期</td></tr>`;
+                warningBanner.style.display = 'none';
+                return;
+            }
+
+            const baseDate = parseDate(baseDateStr);
+            const arrivalDate = parseDate(arrivalDateStr);
+            const pickupDate = parseDate(pickupDateStr);
+            const daysUntilArrival = diffDays(baseDate, arrivalDate);
+
+            if (daysUntilArrival < 0) {
+                warningBanner.style.display = 'flex';
+                warningText.textContent = '⚠️ 预计到货日期早于制表日，请检查日期设置！';
+                tbody.innerHTML = `<tr><td colspan="17" class="empty-msg">⚠️ 预计到货日期早于制表日，请调整日期</td></tr>`;
+                return;
+            }
+
+            let demandDays = dateColumns.length;
+            if (demandDays === 0) {
+                demandDaysSpan.textContent = '0';
+                tbody.innerHTML = `<tr><td colspan="17" class="empty-msg">暂无数据，请导入Excel</td></tr>`;
+                warningBanner.style.display = 'none';
+                return;
+            }
+            demandDaysSpan.textContent = demandDays;
+
+            const demandDates = dateColumns;
+
+            if (materialData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="17" class="empty-msg">暂无数据，请导入Excel</td></tr>`;
+                warningBanner.style.display = 'none';
+                return;
+            }
+
+            // 检查需求日历是否覆盖到提货日+N
+            const minStockDaysSample = getParamValue(materialData[0] || {}, 'minStockDays', globalMinStockDays);
+            const transitDaysSample = getParamValue(materialData[0] || {}, 'transitDaysParam', globalTransitDays);
+            const horizon = minStockDaysSample + transitDaysSample + leadTime;
+            const lastDemandDate = demandDates[demandDates.length - 1];
+            const requiredDate = addDays(pickupDate, horizon);
+            
+            let showWarning = false;
+            let warningMsg = '';
+            
+            if (lastDemandDate && requiredDate > lastDemandDate) {
+                showWarning = true;
+                warningMsg = `⚠️ 需求日历仅到 ${formatDateSlash(lastDemandDate)}，但后N天需求需要到 ${formatDateSlash(requiredDate)}（提货日+${horizon}天），超出部分按0处理，建议补充更多天数的需求数据。`;
+            }
+
+            if (showWarning) {
+                warningBanner.style.display = 'flex';
+                warningText.textContent = warningMsg;
+            } else {
+                warningBanner.style.display = 'none';
+            }
+
+            const rows = materialData.map((mat, idx) => {
+                const demand31 = demandMap[mat.materialId] || [];
+
+                // 如果该物料没有需求数据，跳过
+                if (demand31.length === 0) {
+                    return null;
+                }
+
+                const totalDemand = demand31.reduce((a,b) => a+b, 0);
+                const avgDailyDemand = totalDemand / demand31.length;
+
+                const minStockDays = getParamValue(mat, 'minStockDays', globalMinStockDays);
+                const transitDays = getParamValue(mat, 'transitDaysParam', globalTransitDays);
+
+                const targetDays = minStockDays + transitDays + leadTime;
+
+                const minStock = Math.round(avgDailyDemand * minStockDays);
+                const targetStock = Math.round(avgDailyDemand * targetDays);
+
+                // 到货日前总需求
+                let demandBeforeArrival = 0;
+                if (daysUntilArrival > 0) {
+                    for (let i = 0; i < demandDates.length; i++) {
+                        const d = demandDates[i];
+                        const dayDiff = diffDays(baseDate, d);
+                        if (dayDiff >= 0 && dayDiff < daysUntilArrival) {
+                            demandBeforeArrival += demand31[i];
+                        }
+                    }
+                }
+                const inventoryAtArrival = mat.inventory + mat.inTransit - demandBeforeArrival;
+
+                // 到货日预计库存天数
+                let inventoryAtArrivalDays = 0;
+                if (avgDailyDemand > 0) {
+                    inventoryAtArrivalDays = inventoryAtArrival / avgDailyDemand;
+                }
+                inventoryAtArrivalDays = Math.round(inventoryAtArrivalDays * 10) / 10;
+
+                // 后N天需求从提货日开始计算（内部使用）
+                const horizonLocal = minStockDays + transitDays + leadTime;
+                let demandHorizon = 0;
+                for (let i = 0; i < demandDates.length; i++) {
+                    const d = demandDates[i];
+                    const dayDiff = diffDays(pickupDate, d);
+                    if (dayDiff > 0 && dayDiff <= horizonLocal) {
+                        demandHorizon += demand31[i];
+                    }
+                }
+
+                // 补货判断
+                let replenishQty = 0;
+                if (inventoryAtArrival < targetStock) {
+                    replenishQty = Math.max(0, Math.round(targetStock - inventoryAtArrival));
+                }
+
+                const boxQty = mat.qtyPerBox || 1;
+                let replenishBoxes = 0;
+                if (replenishQty > 0) {
+                    replenishBoxes = Math.ceil(replenishQty / boxQty);
+                }
+
+                const volumePerBox = (mat.packL * mat.packW * mat.packH) / 1e9;
+                const replenishVolume = replenishBoxes * volumePerBox;
+
+                let status = '充足';
+                let statusClass = 'green';
+                if (inventoryAtArrival < minStock) { 
+                    status = '紧急'; 
+                    statusClass = 'red'; 
+                } else if (inventoryAtArrival < targetStock) { 
+                    status = '补货'; 
+                    statusClass = 'yellow'; 
+                }
+
+                const displayMinDays = mat.minStockDays !== null && mat.minStockDays >= 0 ? mat.minStockDays : '全局';
+                const displayTransitDays = mat.transitDaysParam !== null && mat.transitDaysParam >= 0 ? mat.transitDaysParam : '全局';
+
+                return {
+                    ...mat,
+                    minStockDays: minStockDays,
+                    transitDays: transitDays,
+                    displayMinDays: displayMinDays,
+                    displayTransitDays: displayTransitDays,
+                    minStock,
+                    targetDays,
+                    targetStock,
+                    inventoryAtArrival: Math.round(inventoryAtArrival),
+                    inventoryAtArrivalDays: inventoryAtArrivalDays,
+                    replenishQty,
+                    replenishBoxes,
+                    replenishVolume: Math.round(replenishVolume * 1000) / 1000,
+                    status,
+                    statusClass,
+                };
+            }).filter(row => row !== null);
+
+            rowCountSpan.textContent = `${rows.length} 条物料`;
+
+            if (rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="17" class="empty-msg">暂无有效数据，请检查导入的Excel是否包含需求列</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            rows.forEach((row, idx) => {
+                const minDaysDisplay = typeof row.displayMinDays === 'number' ? row.displayMinDays : '全局';
+                const transitDisplay = typeof row.displayTransitDays === 'number' ? row.displayTransitDays : '全局';
+                
+                let daysColor = '#6b7b8d';
+                if (row.inventoryAtArrivalDays >= row.targetDays) {
+                    daysColor = '#0f6b3a';
+                } else if (row.inventoryAtArrivalDays < row.minStockDays) {
+                    daysColor = '#b33c3c';
+                } else {
+                    daysColor = '#b35f00';
+                }
+                
+                html += `<tr>
+                    <td class="col-fixed" style="font-size:12px;">${row.supplierCode || ''}</td>
+                    <td style="font-size:12px; text-align:left; padding-left:6px;">${row.supplierName || ''}</td>
+                    <td style="font-weight:500; font-size:12px;">${row.materialId}</td>
+                    <td style="text-align:left; padding-left:6px; font-size:12px;">${row.materialName}</td>
+                    <td style="font-weight:500; color:${typeof row.displayMinDays === 'number' ? '#0f6b3a' : '#6b7b8d'};">${minDaysDisplay}</td>
+                    <td style="font-weight:500; color:${typeof row.displayTransitDays === 'number' ? '#0f6b3a' : '#6b7b8d'};">${transitDisplay}</td>
+                    <td><input class="editable-input" type="number" value="${row.inventory}" data-idx="${idx}" data-field="inventory" step="10" style="width:50px;"></td>
+                    <td><input class="editable-input" type="number" value="${row.inTransit}" data-idx="${idx}" data-field="inTransit" step="10" style="width:50px;"></td>
+                    <td>${row.minStock}</td>
+                    <td style="font-weight:600; color:#1a5fb4;">${row.targetDays}</td>
+                    <td>${row.targetStock}</td>
+                    <td class="col-highlight" style="font-weight:600;">${row.inventoryAtArrival}</td>
+                    <td style="font-weight:600; color:${daysColor};">${row.inventoryAtArrivalDays}</td>
+                    <td style="font-weight:600; color:${row.replenishQty > 0 ? '#0f6b3a' : '#6b7b8d'};">${row.replenishQty}</td>
+                    <td style="font-weight:600;">${row.replenishBoxes}</td>
+                    <td>${row.replenishVolume}</td>
+                    <td class="status-cell"><span class="badge ${row.statusClass === 'green' ? 'badge-success' : row.statusClass === 'yellow' ? 'badge-warning' : 'badge-danger'}">
+                        <span class="indicator ${row.statusClass}"></span>${row.status}
+                    </span></td>
+                </tr>`;
+            });
+
+            tbody.innerHTML = html;
+
+            document.querySelectorAll('.editable-input').forEach(input => {
+                input.addEventListener('change', function(e) {
+                    const idx = parseInt(this.dataset.idx);
+                    const field = this.dataset.field;
+                    const val = parseInt(this.value) || 0;
+                    if (idx >= 0 && idx < materialData.length) {
+                        materialData[idx][field] = val;
+                        renderAll();
+                    }
+                });
+            });
+        }
+
+        function renderAll() {
+            renderTable();
+        }
+
+        // ----- 导出结果 -----
+        function exportResult() {
+            if (materialData.length === 0 || Object.keys(demandMap).length === 0) {
+                alert('暂无数据可导出，请先导入Excel数据');
+                return;
+            }
+
+            const baseDateStr = baseDateInput.value;
+            if (!baseDateStr) {
+                alert('请先设置制表日');
+                return;
+            }
+            const baseDate = parseDate(baseDateStr);
+            const globalMinStockDays = parseInt(safetyDaysInput.value) || 3;
+            const globalTransitDays = parseInt(transitDaysInput.value) || 3;
+            const leadTime = parseInt(leadTimeInput.value) || 2;
+            const arrivalDate = parseDate(arrivalDateInput.value);
+            const pickupDate = parseDate(pickupDateInput.value);
+            const daysUntilArrival = diffDays(baseDate, arrivalDate);
+
+            if (daysUntilArrival < 0) {
+                alert('预计到货日期早于制表日，请检查日期设置！');
+                return;
+            }
+
+            const demandDates = dateColumns.length > 0 ? dateColumns : (() => {
+                const dates = [];
+                for (let i = 0; i < 31; i++) {
+                    dates.push(addDays(baseDate, i));
+                }
+                return dates;
+            })();
+
+            const rows = materialData.map((mat, idx) => {
+                const demand31 = demandMap[mat.materialId] || [];
+
+                if (demand31.length === 0) return null;
+
+                const totalDemand = demand31.reduce((a,b) => a+b, 0);
+                const avgDailyDemand = totalDemand / demand31.length;
+                
+                const minStockDays = getParamValue(mat, 'minStockDays', globalMinStockDays);
+                const transitDays = getParamValue(mat, 'transitDaysParam', globalTransitDays);
+                
+                const targetDays = minStockDays + transitDays + leadTime;
+                const minStock = Math.round(avgDailyDemand * minStockDays);
+                const targetStock = Math.round(avgDailyDemand * targetDays);
+
+                let demandBeforeArrival = 0;
+                if (daysUntilArrival > 0) {
+                    for (let i = 0; i < demandDates.length; i++) {
+                        const d = demandDates[i];
+                        const dayDiff = diffDays(baseDate, d);
+                        if (dayDiff >= 0 && dayDiff < daysUntilArrival) {
+                            demandBeforeArrival += demand31[i];
+                        }
+                    }
+                }
+                const inventoryAtArrival = mat.inventory + mat.inTransit - demandBeforeArrival;
+
+                let inventoryAtArrivalDays = 0;
+                if (avgDailyDemand > 0) {
+                    inventoryAtArrivalDays = inventoryAtArrival / avgDailyDemand;
+                }
+                inventoryAtArrivalDays = Math.round(inventoryAtArrivalDays * 10) / 10;
+
+                const horizonLocal = minStockDays + transitDays + leadTime;
+                let demandHorizon = 0;
+                for (let i = 0; i < demandDates.length; i++) {
+                    const d = demandDates[i];
+                    const dayDiff = diffDays(pickupDate, d);
+                    if (dayDiff > 0 && dayDiff <= horizonLocal) {
+                        demandHorizon += demand31[i];
+                    }
+                }
+
+                let replenishQty = 0;
+                if (inventoryAtArrival < targetStock) {
+                    replenishQty = Math.max(0, Math.round(targetStock - inventoryAtArrival));
+                }
+
+                const boxQty = mat.qtyPerBox || 1;
+                let replenishBoxes = 0;
+                if (replenishQty > 0) {
+                    replenishBoxes = Math.ceil(replenishQty / boxQty);
+                }
+
+                const volumePerBox = (mat.packL * mat.packW * mat.packH) / 1e9;
+                const replenishVolume = replenishBoxes * volumePerBox;
+
+                let status = '充足';
+                if (inventoryAtArrival < minStock) { status = '紧急'; }
+                else if (inventoryAtArrival < targetStock) { status = '补货'; }
+
+                const demandObj = {};
+                demandDates.forEach((d, i) => {
+                    demandObj[formatDateSlash(d)] = demand31[i] || 0;
+                });
+
+                return {
+                    supplierCode: mat.supplierCode || '',
+                    supplierName: mat.supplierName || '',
+                    materialId: mat.materialId,
+                    materialName: mat.materialName || '',
+                    minStockDays: minStockDays,
+                    transitDaysParam: transitDays,
+                    targetDays: targetDays,
+                    currentInventory: mat.inventory || 0,
+                    inTransit: mat.inTransit || 0,
+                    minStock: minStock,
+                    targetStock: targetStock,
+                    inventoryAtArrival: Math.round(inventoryAtArrival),
+                    inventoryAtArrivalDays: inventoryAtArrivalDays,
+                    demandHorizon: demandHorizon,
+                    replenishQty: replenishQty,
+                    replenishBoxes: replenishBoxes,
+                    replenishVolume: Math.round(replenishVolume * 1000) / 1000,
+                    status: status,
+                    qtyPerBox: mat.qtyPerBox || 1,
+                    packL: mat.packL || 0,
+                    packW: mat.packW || 0,
+                    packH: mat.packH || 0,
+                    ...demandObj
+                };
+            }).filter(row => row !== null);
+
+            if (rows.length === 0) {
+                alert('没有有效数据可导出');
+                return;
+            }
+
+            const baseColumns = [
+                'supplierCode', 'supplierName', 'materialId', 'materialName',
+                'minStockDays', 'transitDaysParam', 'targetDays',
+                'currentInventory', 'inTransit', 'minStock', 'targetStock',
+                'inventoryAtArrival', 'inventoryAtArrivalDays', 'demandHorizon',
+                'replenishQty', 'replenishBoxes', 'replenishVolume', 'status',
+                'qtyPerBox', 'packL', 'packW', 'packH'
+            ];
+            const demandColumns = demandDates.map(d => formatDateSlash(d));
+            const allColumns = [...baseColumns, ...demandColumns];
+
+            const headerMap = {
+                supplierCode: '供应商代码',
+                supplierName: '供应商名称',
+                materialId: '物料号',
+                materialName: '物料名称',
+                minStockDays: '最低库存天数',
+                transitDaysParam: '运输时效',
+                targetDays: '目标库存天数',
+                currentInventory: '当前库存',
+                inTransit: '在途库存',
+                minStock: '最低库存(件)',
+                targetStock: '目标库存(件)',
+                inventoryAtArrival: '到货日预计库存',
+                inventoryAtArrivalDays: '到货日预计库存天数',
+                demandHorizon: '后N天需求',
+                replenishQty: '补货件数',
+                replenishBoxes: '补货箱数',
+                replenishVolume: '补货体积(m³)',
+                status: '状态',
+                qtyPerBox: '单箱数量',
+                packL: '包装长mm',
+                packW: '包装宽mm',
+                packH: '包装高mm',
+            };
+            demandColumns.forEach(col => {
+                headerMap[col] = col;
+            });
+
+            const exportData = rows.map(row => {
+                const obj = {};
+                allColumns.forEach(col => {
+                    obj[headerMap[col] || col] = row[col] !== undefined ? row[col] : '';
+                });
+                return obj;
+            });
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '补货计算结果');
+            XLSX.writeFile(wb, `补货结果_${formatDate(new Date())}.xlsx`);
+        }
+
+        // ----- 初始化 -----
+        function init() {
+            const today = new Date();
+            baseDateInput.value = formatDate(today);
+            updateDates();
+
+            // 初始状态：无数据
+            demandDaysSpan.textContent = '0';
+            rowCountSpan.textContent = '0 条物料';
+            tbody.innerHTML = `<tr><td colspan="17" class="empty-msg">暂无数据，请导入Excel</td></tr>`;
+
+            calcBtn.addEventListener('click', renderAll);
+            clearDataBtn.addEventListener('click', clearData);
+            downloadTemplateBtn.addEventListener('click', downloadTemplate);
+            exportResultBtn.addEventListener('click', exportResult);
+
+            [baseDateInput, safetyDaysInput, transitDaysInput, leadTimeInput].forEach(el => {
+                el.addEventListener('change', function() {
+                    updateDates();
+                    renderAll();
+                });
+                el.addEventListener('input', function() {
+                    updateDates();
+                    renderAll();
+                });
+            });
+
+            fileUpload.addEventListener('change', function(e) {
+                if (this.files && this.files.length > 0) {
+                    handleFileUpload(this.files[0]);
+                }
+                this.value = '';
+            });
+        }
+
+        init();
+    })();
+</script>
+</body>
+</html>
