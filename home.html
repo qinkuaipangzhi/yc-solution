@@ -620,7 +620,7 @@
 
     <script>
         // ============================================================
-        //  工具导航树配置 ★★★ 新增"到货窗口排程"工具 ★★★
+        //  工具导航树配置 ★★★ 新增"VMI拉动平衡"工具 ★★★
         // ============================================================
         const TOOLS = [{
             id: 'welcome',
@@ -693,13 +693,20 @@
             desc: '提货点·目的点·前置仓·末端仓',
             file: 'supply-chain-network.html'
         }, {
-            // ★★★ 新增：到货窗口排程 ★★★
             id: 'dock-scheduling',
             icon: '🚚',
             label: '到货窗口排程',
             section: '仓库规划',
             desc: '道口·拖拽排程·周视图·复制',
             file: 'dock-scheduling.html'
+        }, {
+            // ★★★ 新增：VMI拉动平衡 ★★★
+            id: 'vmi-pull-balance',
+            icon: '⚖️',
+            label: 'VMI拉动平衡',
+            section: '仓库规划',
+            desc: '补货计算·需求日历·参数配置',
+            file: 'vmi-pull-balance.html'
         }, {
             id: 'stats',
             icon: '📈',
@@ -1090,7 +1097,7 @@
                         <div class="welcome-content">
                             <div class="logo-big">📦</div>
                             <h2>物流工具箱</h2>
-                            <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析、3D装载可视化、仓库规划等核心工具</p>
+                            <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析、3D装载可视化、仓库规划、VMI拉动平衡等核心工具</p>
                             <div class="tool-grid">
                                 ${TOOLS.filter(t => !t.isWelcome && !t.isStats).map(t => `
                                     <div class="card" onclick="loadTool('${t.id}')">
