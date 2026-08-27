@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>仓库规划工具 - 精简参数版 (含保存/加载)</title>
+    <title>仓库规划工具 - 行业基准版 (设备时长随班次)</title>
     <style>
-        /* ===== 样式 ===== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
         }
         body {
             background: linear-gradient(145deg, #eef2f9 0%, #dce3ec 100%);
@@ -53,27 +52,20 @@
             border-radius: 30px;
             font-size: 9px;
         }
-        .header .badge.green {
-            background: #2a7f6e;
-        }
-        .header .badge.orange {
-            background: #d48c2c;
-        }
-        .header .badge.purple {
-            background: #6c5b7b;
-        }
+        .header .badge.green { background: #2a7f6e; }
+        .header .badge.orange { background: #d48c2c; }
+        .header .badge.purple { background: #6c5b7b; }
+        .header .badge.cyan { background: #2a7f8e; }
+        .header .badge.pink { background: #b13b6e; }
+        .header .badge.gold { background: #b8860b; }
 
         .main-grid {
             display: grid;
-            grid-template-columns: 460px 1fr;
+            grid-template-columns: 520px 1fr;
             gap: 12px;
             min-height: 600px;
         }
-        @media (max-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
 
         .panel-left {
             background: white;
@@ -86,13 +78,8 @@
             max-height: 820px;
             overflow-y: auto;
         }
-        .panel-left::-webkit-scrollbar {
-            width: 4px;
-        }
-        .panel-left::-webkit-scrollbar-thumb {
-            background: #c8d8e8;
-            border-radius: 8px;
-        }
+        .panel-left::-webkit-scrollbar { width: 4px; }
+        .panel-left::-webkit-scrollbar-thumb { background: #c8d8e8; border-radius: 8px; }
         .panel-title {
             font-size: 13px;
             font-weight: 700;
@@ -176,6 +163,34 @@
         .input-group input[type="number"]::-webkit-inner-spin-button {
             -webkit-appearance: none;
         }
+        .input-group select {
+            padding: 4px 6px;
+            border: 1.5px solid #dce6f0;
+            border-radius: 4px;
+            font-size: 11px;
+            background: white;
+            width: 100%;
+        }
+        .input-group select:focus {
+            outline: none;
+            border-color: #1a5d8c;
+        }
+        .input-group .readonly-display {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a5d8c;
+            padding: 2px 0;
+            background: #f5fafc;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid #dce6f0;
+            line-height: 30px;
+        }
+        .input-group .readonly-hint {
+            font-size: 8px;
+            color: #8aa0b8;
+            text-align: center;
+        }
 
         .func-section {
             background: #f8fafd;
@@ -213,9 +228,7 @@
             border-radius: 3px;
             cursor: pointer;
         }
-        .func-item:hover {
-            background: #eef4fa;
-        }
+        .func-item:hover { background: #eef4fa; }
         .func-item input[type="checkbox"] {
             width: 13px;
             height: 13px;
@@ -250,53 +263,17 @@
             gap: 5px;
             justify-content: center;
         }
-        .btn-primary {
-            background: #1a5d8c;
-            color: white;
-        }
-        .btn-primary:hover {
-            background: #0e466b;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(26, 93, 140, 0.3);
-        }
-        .btn-outline {
-            background: #eef3fc;
-            color: #1f4970;
-            border: 1px solid #cde0ee;
-        }
-        .btn-outline:hover {
-            background: #e2ebf5;
-        }
-        .btn-save {
-            background: #2a7f6e;
-            color: white;
-        }
-        .btn-save:hover {
-            background: #1e6657;
-        }
-        .btn-danger {
-            background: #fce4e4;
-            color: #b13b3b;
-            border: 1px solid #f5c2c2;
-        }
-        .btn-danger:hover {
-            background: #fccfcf;
-        }
-        .btn-sm {
-            padding: 4px 12px;
-            font-size: 11px;
-        }
-        .btn-group {
-            display: flex;
-            gap: 6px;
-            margin-top: 2px;
-            flex-shrink: 0;
-        }
-        .btn-group .btn {
-            flex: 1;
-            padding: 6px 12px;
-            font-size: 11px;
-        }
+        .btn-primary { background: #1a5d8c; color: white; }
+        .btn-primary:hover { background: #0e466b; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26, 93, 140, 0.3); }
+        .btn-outline { background: #eef3fc; color: #1f4970; border: 1px solid #cde0ee; }
+        .btn-outline:hover { background: #e2ebf5; }
+        .btn-save { background: #2a7f6e; color: white; }
+        .btn-save:hover { background: #1e6657; }
+        .btn-danger { background: #fce4e4; color: #b13b3b; border: 1px solid #f5c2c2; }
+        .btn-danger:hover { background: #fccfcf; }
+        .btn-sm { padding: 4px 12px; font-size: 11px; }
+        .btn-group { display: flex; gap: 6px; margin-top: 2px; flex-shrink: 0; }
+        .btn-group .btn { flex: 1; padding: 6px 12px; font-size: 11px; }
 
         .panel-right {
             background: white;
@@ -308,27 +285,16 @@
             gap: 8px;
             min-height: 600px;
         }
-        .panel-right .panel-title {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
+        .panel-right .panel-title { border-bottom: none; padding-bottom: 0; }
 
         .result-summary {
             display: grid;
-            grid-template-columns: repeat(6, 1fr);
+            grid-template-columns: repeat(8, 1fr);
             gap: 4px;
             flex-shrink: 0;
         }
-        @media (max-width: 800px) {
-            .result-summary {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-        @media (max-width: 500px) {
-            .result-summary {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
+        @media (max-width: 900px) { .result-summary { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 600px) { .result-summary { grid-template-columns: repeat(2, 1fr); } }
         .result-card {
             background: #f8fafd;
             border-radius: 4px;
@@ -370,11 +336,7 @@
             max-height: 100px;
             overflow-y: auto;
         }
-        @media (max-width: 700px) {
-            .area-detail {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
+        @media (max-width: 700px) { .area-detail { grid-template-columns: 1fr 1fr; } }
         .area-item {
             display: flex;
             justify-content: space-between;
@@ -383,11 +345,7 @@
             color: #2c3e66;
             border-bottom: 1px dashed #eef2f7;
         }
-        .area-item .name {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
+        .area-item .name { display: flex; align-items: center; gap: 3px; }
         .area-item .name .dot {
             width: 6px;
             height: 6px;
@@ -395,11 +353,7 @@
             display: inline-block;
             flex-shrink: 0;
         }
-        .area-item .val {
-            font-weight: 600;
-            color: #1f3a5f;
-            font-size: 9px;
-        }
+        .area-item .val { font-weight: 600; color: #1f3a5f; font-size: 9px; }
 
         .color-legend {
             display: flex;
@@ -425,6 +379,125 @@
             border: 1px solid rgba(0, 0, 0, 0.1);
         }
 
+        .equipment-section {
+            background: #f0f6fc;
+            border-radius: 6px;
+            padding: 8px 12px;
+            border: 1px solid #cde0ee;
+            flex-shrink: 0;
+        }
+        .equipment-section .eq-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #1f3a5f;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px 8px;
+        }
+        @media (max-width: 700px) { .equipment-grid { grid-template-columns: 1fr 1fr; } }
+        .eq-item {
+            background: white;
+            border-radius: 4px;
+            padding: 4px 8px;
+            border: 1px solid #e2edf5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .eq-item .eq-name {
+            font-size: 10px;
+            font-weight: 600;
+            color: #2c4a6e;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .eq-item .eq-name .eq-icon { font-size: 14px; }
+        .eq-item .eq-count {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a5d8c;
+        }
+        .eq-item .eq-count .eq-suffix {
+            font-size: 10px;
+            font-weight: 400;
+            color: #7a8eaa;
+        }
+
+        .staff-section {
+            background: #f5f0f8;
+            border-radius: 6px;
+            padding: 8px 12px;
+            border: 1px solid #d4c8e0;
+            flex-shrink: 0;
+        }
+        .staff-section .staff-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #1f3a5f;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        .staff-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px 8px;
+        }
+        @media (max-width: 700px) { .staff-grid { grid-template-columns: 1fr 1fr; } }
+        .staff-item {
+            background: white;
+            border-radius: 4px;
+            padding: 4px 8px;
+            border: 1px solid #e2edf5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .staff-item .staff-name {
+            font-size: 10px;
+            font-weight: 600;
+            color: #2c4a6e;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .staff-item .staff-name .staff-icon { font-size: 14px; }
+        .staff-item .staff-count {
+            font-size: 16px;
+            font-weight: 700;
+            color: #6c5b7b;
+        }
+        .staff-item .staff-count .staff-suffix {
+            font-size: 10px;
+            font-weight: 400;
+            color: #7a8eaa;
+        }
+
+        .staff-total-bar {
+            display: flex;
+            gap: 12px;
+            padding: 4px 10px;
+            background: #e8e0f0;
+            border-radius: 4px;
+            border: 1px solid #d4c8e0;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            margin-top: 3px;
+        }
+        .staff-total-bar .item {
+            font-size: 10px;
+            color: #1f3a5f;
+        }
+        .staff-total-bar .item strong { color: #6c5b7b; }
+
         .dock-info {
             display: flex;
             gap: 12px;
@@ -439,9 +512,7 @@
             font-size: 10px;
             color: #1f3a5f;
         }
-        .dock-info .item strong {
-            color: #1a5d8c;
-        }
+        .dock-info .item strong { color: #1a5d8c; }
         .dock-info .item .tag {
             font-size: 8px;
             padding: 0 6px;
@@ -478,9 +549,7 @@
             pointer-events: none;
             white-space: nowrap;
         }
-        .three-overlay .highlight {
-            color: #ffb347;
-        }
+        .three-overlay .highlight { color: #ffb347; }
 
         .three-controls {
             position: absolute;
@@ -501,9 +570,7 @@
             backdrop-filter: blur(4px);
             transition: 0.2s;
         }
-        .three-controls button:hover {
-            background: rgba(255, 255, 255, 0.25);
-        }
+        .three-controls button:hover { background: rgba(255, 255, 255, 0.25); }
 
         .footer {
             font-size: 8px;
@@ -513,7 +580,6 @@
             flex-shrink: 0;
         }
 
-        /* ===== 保存/加载区域 ===== */
         .save-load-area {
             display: flex;
             flex-wrap: wrap;
@@ -537,7 +603,6 @@
             border-color: #1a5d8c;
             outline: none;
         }
-
         .record-select-wrapper {
             display: flex;
             align-items: center;
@@ -558,9 +623,7 @@
             outline: none;
             cursor: pointer;
         }
-        .record-select-wrapper select:focus {
-            outline: none;
-        }
+        .record-select-wrapper select:focus { outline: none; }
         .record-select-wrapper .del-record-btn {
             border: none;
             background: transparent;
@@ -578,77 +641,42 @@
             background: #fce4e4;
             transform: scale(1.1);
         }
-        .record-select-wrapper .del-record-btn.show {
-            display: block;
-        }
-        .save-load-area .sep-text {
-            color: #d0d8e0;
-            font-size: 12px;
+        .record-select-wrapper .del-record-btn.show { display: block; }
+        .save-load-area .sep-text { color: #d0d8e0; font-size: 12px; }
+
+        .info-tip {
+            font-size: 8px;
+            color: #6a8aaa;
+            background: #eaf1f9;
+            padding: 2px 6px;
+            border-radius: 30px;
+            display: inline-block;
+            margin-top: 1px;
         }
 
         @media (max-width: 768px) {
-            body {
-                padding: 6px;
-            }
-            .panel-left {
-                max-height: none;
-            }
-            .input-row {
-                grid-template-columns: 1fr 1fr;
-            }
-            .input-row.three-col {
-                grid-template-columns: 1fr 1fr;
-            }
-            .func-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-            .area-detail {
-                grid-template-columns: 1fr 1fr;
-            }
-            #threeContainer {
-                min-height: 220px;
-            }
-            .header h1 {
-                font-size: 16px;
-            }
-            .result-summary {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            .save-load-area input[type="text"] {
-                width: 80px;
-                font-size: 10px;
-            }
-            .record-select-wrapper {
-                max-width: 140px;
-                padding: 1px 2px 1px 6px;
-            }
-            .record-select-wrapper select {
-                font-size: 9px;
-                max-width: 100px;
-            }
+            body { padding: 6px; }
+            .panel-left { max-height: none; }
+            .input-row { grid-template-columns: 1fr 1fr; }
+            .input-row.three-col { grid-template-columns: 1fr 1fr; }
+            .func-grid { grid-template-columns: 1fr 1fr; }
+            .area-detail { grid-template-columns: 1fr 1fr; }
+            #threeContainer { min-height: 220px; }
+            .header h1 { font-size: 16px; }
+            .result-summary { grid-template-columns: repeat(3, 1fr); }
+            .equipment-grid { grid-template-columns: 1fr 1fr; }
+            .staff-grid { grid-template-columns: 1fr 1fr; }
         }
         @media (max-width: 480px) {
-            .input-row {
-                grid-template-columns: 1fr;
-            }
-            .input-row.three-col {
-                grid-template-columns: 1fr;
-            }
-            .func-grid {
-                grid-template-columns: 1fr;
-            }
-            .area-detail {
-                grid-template-columns: 1fr;
-            }
-            #threeContainer {
-                min-height: 160px;
-            }
-            .result-summary {
-                grid-template-columns: 1fr 1fr;
-            }
-            .btn-group {
-                flex-direction: column;
-            }
+            .input-row { grid-template-columns: 1fr; }
+            .input-row.three-col { grid-template-columns: 1fr; }
+            .func-grid { grid-template-columns: 1fr; }
+            .area-detail { grid-template-columns: 1fr; }
+            #threeContainer { min-height: 160px; }
+            .result-summary { grid-template-columns: 1fr 1fr; }
+            .equipment-grid { grid-template-columns: 1fr; }
+            .staff-grid { grid-template-columns: 1fr; }
+            .btn-group { flex-direction: column; }
         }
     </style>
 </head>
@@ -656,13 +684,15 @@
 
     <div class="container">
         <div class="header">
-            <h1>🏗️ 仓库规划工具 <span style="font-size:13px;font-weight:400;opacity:0.8;">— 精简参数版 (含保存/加载)</span></h1>
+            <h1>🏗️ 仓库规划工具 <span style="font-size:13px;font-weight:400;opacity:0.8;">— 设备时长随班次</span></h1>
             <div class="badge-group">
                 <span class="badge">📐 面积计算</span>
                 <span class="badge green">🚶 动线分析</span>
                 <span class="badge orange">🚛 道口规划</span>
+                <span class="badge cyan">🛠️ 设备需求</span>
+                <span class="badge pink">👤 人员需求</span>
+                <span class="badge gold">🔄 单/双班</span>
                 <span class="badge purple">🏗️ 建筑模型</span>
-                <span class="badge">🎯 3D可视化</span>
                 <span class="badge">💾 保存/加载</span>
             </div>
         </div>
@@ -672,7 +702,7 @@
             <div class="panel-left">
                 <div class="panel-title">
                     📥 输入参数
-                    <span class="sub">— 流量 · 功能 · 道口</span>
+                    <span class="sub">— 流量 · 功能 · 设备 · 人员 · 道口 · 班次</span>
                 </div>
 
                 <!-- 满箱流量 -->
@@ -719,33 +749,135 @@
                     </div>
                 </div>
 
-                <!-- 道口参数 -->
-                <div class="input-section">
-                    <div class="section-title">🚛 道口参数</div>
+                <!-- ===== 设备参数 (设备时长随班次) ===== -->
+                <div class="input-section" style="border:2px solid #2a7f8e40;background:#f0f8fc;">
+                    <div class="section-title">🛠️ 设备参数 <span class="hint">(工作时长随班次自动变化)</span></div>
                     <div class="input-row three-col">
                         <div class="input-group">
-                            <label>⏱️ 单车操作时长 <span class="hint">(分钟/车)</span></label>
-                            <input type="number" id="dockOperTime" value="30" min="5" max="120" step="5">
+                            <label>铲车基准效率 <span class="hint">(m³/小时)</span></label>
+                            <input type="number" id="forkliftEfficiency" value="30" min="10" max="60" step="1">
+                            <span class="info-tip">行业基准: 25-40 m³/h</span>
+                        </div>
+                        <div class="input-group" style="opacity:0.7;background:#f8fafd;border-radius:4px;padding:4px 6px;display:flex;flex-direction:column;justify-content:center;">
+                            <label>⏱️ 设备工作时长 <span class="hint">(小时/天)</span></label>
+                            <div class="readonly-display" id="equipWorkHoursDisplay">8</div>
+                            <span class="readonly-hint">随班次自动变化：单班=8h，双班=16h</span>
                         </div>
                         <div class="input-group">
-                            <label>🕐 工作时间 <span class="hint">(小时/天)</span></label>
-                            <input type="number" id="workHours" value="16" min="4" max="24" step="1">
-                        </div>
-                        <div class="input-group">
-                            <label>📐 道口宽度 <span class="hint">(m)</span></label>
-                            <input type="number" id="dockWidth" value="3.5" min="2.5" max="5" step="0.1">
+                            <label>铲车利用率 <span class="hint">(%)</span></label>
+                            <input type="number" id="forkliftUtil" value="70" min="30" max="95" step="5">
+                            <span class="info-tip">行业基准: 65-75%</span>
                         </div>
                     </div>
                     <div class="input-row three-col" style="margin-top:3px;">
                         <div class="input-group">
-                            <label>🚛 单车平均货量 <span class="hint">(m³/车)</span></label>
-                            <input type="number" id="avgLoadPerTruck" value="25" min="5" max="80" step="5">
+                            <label>地牛基准效率 <span class="hint">(m³/小时)</span></label>
+                            <input type="number" id="palletJackEfficiency" value="15" min="5" max="40" step="1">
+                            <span class="info-tip">行业基准: 10-20 m³/h</span>
                         </div>
+                        <div class="input-group">
+                            <label>地牛利用率 <span class="hint">(%)</span></label>
+                            <input type="number" id="palletJackUtil" value="65" min="30" max="95" step="5">
+                            <span class="info-tip">行业基准: 60-70%</span>
+                        </div>
+                        <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
+                            <span style="font-size:9px;color:#6a8aaa;">📌 备用系数: 1.2 (固定)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== 人员效率参数 ===== -->
+                <div class="input-section" style="border:2px solid #b13b6e40;background:#fcf5f8;">
+                    <div class="section-title">👤 人员效率参数 <span class="hint">(效率受面积&动线自动调整)</span></div>
+                    <div class="input-row three-col">
+                        <div class="input-group">
+                            <label>📥 收货基准效率 <span class="hint">(m³/人·小时)</span></label>
+                            <input type="number" id="receivingEfficiency" value="18" min="8" max="35" step="1">
+                            <span class="info-tip">行业基准: 12-20 m³/h</span>
+                        </div>
+                        <div class="input-group">
+                            <label>📤 发货基准效率 <span class="hint">(m³/人·小时)</span></label>
+                            <input type="number" id="shippingEfficiency" value="20" min="10" max="40" step="1">
+                            <span class="info-tip">行业基准: 15-25 m³/h</span>
+                        </div>
+                        <div class="input-group">
+                            <label>🔄 翻包基准效率 <span class="hint">(m³/人·小时)</span></label>
+                            <input type="number" id="repackEfficiency" value="12" min="6" max="30" step="1">
+                            <span class="info-tip">行业基准: 8-15 m³/h</span>
+                        </div>
+                    </div>
+                    <div class="input-row three-col" style="margin-top:3px;">
+                        <div class="input-group">
+                            <label>人员利用率 <span class="hint">(%)</span></label>
+                            <input type="number" id="staffUtilRate" value="85" min="60" max="98" step="5">
+                            <span class="info-tip">行业基准: 80-90%</span>
+                        </div>
+                        <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
+                            <span style="font-size:9px;color:#6a8aaa;">📌 管理配比: 1:20 (标准)</span>
+                        </div>
+                        <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
+                            <span style="font-size:9px;color:#6a8aaa;">📌 数据员基准: 1000 m³/人</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== 单双班参数 ===== -->
+                <div class="input-section" style="border:2px solid #b8860b40;background:#faf8f0;">
+                    <div class="section-title">🔄 班次设置 <span class="hint">影响人员需求 &amp; 设备工作时长</span></div>
+                    <div class="input-row three-col">
+                        <div class="input-group">
+                            <label>📅 班次模式</label>
+                            <select id="shiftMode">
+                                <option value="single">单班</option>
+                                <option value="double">双班</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>单班时长 <span class="hint">(小时/班)</span></label>
+                            <input type="number" id="shiftHours" value="8" min="4" max="12" step="0.5">
+                            <span class="info-tip">设备时长 = 单班时长 × 班次数</span>
+                        </div>
+                        <div class="input-group" style="opacity:0.6;background:#f8f5ee;border-radius:4px;padding:4px 6px;display:flex;flex-direction:column;justify-content:center;">
+                            <span style="font-size:9px;color:#6a8aaa;">📌 总工作时长: <strong id="totalHoursDisplay">8</strong> 小时/天</span>
+                            <span style="font-size:8px;color:#8aa0b8;">单班8h · 双班16h</span>
+                        </div>
+                    </div>
+                    <div class="input-row three-col" style="margin-top:3px;">
+                        <div class="input-group">
+                            <label>管理人员配比</label>
+                            <select id="mgmtRatioSelect">
+                                <option value="20">1:20 (标准)</option>
+                                <option value="15">1:15 (精细管理)</option>
+                                <option value="25">1:25 (宽松管理)</option>
+                                <option value="30">1:30 (极简管理)</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
+                            <span style="font-size:9px;color:#6a8aaa;">📌 经理固定配置: 1人</span>
+                        </div>
+                        <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
+                            <span style="font-size:9px;color:#6a8aaa;">📌 双班主管 = 单班主管 × 2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 道口参数 -->
+                <div class="input-section">
+                    <div class="section-title">🚛 道口参数</div>
+                    <div class="input-row three-col">
+                        <div class="input-group"><label>⏱️ 单车操作时长 <span class="hint">(分钟/车)</span></label><input type="number" id="dockOperTime" value="30" min="5" max="120" step="5"></div>
+                        <div class="input-group"><label>📐 道口宽度 <span class="hint">(m)</span></label><input type="number" id="dockWidth" value="3.5" min="2.5" max="5" step="0.1"></div>
+                        <div class="input-group"><label>🚛 单车平均货量 <span class="hint">(m³/车)</span></label><input type="number" id="avgLoadPerTruck" value="25" min="5" max="80" step="5"></div>
+                    </div>
+                    <div class="input-row three-col" style="margin-top:3px;">
                         <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
                             <span style="font-size:9px;color:#6a8aaa;">📌 利用系数: 0.85 (固定)</span>
                         </div>
                         <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
                             <span style="font-size:9px;color:#6a8aaa;">📌 进货占比: 55% (固定)</span>
+                        </div>
+                        <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
+                            <span style="font-size:9px;color:#6a8aaa;">📌 道口可用时间 = 单班时长 × 班次数</span>
                         </div>
                     </div>
                 </div>
@@ -769,18 +901,16 @@
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-primary" id="calcBtn">🧮 计算 & 生成3D</button>
+                    <button class="btn btn-primary" id="calcBtn">🧮 计算 &amp; 生成3D</button>
                     <button class="btn btn-outline" id="resetBtn">↺ 重置</button>
                 </div>
 
-                <!-- ===== 保存/加载区域 ===== -->
+                <!-- ===== 保存/加载 ===== -->
                 <div class="save-load-area">
                     <span style="font-size:11px;font-weight:600;color:#1f3a5f;">💾 保存</span>
                     <input type="text" id="saveNameInput" placeholder="方案名称" value="">
                     <button class="btn btn-save btn-sm" id="savePlanBtn">💾 保存</button>
-
                     <span class="sep-text">|</span>
-
                     <span style="font-size:11px;font-weight:600;color:#1f3a5f;">📂 加载</span>
                     <div class="record-select-wrapper" id="recordSelectWrapper">
                         <select id="loadSelect">
@@ -797,10 +927,11 @@
             <div class="panel-right">
                 <div class="panel-title">
                     📊 分析结果
-                    <span class="sub">— 面积 · 道口 · 动线 · 3D</span>
+                    <span class="sub">— 面积 · 设备 · 人员 · 道口 · 3D</span>
                     <span style="margin-left:auto;font-size:9px;color:#7a8eaa;" id="statusText">就绪</span>
                 </div>
 
+                <!-- 面积汇总 -->
                 <div class="result-summary" id="resultSummary">
                     <div class="result-card"><div class="label">🏭 总面积</div><div class="value" id="totalArea">0 <span class="unit">m²</span></div><div class="sub" id="totalDim">-</div></div>
                     <div class="result-card"><div class="label">📦 满箱存储</div><div class="value" id="fullStorageArea">0 <span class="unit">m²</span></div><div class="sub" id="fullStoragePct">-</div></div>
@@ -808,19 +939,61 @@
                     <div class="result-card"><div class="label">📥 作业区</div><div class="value" id="workArea">0 <span class="unit">m²</span></div><div class="sub" id="workPct">-</div></div>
                     <div class="result-card"><div class="label">🚛 道口数</div><div class="value" id="dockCount">0</div><div class="sub" id="dockDetail">进货/出货</div></div>
                     <div class="result-card"><div class="label">📤 通道</div><div class="value" id="aisleArea">0 <span class="unit">m²</span></div><div class="sub" id="aislePct">-</div></div>
+                    <div class="result-card"><div class="label">🛠️ 设备</div><div class="value" id="totalEquipment">0</div><div class="sub" id="equipDetail">铲车+地牛</div></div>
+                    <div class="result-card"><div class="label">👤 人员</div><div class="value" id="totalStaff">0</div><div class="sub" id="staffDetail">操作+管理</div></div>
+                </div>
+
+                <!-- ===== 设备需求 ===== -->
+                <div class="equipment-section" id="equipmentSection">
+                    <div class="eq-title">🛠️ 设备需求分析 <span style="font-size:9px;font-weight:400;color:#7a8eaa;">(效率已按面积&动线调整)</span></div>
+                    <div class="equipment-grid" id="equipmentGrid">
+                        <div class="eq-item"><span class="eq-name"><span class="eq-icon">🛠️</span>铲车</span><span class="eq-count" id="forkliftCount">0 <span class="eq-suffix">台</span></span></div>
+                        <div class="eq-item"><span class="eq-name"><span class="eq-icon">🔧</span>地牛</span><span class="eq-count" id="palletJackCount">0 <span class="eq-suffix">台</span></span></div>
+                        <div class="eq-item" style="background:#f0f6fc;border-color:#cde0ee;"><span class="eq-name"><span class="eq-icon">📊</span>总设备</span><span class="eq-count" id="totalEquipCount" style="color:#1a5d8c;">0 <span class="eq-suffix">台</span></span></div>
+                        <div class="eq-item" style="background:#f0f6fc;border-color:#cde0ee;"><span class="eq-name"><span class="eq-icon">📋</span>日均作业量</span><span class="eq-count" id="dailyWorkload" style="color:#1a5d8c;">0 <span class="eq-suffix">m³</span></span></div>
+                        <div class="eq-item" style="background:#f0f6fc;border-color:#cde0ee;"><span class="eq-name"><span class="eq-icon">🚛</span>道口数</span><span class="eq-count" id="dockCountDisplay" style="color:#d48c2c;">0 <span class="eq-suffix">个</span></span></div>
+                    </div>
+                    <div style="font-size:8px;color:#8aa0b8;margin-top:2px;display:flex;gap:12px;flex-wrap:wrap;">
+                        <span>⚡ 铲车调整后效率: <span id="adjustedForkliftEff">0</span> m³/h</span>
+                        <span>📥 收货调整后效率: <span id="adjustedReceivingEff">0</span> m³/h</span>
+                        <span>📤 发货调整后效率: <span id="adjustedShippingEff">0</span> m³/h</span>
+                        <span>🔄 翻包调整后效率: <span id="adjustedRepackEff">0</span> m³/h</span>
+                    </div>
+                </div>
+
+                <!-- ===== 人员需求 ===== -->
+                <div class="staff-section" id="staffSection">
+                    <div class="staff-title">👤 人员需求分析 <span style="font-size:9px;font-weight:400;color:#7a8eaa;" id="shiftLabel">单班模式</span></div>
+                    <div class="staff-grid" id="staffGrid">
+                        <div class="staff-item"><span class="staff-name"><span class="staff-icon">🛠️</span>铲车工</span><span class="staff-count" id="forkliftOperatorCount">0 <span class="staff-suffix">人</span></span></div>
+                        <div class="staff-item"><span class="staff-name"><span class="staff-icon">📥</span>收货员</span><span class="staff-count" id="receiverCount">0 <span class="staff-suffix">人</span></span></div>
+                        <div class="staff-item"><span class="staff-name"><span class="staff-icon">📤</span>发货员</span><span class="staff-count" id="shipperCount">0 <span class="staff-suffix">人</span></span></div>
+                        <div class="staff-item"><span class="staff-name"><span class="staff-icon">🔄</span>翻包员</span><span class="staff-count" id="repackStaffCount">0 <span class="staff-suffix">人</span></span></div>
+                        <div class="staff-item"><span class="staff-name"><span class="staff-icon">📋</span>数据员</span><span class="staff-count" id="dataClerkCount">0 <span class="staff-suffix">人</span></span></div>
+                        <div class="staff-item"><span class="staff-name"><span class="staff-icon">👔</span>仓库主管</span><span class="staff-count" id="supervisorCount">0 <span class="staff-suffix">人</span></span></div>
+                        <div class="staff-item"><span class="staff-name"><span class="staff-icon">🏢</span>仓库经理</span><span class="staff-count" id="managerCount">0 <span class="staff-suffix">人</span></span></div>
+                        <div class="staff-item" style="background:#f0eef8;border-color:#d4c8e0;"><span class="staff-name"><span class="staff-icon">👥</span>总人数</span><span class="staff-count" id="totalStaffCount" style="color:#6c5b7b;">0 <span class="staff-suffix">人</span></span></div>
+                    </div>
+                    <div class="staff-total-bar">
+                        <span class="item">👤 操作人员：<strong id="opsStaffCount">0</strong> 人</span>
+                        <span class="item">📋 管理人员：<strong id="mgmtStaffCount">0</strong> 人</span>
+                        <span class="item">📊 管理配比：<strong id="mgmtRatio">1:20</strong></span>
+                        <span class="item">⏱️ 班次：<strong id="shiftDisplay">单班 (8h)</strong></span>
+                    </div>
                 </div>
 
                 <div class="dock-info" id="dockInfo">
-                    <span class="item">🚛 道口规划：<strong id="dockTotal">0</strong> 个</span>
-                    <span class="item">📥 进货道口：<strong id="dockInbound">0</strong> 个 <span class="tag">前墙</span></span>
-                    <span class="item">📤 出货道口：<strong id="dockOutbound">0</strong> 个 <span class="tag">前墙</span></span>
-                    <span class="item">📐 道口宽度：<strong id="dockWidthDisplay">3.5</strong> m</span>
-                    <span class="item">⏱️ 每道口日处理：<strong id="dockDailyCapacity">0</strong> m³/天</span>
+                    <span class="item">🚛 道口：<strong id="dockTotal">0</strong> 个</span>
+                    <span class="item">📥 进货：<strong id="dockInbound">0</strong> 个</span>
+                    <span class="item">📤 出货：<strong id="dockOutbound">0</strong> 个</span>
+                    <span class="item">📐 宽度：<strong id="dockWidthDisplay">3.5</strong> m</span>
+                    <span class="item">⏱️ 日处理：<strong id="dockDailyCapacity">0</strong> m³/天</span>
+                    <span class="item">⏱️ 可用时间：<strong id="dockAvailableTimeDisplay">8</strong> 小时/天</span>
                 </div>
 
                 <div class="area-detail" id="areaDetail">
                     <div style="grid-column:1/-1;font-size:8px;color:#7a8eaa;font-weight:600;padding-bottom:1px;">📋 各功能区面积明细</div>
-                    <div class="area-item" style="border-bottom:none;color:#8aa0b8;font-size:9px;grid-column:1/-1;text-align:center;">请点击「计算 & 生成3D」查看</div>
+                    <div class="area-item" style="border-bottom:none;color:#8aa0b8;font-size:9px;grid-column:1/-1;text-align:center;">请点击「计算 &amp; 生成3D」查看</div>
                 </div>
 
                 <div class="color-legend" id="colorLegend"></div>
@@ -834,11 +1007,11 @@
                         <button id="resetView">复位</button>
                     </div>
                     <div class="three-overlay">
-                        🖱️ 拖拽旋转 · 滚轮缩放 · <span class="highlight">精简参数 · 固定系数</span>
+                        🖱️ 拖拽旋转 · 滚轮缩放 · <span class="highlight">设备时长随班次</span>
                     </div>
                 </div>
 
-                <div class="footer">📌 翻包系数(0.35) · 道口利用系数(0.85) · 进货占比(55%) 均为系统固定值</div>
+                <div class="footer">📌 效率受面积&动线自动调整 · 设备时长=单班时长×班次数 · 数据员基准1000 m³/人 · 经理固定1人</div>
             </div>
         </div>
     </div>
@@ -882,11 +1055,50 @@
         const FIXED_PARAMS = {
             repackFactor: 0.35,
             dockUtilFactor: 0.85,
-            inboundDockRatio: 0.55
+            inboundDockRatio: 0.55,
+            equipBackupFactor: 1.2,
+            dataClerkBase: 1000
         };
 
         // ============================================================
-        //  计算引擎 (与之前一致)
+        //  效率调整函数（基于面积和动线）
+        // ============================================================
+        function adjustEfficiency(baseEff, totalArea, aisleRatio, type) {
+            const areaFactor = 1 / (1 + (totalArea / 1000) * 0.025);
+            const aisleFactor = 1 / (1 + (aisleRatio / 100) * 0.6);
+
+            let weight = 1.0;
+            if (type === 'forklift') {
+                weight = areaFactor * 0.6 + aisleFactor * 0.4;
+            } else if (type === 'receiving') {
+                weight = areaFactor * 0.3 + aisleFactor * 0.7;
+            } else if (type === 'shipping') {
+                weight = areaFactor * 0.3 + aisleFactor * 0.7;
+            } else if (type === 'repack') {
+                weight = areaFactor * 0.5 + aisleFactor * 0.5;
+            } else {
+                weight = areaFactor * 0.5 + aisleFactor * 0.5;
+            }
+
+            const factor = Math.max(0.5, Math.min(1.0, weight));
+            return Math.round(baseEff * factor * 10) / 10;
+        }
+
+        // ============================================================
+        //  更新设备工作时长显示
+        // ============================================================
+        function updateEquipHoursDisplay() {
+            const shiftMode = document.getElementById('shiftMode').value;
+            const shiftHours = parseFloat(document.getElementById('shiftHours').value) || 8;
+            const shiftCount = shiftMode === 'double' ? 2 : 1;
+            const totalHours = shiftHours * shiftCount;
+            document.getElementById('equipWorkHoursDisplay').textContent = totalHours;
+            document.getElementById('totalHoursDisplay').textContent = totalHours;
+            document.getElementById('dockAvailableTimeDisplay').textContent = totalHours;
+        }
+
+        // ============================================================
+        //  计算引擎
         // ============================================================
 
         function calculateWarehouse(params) {
@@ -897,15 +1109,30 @@
                 fullTurnover, emptyTurnover,
                 fullStackHeight, emptyStackHeight,
                 emptyVolumeFactor, aisleRatio,
-                dockOperTime, workHours, dockWidth,
+                dockOperTime, dockWidth,
                 avgLoadPerTruck,
+                forkliftEfficiency, palletJackEfficiency,
+                forkliftUtil, palletJackUtil,
+                receivingEfficiency, shippingEfficiency,
+                repackEfficiency, staffUtilRate,
+                shiftMode, shiftHours, mgmtRatio,
                 enabledFunctions
             } = params;
 
             const repackFactor = FIXED_PARAMS.repackFactor;
             const dockUtilFactor = FIXED_PARAMS.dockUtilFactor;
             const inboundDockRatio = FIXED_PARAMS.inboundDockRatio;
+            const equipBackupFactor = FIXED_PARAMS.equipBackupFactor;
+            const dataClerkBase = FIXED_PARAMS.dataClerkBase;
 
+            const isDoubleShift = shiftMode === 'double';
+            const shiftCount = isDoubleShift ? 2 : 1;
+
+            // ★★★ 设备工作时长 = 单班时长 × 班次数 ★★★
+            const equipWorkHours = shiftHours * shiftCount;
+            const dockAvailableHours = shiftHours * shiftCount;
+
+            // ===== 面积计算 =====
             const fullAvgFlow = (fullInbound + fullOutbound) / 2;
             const fullStorageVolume = fullAvgFlow * fullTurnover;
             const fullStorageArea = fullStorageVolume / fullStackHeight;
@@ -959,16 +1186,92 @@
             const aisleArea = Math.round(totalFuncArea * (aisleRatio / 100));
             const totalArea = totalFuncArea + aisleArea;
 
+            // ===== 总流量 =====
             const totalFlow = fullInbound + fullOutbound + emptyInbound + emptyOutbound;
-            const totalTrucks = Math.ceil(totalFlow / avgLoadPerTruck);
+
+            // ===== 道口计算 =====
             const operTimeHours = dockOperTime / 60;
-            const trucksPerDockPerDay = (workHours / operTimeHours) * dockUtilFactor;
+            const trucksPerDockPerDay = (dockAvailableHours / operTimeHours) * dockUtilFactor;
             const capacityPerDock = trucksPerDockPerDay * avgLoadPerTruck;
             const rawDocks = Math.ceil(totalFlow / capacityPerDock);
             const totalDocks = Math.max(2, rawDocks);
             const inboundDocks = Math.max(1, Math.round(totalDocks * inboundDockRatio));
             const outboundDocks = Math.max(1, totalDocks - inboundDocks);
 
+            // ===== 效率调整 =====
+            const adjForkliftEff = adjustEfficiency(forkliftEfficiency, totalArea, aisleRatio, 'forklift');
+            const adjReceivingEff = adjustEfficiency(receivingEfficiency, totalArea, aisleRatio, 'receiving');
+            const adjShippingEff = adjustEfficiency(shippingEfficiency, totalArea, aisleRatio, 'shipping');
+            const adjRepackEff = adjustEfficiency(repackEfficiency, totalArea, aisleRatio, 'repack');
+
+            // ===== 设备需求 =====
+            const forkliftWorkload = fullInbound + fullOutbound + repackVolume * 0.6;
+            const forkliftDailyCapacity = adjForkliftEff * equipWorkHours * (forkliftUtil / 100);
+            let forkliftCount = Math.ceil(forkliftWorkload / forkliftDailyCapacity);
+            forkliftCount = Math.max(1, forkliftCount);
+            forkliftCount = Math.ceil(forkliftCount * equipBackupFactor);
+
+            const palletJackWorkload = emptyInbound + emptyOutbound + repackVolume * 0.4;
+            const palletJackDailyCapacity = palletJackEfficiency * equipWorkHours * (palletJackUtil / 100);
+            let palletJackCount = Math.ceil(palletJackWorkload / palletJackDailyCapacity);
+            palletJackCount = Math.max(1, palletJackCount);
+            palletJackCount = Math.ceil(palletJackCount * equipBackupFactor);
+
+            const totalHandlingVolume = fullInbound + fullOutbound + emptyInbound + emptyOutbound + repackVolume;
+            const dailyWorkload = Math.round(totalHandlingVolume);
+
+            // ============================================================
+            //  人员需求计算
+            // ============================================================
+            const singleShiftEffectiveHours = shiftHours * (staffUtilRate / 100);
+
+            // 铲车工
+            const singleForkliftOperator = Math.max(1, forkliftCount);
+            const forkliftOperatorCount = singleForkliftOperator * shiftCount;
+
+            // 收货员
+            let singleReceiver = 0;
+            if (fullInbound > 0 && adjReceivingEff > 0) {
+                singleReceiver = Math.ceil(fullInbound / (adjReceivingEff * singleShiftEffectiveHours));
+            }
+            singleReceiver = Math.max(1, singleReceiver);
+            const receiverCount = singleReceiver * shiftCount;
+
+            // 发货员
+            let singleShipper = 0;
+            if (fullOutbound > 0 && adjShippingEff > 0) {
+                singleShipper = Math.ceil(fullOutbound / (adjShippingEff * singleShiftEffectiveHours));
+            }
+            singleShipper = Math.max(1, singleShipper);
+            const shipperCount = singleShipper * shiftCount;
+
+            // 翻包员
+            let singleRepackStaff = 0;
+            if (repackVolume > 0 && adjRepackEff > 0) {
+                singleRepackStaff = Math.ceil(repackVolume / (adjRepackEff * singleShiftEffectiveHours));
+            }
+            singleRepackStaff = Math.max(1, singleRepackStaff);
+            const repackStaffCount = singleRepackStaff * shiftCount;
+
+            // 数据员
+            let singleDataClerk = Math.max(1, Math.ceil(totalFlow / dataClerkBase));
+            singleDataClerk = Math.min(5, singleDataClerk);
+            const dataClerkCount = singleDataClerk * shiftCount;
+
+            // 操作人员总数
+            const opsTotal = forkliftOperatorCount + receiverCount + shipperCount + repackStaffCount + dataClerkCount;
+
+            // ★★★ 管理人员 ★★★
+            const singleSupervisor = Math.max(1, Math.ceil(opsTotal / mgmtRatio));
+            let supervisorCount = singleSupervisor;
+            if (isDoubleShift) {
+                supervisorCount = singleSupervisor * 2;
+            }
+            const managerCount = 1;
+
+            const totalStaff = opsTotal + supervisorCount + managerCount;
+
+            // ===== 3D布局 =====
             const aspectRatio = 1.3;
             const baseWidth = Math.sqrt(totalArea / aspectRatio);
             const baseLength = baseWidth * aspectRatio;
@@ -1019,11 +1322,59 @@
                 dockWidth,
                 totalFlow,
                 capacityPerDock: Math.round(capacityPerDock),
-                totalTrucks: totalTrucks,
+                totalTrucks: Math.ceil(totalFlow / avgLoadPerTruck),
                 operTimeHours: operTimeHours,
-                workHours: workHours,
+                dockAvailableHours: dockAvailableHours,
+                equipWorkHours: equipWorkHours,
+                shiftMode: shiftMode,
+                isDoubleShift: isDoubleShift,
+                shiftHours: shiftHours,
+                shiftCount: shiftCount,
                 fixedParams: FIXED_PARAMS,
-                // 保存原始参数用于恢复
+                adjustedEfficiency: {
+                    forklift: adjForkliftEff,
+                    receiving: adjReceivingEff,
+                    shipping: adjShippingEff,
+                    repack: adjRepackEff
+                },
+                equipment: {
+                    forkliftCount: forkliftCount,
+                    palletJackCount: palletJackCount,
+                    totalCount: forkliftCount + palletJackCount,
+                    dailyWorkload: dailyWorkload,
+                    forkliftWorkload: Math.round(forkliftWorkload),
+                    palletJackWorkload: Math.round(palletJackWorkload),
+                    forkliftEfficiency: forkliftEfficiency,
+                    palletJackEfficiency: palletJackEfficiency,
+                    forkliftUtil: forkliftUtil,
+                    palletJackUtil: palletJackUtil,
+                    equipWorkHours: equipWorkHours,
+                    backupFactor: equipBackupFactor
+                },
+                staff: {
+                    forkliftOperatorCount: forkliftOperatorCount,
+                    receiverCount: receiverCount,
+                    shipperCount: shipperCount,
+                    repackStaffCount: repackStaffCount,
+                    dataClerkCount: dataClerkCount,
+                    supervisorCount: supervisorCount,
+                    managerCount: managerCount,
+                    totalOps: opsTotal,
+                    totalMgmt: supervisorCount + managerCount,
+                    totalStaff: totalStaff,
+                    singleShiftEffectiveHours: Math.round(singleShiftEffectiveHours * 10) / 10,
+                    mgmtRatio: mgmtRatio,
+                    shiftHours: shiftHours,
+                    shiftCount: shiftCount,
+                    isDoubleShift: isDoubleShift,
+                    staffUtilRate: staffUtilRate,
+                    singleReceiver: singleReceiver,
+                    singleShipper: singleShipper,
+                    singleRepackStaff: singleRepackStaff,
+                    singleForkliftOperator: singleForkliftOperator,
+                    singleDataClerk: singleDataClerk,
+                    dataClerkBase: dataClerkBase
+                },
                 rawParams: params
             };
         }
@@ -1057,26 +1408,18 @@
                 let x = col * cellW + (cellW - w) / 2 - width / 2;
                 let z = row * cellH + (cellH - h) / 2 - length / 2;
 
-                if (x - w / 2 < -maxX) {
-                    const overflow = (-maxX) - (x - w / 2);
+                if (x - w / 2 < -maxX) { const overflow = (-maxX) - (x - w / 2);
                     w = w - overflow - 0.05;
-                    x = -maxX + w / 2 + 0.05;
-                }
-                if (x + w / 2 > maxX) {
-                    const overflow = (x + w / 2) - maxX;
+                    x = -maxX + w / 2 + 0.05; }
+                if (x + w / 2 > maxX) { const overflow = (x + w / 2) - maxX;
                     w = w - overflow - 0.05;
-                    x = maxX - w / 2 - 0.05;
-                }
-                if (z - h / 2 < -maxZ) {
-                    const overflow = (-maxZ) - (z - h / 2);
+                    x = maxX - w / 2 - 0.05; }
+                if (z - h / 2 < -maxZ) { const overflow = (-maxZ) - (z - h / 2);
                     h = h - overflow - 0.05;
-                    z = -maxZ + h / 2 + 0.05;
-                }
-                if (z + h / 2 > maxZ) {
-                    const overflow = (z + h / 2) - maxZ;
+                    z = -maxZ + h / 2 + 0.05; }
+                if (z + h / 2 > maxZ) { const overflow = (z + h / 2) - maxZ;
                     h = h - overflow - 0.05;
-                    z = maxZ - h / 2 - 0.05;
-                }
+                    z = maxZ - h / 2 - 0.05; }
 
                 w = Math.max(0.5, w);
                 h = Math.max(0.5, h);
@@ -1229,6 +1572,8 @@
             document.querySelectorAll('#funcGrid .func-item input[type="checkbox"]').forEach(cb => {
                 enabled[cb.dataset.func] = cb.checked;
             });
+            // ★★★ 修正：默认值与下拉框默认值一致 ★★★
+            const mgmtRatio = parseInt(document.getElementById('mgmtRatioSelect').value) || 20;
             return {
                 fullInbound: parseFloat(document.getElementById('fullInbound').value) || 0,
                 fullOutbound: parseFloat(document.getElementById('fullOutbound').value) || 0,
@@ -1242,11 +1587,65 @@
                 emptyVolumeFactor: parseFloat(document.getElementById('emptyVolumeFactor').value) || 0.4,
                 aisleRatio: parseFloat(document.getElementById('aisleRatio').value) || 25,
                 dockOperTime: parseFloat(document.getElementById('dockOperTime').value) || 30,
-                workHours: parseFloat(document.getElementById('workHours').value) || 16,
                 dockWidth: parseFloat(document.getElementById('dockWidth').value) || 3.5,
                 avgLoadPerTruck: parseFloat(document.getElementById('avgLoadPerTruck').value) || 25,
+                forkliftEfficiency: parseFloat(document.getElementById('forkliftEfficiency').value) || 30,
+                palletJackEfficiency: parseFloat(document.getElementById('palletJackEfficiency').value) || 15,
+                forkliftUtil: parseFloat(document.getElementById('forkliftUtil').value) || 70,
+                palletJackUtil: parseFloat(document.getElementById('palletJackUtil').value) || 65,
+                receivingEfficiency: parseFloat(document.getElementById('receivingEfficiency').value) || 18,
+                shippingEfficiency: parseFloat(document.getElementById('shippingEfficiency').value) || 20,
+                repackEfficiency: parseFloat(document.getElementById('repackEfficiency').value) || 12,
+                staffUtilRate: parseFloat(document.getElementById('staffUtilRate').value) || 85,
+                shiftMode: document.getElementById('shiftMode').value,
+                shiftHours: parseFloat(document.getElementById('shiftHours').value) || 8,
+                mgmtRatio: mgmtRatio,
                 enabledFunctions: enabled
             };
+        }
+
+        function updateEquipmentDisplay(result) {
+            const eq = result.equipment || {};
+            document.getElementById('forkliftCount').innerHTML = `${eq.forkliftCount || 0} <span class="eq-suffix">台</span>`;
+            document.getElementById('palletJackCount').innerHTML = `${eq.palletJackCount || 0} <span class="eq-suffix">台</span>`;
+            document.getElementById('totalEquipCount').innerHTML = `${eq.totalCount || 0} <span class="eq-suffix">台</span>`;
+            document.getElementById('dailyWorkload').innerHTML = `${eq.dailyWorkload || 0} <span class="eq-suffix">m³</span>`;
+            document.getElementById('dockCountDisplay').innerHTML = `${result.totalDocks || 0} <span class="eq-suffix">个</span>`;
+
+            document.getElementById('totalEquipment').textContent = eq.totalCount || 0;
+            document.getElementById('equipDetail').textContent = `${eq.forkliftCount||0}铲车+${eq.palletJackCount||0}地牛`;
+
+            const adj = result.adjustedEfficiency || {};
+            document.getElementById('adjustedForkliftEff').textContent = adj.forklift || 0;
+            document.getElementById('adjustedReceivingEff').textContent = adj.receiving || 0;
+            document.getElementById('adjustedShippingEff').textContent = adj.shipping || 0;
+            document.getElementById('adjustedRepackEff').textContent = adj.repack || 0;
+        }
+
+        function updateStaffDisplay(result) {
+            const staff = result.staff || {};
+            const isDouble = staff.isDoubleShift || false;
+
+            document.getElementById('forkliftOperatorCount').innerHTML = `${staff.forkliftOperatorCount||0} <span class="staff-suffix">人</span>`;
+            document.getElementById('receiverCount').innerHTML = `${staff.receiverCount||0} <span class="staff-suffix">人</span>`;
+            document.getElementById('shipperCount').innerHTML = `${staff.shipperCount||0} <span class="staff-suffix">人</span>`;
+            document.getElementById('repackStaffCount').innerHTML = `${staff.repackStaffCount||0} <span class="staff-suffix">人</span>`;
+            document.getElementById('dataClerkCount').innerHTML = `${staff.dataClerkCount||0} <span class="staff-suffix">人</span>`;
+            document.getElementById('supervisorCount').innerHTML = `${staff.supervisorCount||0} <span class="staff-suffix">人</span>`;
+            document.getElementById('managerCount').innerHTML = `${staff.managerCount||0} <span class="staff-suffix">人</span>`;
+            document.getElementById('totalStaffCount').innerHTML = `${staff.totalStaff||0} <span class="staff-suffix">人</span>`;
+
+            document.getElementById('opsStaffCount').textContent = staff.totalOps || 0;
+            document.getElementById('mgmtStaffCount').textContent = staff.totalMgmt || 0;
+            document.getElementById('mgmtRatio').textContent = `1:${staff.mgmtRatio||20}`;
+
+            const shiftLabel = isDouble ? '🔁 双班模式' : '🔄 单班模式';
+            const shiftDisplay = isDouble ? `双班 (${staff.shiftHours||8}h × 2)` : `单班 (${staff.shiftHours||8}h)`;
+            document.getElementById('shiftLabel').textContent = shiftLabel;
+            document.getElementById('shiftDisplay').textContent = shiftDisplay;
+
+            document.getElementById('totalStaff').textContent = staff.totalStaff || 0;
+            document.getElementById('staffDetail').textContent = `${staff.totalOps||0}操作+${staff.totalMgmt||0}管理`;
         }
 
         function updateResults(result) {
@@ -1275,6 +1674,10 @@
             document.getElementById('dockOutbound').textContent = result.outboundDocks;
             document.getElementById('dockWidthDisplay').textContent = result.dockWidth.toFixed(1);
             document.getElementById('dockDailyCapacity').textContent = result.capacityPerDock;
+            document.getElementById('dockAvailableTimeDisplay').textContent = result.dockAvailableHours || 0;
+
+            updateEquipmentDisplay(result);
+            updateStaffDisplay(result);
 
             const detailContainer = document.getElementById('areaDetail');
             let detailHtml =
@@ -1306,15 +1709,16 @@
                 `<span class="item"><span class="swatch" style="background:#ff8800;"></span>空箱</span>`;
             legendContainer.innerHTML = legendHtml;
 
-            const fixedInfo = result.fixedParams || FIXED_PARAMS;
+            const staff = result.staff || {};
+            const shiftText = result.isDoubleShift ? '双班' : '单班';
             document.getElementById('statusText').textContent =
-                `✅ 完成 · ${result.enabledCount}功能区 · ${result.totalDocks}道口 · ${total} m² (固定系数: 翻包${fixedInfo.repackFactor} · 利用${fixedInfo.dockUtilFactor} · 进货占比${Math.round(fixedInfo.inboundDockRatio*100)}%)`;
+                `✅ ${shiftText} · ${result.enabledCount}功能区 · ${result.totalDocks}道口 · ${result.equipment.totalCount}台设备 · ${staff.totalStaff}人 · ${total} m²`;
 
             generate3D(result);
         }
 
         // ============================================================
-        //  3D 渲染 (与之前一致)
+        //  3D 渲染
         // ============================================================
 
         let scene, camera, renderer, controls;
@@ -1456,10 +1860,7 @@
 
         function initThree() {
             threeContainer = document.getElementById('threeContainer');
-            if (!threeContainer) {
-                console.warn('3D容器未找到');
-                return;
-            }
+            if (!threeContainer) return;
 
             const rect = threeContainer.getBoundingClientRect();
             const width = rect.width || 800;
@@ -1467,9 +1868,7 @@
 
             if (width < 10 || height < 10) {
                 initAttempts++;
-                if (initAttempts < 5) {
-                    setTimeout(initThree, 300);
-                }
+                if (initAttempts < 5) setTimeout(initThree, 300);
                 return;
             }
 
@@ -1480,11 +1879,7 @@
                 camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 500);
                 camera.position.set(40, 35, 50);
 
-                renderer = new THREE.WebGLRenderer({
-                    antialias: true,
-                    alpha: false,
-                    polygonOffset: true
-                });
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, polygonOffset: true });
                 renderer.setSize(width, height);
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 renderer.shadowMap.enabled = true;
@@ -1492,8 +1887,6 @@
                 renderer.toneMapping = THREE.ACESFilmicToneMapping;
                 renderer.toneMappingExposure = 1.2;
                 threeContainer.appendChild(renderer.domElement);
-
-                renderer.sortObjects = true;
 
                 controls = new THREE.OrbitControls(camera, renderer.domElement);
                 controls.enableDamping = true;
@@ -1522,10 +1915,6 @@
                 const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
                 fillLight.position.set(-20, 20, -30);
                 scene.add(fillLight);
-
-                const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
-                rimLight.position.set(0, -10, 40);
-                scene.add(rimLight);
 
                 const gridHelper = new THREE.GridHelper(80, 20, 0x446688, 0x334466);
                 gridHelper.position.y = -0.01;
@@ -1573,9 +1962,7 @@
             } catch (e) {
                 console.error('Three.js 初始化失败:', e);
                 initAttempts++;
-                if (initAttempts < 5) {
-                    setTimeout(initThree, 500);
-                }
+                if (initAttempts < 5) setTimeout(initThree, 500);
             }
         }
 
@@ -1584,13 +1971,9 @@
             const rect = threeContainer.getBoundingClientRect();
             const w = rect.width || 800;
             const h = rect.height || 400;
-            if (camera) {
-                camera.aspect = w / h;
-                camera.updateProjectionMatrix();
-            }
-            if (renderer) {
-                renderer.setSize(w, h);
-            }
+            if (camera) { camera.aspect = w / h;
+                camera.updateProjectionMatrix(); }
+            if (renderer) renderer.setSize(w, h);
         }
 
         function animate() {
@@ -1601,13 +1984,8 @@
         }
 
         function generate3D(result) {
-            if (!is3DInitialized) {
-                setTimeout(() => generate3D(result), 300);
-                return;
-            }
-            requestAnimationFrame(() => {
-                _render3D(result);
-            });
+            if (!is3DInitialized) { setTimeout(() => generate3D(result), 300); return; }
+            requestAnimationFrame(() => _render3D(result));
         }
 
         function _render3D(result) {
@@ -1617,8 +1995,7 @@
             scene.children.forEach(child => {
                 if (child.type === 'AmbientLight' || child.type === 'DirectionalLight') return;
                 if (child.type === 'GridHelper') return;
-                if (child.type === 'Mesh' && child.material && child.material.type === 'ShadowMaterial')
-                    return;
+                if (child.type === 'Mesh' && child.material && child.material.type === 'ShadowMaterial') return;
                 toRemove.push(child);
             });
 
@@ -1636,8 +2013,8 @@
             const H = 6;
 
             const WALL_THICK = 0.3;
-            const wallMat = createWallMaterial(0x3a4a6a, 0.40, false);
-            const wallMatLight = createWallMaterial(0x5a7a9a, 0.30, false);
+            const wallMat = createWallMaterial(0x3a4a6a, 0.40);
+            const wallMatLight = createWallMaterial(0x5a7a9a, 0.30);
             const wallHeight = H;
             const hw = W / 2;
             const hl = L / 2;
@@ -1661,10 +2038,8 @@
 
                 if (leftEdge - currentX > 0.1) {
                     const segWidth = leftEdge - currentX;
-                    const seg = new THREE.Mesh(
-                        new THREE.BoxGeometry(segWidth, wallHeight, WALL_THICK),
-                        wallMatLight
-                    );
+                    const seg = new THREE.Mesh(new THREE.BoxGeometry(segWidth, wallHeight, WALL_THICK),
+                    wallMatLight);
                     seg.position.set(currentX + segWidth / 2, wallHeight / 2, hl);
                     seg.castShadow = true;
                     seg.receiveShadow = true;
@@ -1679,10 +2054,7 @@
                     side: THREE.DoubleSide,
                     depthWrite: false
                 });
-                const doorHole = new THREE.Mesh(
-                    new THREE.PlaneGeometry(dock.width - 0.2, doorHeight),
-                    doorMat
-                );
+                const doorHole = new THREE.Mesh(new THREE.PlaneGeometry(dock.width - 0.2, doorHeight), doorMat);
                 doorHole.position.set(doorX, doorHeight / 2, hl + 0.01);
                 doorHole.renderOrder = 2;
                 scene.add(doorHole);
@@ -1693,39 +2065,25 @@
                     metalness: 0.3,
                     depthWrite: false
                 });
-                const frameL = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.08, doorHeight, 0.15),
-                    frameMat
-                );
+                const frameL = new THREE.Mesh(new THREE.BoxGeometry(0.08, doorHeight, 0.15), frameMat);
                 frameL.position.set(doorX - dock.width / 2 + 0.1, doorHeight / 2, hl + 0.05);
                 frameL.renderOrder = 2;
                 scene.add(frameL);
 
-                const frameR = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.08, doorHeight, 0.15),
-                    frameMat
-                );
+                const frameR = new THREE.Mesh(new THREE.BoxGeometry(0.08, doorHeight, 0.15), frameMat);
                 frameR.position.set(doorX + dock.width / 2 - 0.1, doorHeight / 2, hl + 0.05);
                 frameR.renderOrder = 2;
                 scene.add(frameR);
 
-                const frameTop = new THREE.Mesh(
-                    new THREE.BoxGeometry(dock.width - 0.2, 0.08, 0.15),
-                    frameMat
-                );
+                const frameTop = new THREE.Mesh(new THREE.BoxGeometry(dock.width - 0.2, 0.08, 0.15), frameMat);
                 frameTop.position.set(doorX, doorHeight, hl + 0.05);
                 frameTop.renderOrder = 2;
                 scene.add(frameTop);
 
                 const labelColor = dock.isInbound ? 0xff6644 : 0x4488ff;
-                const labelDot = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.25, 8, 8),
-                    new THREE.MeshStandardMaterial({
-                        color: labelColor,
-                        emissive: labelColor,
-                        emissiveIntensity: 0.4,
-                        depthWrite: false
-                    })
+                const labelDot = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8),
+                    new THREE.MeshStandardMaterial({ color: labelColor, emissive: labelColor,
+                        emissiveIntensity: 0.4, depthWrite: false })
                 );
                 labelDot.position.set(doorX, doorHeight + 0.8, hl + 0.3);
                 labelDot.renderOrder = 3;
@@ -1742,33 +2100,12 @@
                 forklift.rotation.y = dock.isInbound ? -0.3 : 0.3;
                 scene.add(forklift);
 
-                const markMat = new THREE.MeshStandardMaterial({
-                    color: dock.isInbound ? 0xff6644 : 0x4488ff,
-                    transparent: true,
-                    opacity: 0.3,
-                    depthWrite: false,
-                    polygonOffset: true,
-                    polygonOffsetFactor: -3,
-                    polygonOffsetUnits: -3
-                });
-                const mark = new THREE.Mesh(
-                    new THREE.PlaneGeometry(dock.width * 0.8, 1.0),
-                    markMat
-                );
-                mark.rotation.x = -Math.PI / 2;
-                mark.position.set(doorX, 0.02, hl + 1.0);
-                mark.renderOrder = 0;
-                scene.add(mark);
-
                 currentX = rightEdge;
             });
 
             if (hw - currentX > 0.1) {
                 const segWidth = hw - currentX;
-                const seg = new THREE.Mesh(
-                    new THREE.BoxGeometry(segWidth, wallHeight, WALL_THICK),
-                    wallMatLight
-                );
+                const seg = new THREE.Mesh(new THREE.BoxGeometry(segWidth, wallHeight, WALL_THICK), wallMatLight);
                 seg.position.set(currentX + segWidth / 2, wallHeight / 2, hl);
                 seg.castShadow = true;
                 seg.receiveShadow = true;
@@ -1830,50 +2167,6 @@
                 scene.add(pillar);
             });
 
-            const windowMat = new THREE.MeshStandardMaterial({
-                color: 0x88ccff,
-                emissive: 0x4488aa,
-                emissiveIntensity: 0.1,
-                transparent: true,
-                opacity: 0.4,
-                depthWrite: false
-            });
-            const windowPositions = [];
-            const winCandidates = [
-                [-hw + 2, 2.5, -hl + 3],
-                [-hw + 2, 2.5, -hl + 7],
-                [-hw + 2, 2.5, hl - 3],
-                [-hw + 2, 2.5, hl - 7],
-                [hw - 2, 2.5, -hl + 3],
-                [hw - 2, 2.5, -hl + 7],
-                [hw - 2, 2.5, hl - 3],
-                [hw - 2, 2.5, hl - 7],
-                [0, 2.5, -hl + 5],
-                [0, 2.5, -hl + 9]
-            ];
-            winCandidates.forEach(([wx, wy, wz]) => {
-                let isNearDock = false;
-                for (let d of docks) {
-                    if (Math.abs(wx - d.x) < 1.5 && Math.abs(wz - hl) < 1.0) {
-                        isNearDock = true;
-                        break;
-                    }
-                }
-                if (!isNearDock) {
-                    windowPositions.push([wx, wy, wz]);
-                }
-            });
-
-            windowPositions.forEach(([wx, wy, wz]) => {
-                const win = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.8), windowMat);
-                win.position.set(wx, wy, wz);
-                if (Math.abs(wx) > Math.abs(wz) + 1) {
-                    win.rotation.y = Math.PI / 2 * (wx > 0 ? 1 : -1);
-                }
-                win.renderOrder = 2;
-                scene.add(win);
-            });
-
             layout.forEach((item) => {
                 const colorHex = parseInt(item.color.replace('#', ''), 16);
                 const xPos = item.x;
@@ -1905,7 +2198,6 @@
             paths.forEach((path) => {
                 const pts = path.points;
                 if (pts.length < 2) return;
-
                 const color = path.color || 0xff4444;
                 const isDashed = path.dashed || false;
 
@@ -1968,10 +2260,7 @@
                 polygonOffsetFactor: -3,
                 polygonOffsetUnits: -3
             });
-            const aisleLine = new THREE.Mesh(
-                new THREE.PlaneGeometry(W * 0.85, 0.05),
-                floorLineMat
-            );
+            const aisleLine = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.85, 0.05), floorLineMat);
             aisleLine.rotation.x = -Math.PI / 2;
             aisleLine.position.set(0, 0.02, 0);
             aisleLine.renderOrder = 0;
@@ -1985,40 +2274,36 @@
                 controls.update();
             }
 
+            const staff = result.staff || {};
+            const shiftText = result.isDoubleShift ? '双班' : '单班';
             document.getElementById('statusText').textContent =
-                `✅ 3D渲染完成 · ${layout.length}功能区 · ${docks.length}道口 (精简参数版)`;
+                `✅ 3D完成 · ${shiftText} · ${layout.length}功能区 · ${docks.length}道口 · ${result.equipment.totalCount}台设备 · ${staff.totalStaff}人`;
         }
 
         // ============================================================
-        //  【核心】保存/加载/删除 方案 (localStorage)
+        //  保存/加载
         // ============================================================
 
         function getSavedList() {
-            try {
-                return JSON.parse(localStorage.getItem('warehouse_save_list_v2') || '[]');
-            } catch (e) { return []; }
+            try { return JSON.parse(localStorage.getItem('warehouse_save_list_v2') || '[]'); } catch (e) { return []; }
         }
 
-        function setSavedList(list) {
-            localStorage.setItem('warehouse_save_list_v2', JSON.stringify(list));
-        }
+        function setSavedList(list) { localStorage.setItem('warehouse_save_list_v2', JSON.stringify(list)); }
 
         function refreshLoadSelect() {
             var list = getSavedList();
             list.sort(function(a, b) { return b.timestamp - a.timestamp; });
-
             var select = loadSelect;
             select.innerHTML = '<option value="">-- 无记录 --</option>';
-            if (list.length === 0) {
-                delRecordBtn.classList.remove('show');
-                return;
-            }
+            if (list.length === 0) { delRecordBtn.classList.remove('show'); return; }
             list.forEach(function(item) {
                 var opt = document.createElement('option');
                 opt.value = item.id;
                 var info = item.area !== undefined ? ' · ' + item.area + 'm²' : '';
-                var dockInfo = item.docks !== undefined ? ' · ' + item.docks + '道口' : '';
-                opt.textContent = item.name + ' (' + item.date + ')' + info + dockInfo;
+                var equipInfo = item.equipment !== undefined ? ' · ' + item.equipment + '台设备' : '';
+                var staffInfo = item.staff !== undefined ? ' · ' + item.staff + '人' : '';
+                var shiftInfo = item.shift !== undefined ? ' · ' + (item.shift === 'double' ? '双班' : '单班') : '';
+                opt.textContent = item.name + ' (' + item.date + ')' + info + equipInfo + staffInfo + shiftInfo;
                 select.appendChild(opt);
             });
             select.value = list[0].id;
@@ -2034,20 +2319,14 @@
         loadSelect.addEventListener('change', updateDeleteBtn);
 
         function savePlan() {
-            // 先获取当前参数和计算结果
             var params = getFullParams();
             var hasData = false;
             for (var key in params.enabledFunctions) {
                 if (params.enabledFunctions[key]) { hasData = true; break; }
             }
-            if (!hasData) {
-                alert('请至少选择一个功能区！');
-                return;
-            }
+            if (!hasData) { alert('请至少选择一个功能区！'); return; }
 
-            // 执行计算获取结果
             var result = calculateWarehouse(params);
-
             var name = document.getElementById('saveNameInput').value.trim();
             if (!name) {
                 name = '方案_' + new Date().toLocaleString().replace(/[\/:]/g, '-');
@@ -2065,7 +2344,10 @@
                 params: params,
                 result: result,
                 area: result.totalArea,
-                docks: result.totalDocks
+                docks: result.totalDocks,
+                equipment: result.equipment.totalCount,
+                staff: result.staff.totalStaff,
+                shift: params.shiftMode
             };
 
             list.push({
@@ -2074,33 +2356,30 @@
                 date: new Date().toLocaleString(),
                 timestamp: Date.now(),
                 area: result.totalArea,
-                docks: result.totalDocks
+                docks: result.totalDocks,
+                equipment: result.equipment.totalCount,
+                staff: result.staff.totalStaff,
+                shift: params.shiftMode
             });
             setSavedList(list);
             localStorage.setItem('warehouse_data_' + id, JSON.stringify(data));
             refreshLoadSelect();
-            showToast('✅ 方案 "' + name + '" 已保存 (' + result.totalArea + 'm², ' + result.totalDocks + '道口)');
+            showToast('✅ 方案 "' + name + '" 已保存 (' + result.totalArea + 'm², ' + result.totalDocks + '道口, ' + result
+                .equipment.totalCount + '台设备, ' + result.staff.totalStaff + '人)');
         }
 
         function loadPlan() {
             var select = loadSelect;
             var id = select.value;
-            if (!id) {
-                showToast('请先选择一个记录', true);
-                return;
-            }
+            if (!id) { showToast('请先选择一个记录', true); return; }
             var raw = localStorage.getItem('warehouse_data_' + id);
-            if (!raw) {
-                showToast('记录不存在或已损坏', true);
-                refreshLoadSelect();
-                return;
-            }
+            if (!raw) { showToast('记录不存在', true);
+                refreshLoadSelect(); return; }
             try {
                 var data = JSON.parse(raw);
                 var params = data.params;
                 var result = data.result;
 
-                // 恢复参数到UI
                 document.getElementById('fullInbound').value = params.fullInbound || 0;
                 document.getElementById('fullOutbound').value = params.fullOutbound || 0;
                 document.getElementById('emptyInbound').value = params.emptyInbound || 0;
@@ -2113,11 +2392,22 @@
                 document.getElementById('emptyVolumeFactor').value = params.emptyVolumeFactor || 0.4;
                 document.getElementById('aisleRatio').value = params.aisleRatio || 25;
                 document.getElementById('dockOperTime').value = params.dockOperTime || 30;
-                document.getElementById('workHours').value = params.workHours || 16;
                 document.getElementById('dockWidth').value = params.dockWidth || 3.5;
                 document.getElementById('avgLoadPerTruck').value = params.avgLoadPerTruck || 25;
+                document.getElementById('forkliftEfficiency').value = params.forkliftEfficiency || 30;
+                document.getElementById('palletJackEfficiency').value = params.palletJackEfficiency || 15;
+                document.getElementById('forkliftUtil').value = params.forkliftUtil || 70;
+                document.getElementById('palletJackUtil').value = params.palletJackUtil || 65;
+                document.getElementById('receivingEfficiency').value = params.receivingEfficiency || 18;
+                document.getElementById('shippingEfficiency').value = params.shippingEfficiency || 20;
+                document.getElementById('repackEfficiency').value = params.repackEfficiency || 12;
+                document.getElementById('staffUtilRate').value = params.staffUtilRate || 85;
+                document.getElementById('shiftMode').value = params.shiftMode || 'single';
+                document.getElementById('shiftHours').value = params.shiftHours || 8;
+                if (params.mgmtRatio) {
+                    document.getElementById('mgmtRatioSelect').value = params.mgmtRatio;
+                }
 
-                // 恢复功能区勾选
                 document.querySelectorAll('#funcGrid .func-item input[type="checkbox"]').forEach(function(cb) {
                     var funcKey = cb.dataset.func;
                     if (params.enabledFunctions && params.enabledFunctions[funcKey] !== undefined) {
@@ -2125,10 +2415,7 @@
                     }
                 });
 
-                // 恢复名称
                 document.getElementById('saveNameInput').value = data.name || '';
-
-                // 显示结果
                 updateResults(result);
                 showToast('📂 已加载方案 "' + data.name + '" (' + result.totalArea + 'm²)');
                 refreshLoadSelect();
@@ -2140,32 +2427,23 @@
         function deleteCurrentRecord() {
             var select = loadSelect;
             var id = select.value;
-            if (!id) {
-                showToast('请先选择一个记录', true);
-                return;
-            }
+            if (!id) { showToast('请先选择一个记录', true); return; }
             var selectedOption = select.options[select.selectedIndex];
             var name = selectedOption ? selectedOption.text : '未命名';
             if (!confirm('确定要删除 "' + name + '" 吗？')) return;
 
             var list = getSavedList();
             var idx = list.findIndex(function(item) { return item.id === id; });
-            if (idx > -1) {
-                list.splice(idx, 1);
-                setSavedList(list);
-            }
+            if (idx > -1) { list.splice(idx, 1);
+                setSavedList(list); }
             localStorage.removeItem('warehouse_data_' + id);
             refreshLoadSelect();
             showToast('🗑️ 已删除方案记录');
         }
 
-        // ============================================================
-        //  Toast 通知
-        // ============================================================
         function showToast(msg, isError) {
             var old = document.querySelector('.custom-toast');
             if (old) old.remove();
-
             var div = document.createElement('div');
             div.className = 'custom-toast';
             div.style.cssText =
@@ -2174,7 +2452,6 @@
                 ';color:white;padding:8px 24px;border-radius:60px;font-weight:600;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,0.15);z-index:999;animation:fadeInDown 0.3s ease;';
             div.textContent = msg;
             document.body.appendChild(div);
-
             clearTimeout(div._timer);
             div._timer = setTimeout(function() {
                 div.style.opacity = '0';
@@ -2183,15 +2460,25 @@
             }, 2500);
         }
 
-        // 注入动画
         var styleSheet = document.createElement("style");
         styleSheet.textContent =
             `@keyframes fadeInDown { from { opacity:0; transform:translateX(-50%) translateY(-12px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }`;
         document.head.appendChild(styleSheet);
 
         // ============================================================
-        //  主计算
+        //  主计算 & 事件绑定
         // ============================================================
+
+        // 更新设备工作时长显示
+        document.getElementById('shiftHours').addEventListener('input', updateEquipHoursDisplay);
+        document.getElementById('shiftHours').addEventListener('change', updateEquipHoursDisplay);
+        document.getElementById('shiftMode').addEventListener('change', function() {
+            updateEquipHoursDisplay();
+            // 更新总时长显示
+            var val = parseFloat(document.getElementById('shiftHours').value) || 8;
+            var shiftCount = this.value === 'double' ? 2 : 1;
+            document.getElementById('totalHoursDisplay').textContent = val * shiftCount;
+        });
 
         function calculateAndRender() {
             const params = getFullParams();
@@ -2210,10 +2497,6 @@
             document.querySelector('.panel-right').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        // ============================================================
-        //  事件绑定
-        // ============================================================
-
         document.getElementById('calcBtn').addEventListener('click', calculateAndRender);
 
         document.getElementById('resetBtn').addEventListener('click', function() {
@@ -2229,11 +2512,26 @@
             document.getElementById('emptyVolumeFactor').value = 0.4;
             document.getElementById('aisleRatio').value = 25;
             document.getElementById('dockOperTime').value = 30;
-            document.getElementById('workHours').value = 16;
             document.getElementById('dockWidth').value = 3.5;
             document.getElementById('avgLoadPerTruck').value = 25;
+            document.getElementById('forkliftEfficiency').value = 30;
+            document.getElementById('palletJackEfficiency').value = 15;
+            document.getElementById('forkliftUtil').value = 70;
+            document.getElementById('palletJackUtil').value = 65;
+            document.getElementById('receivingEfficiency').value = 18;
+            document.getElementById('shippingEfficiency').value = 20;
+            document.getElementById('repackEfficiency').value = 12;
+            document.getElementById('staffUtilRate').value = 85;
+            document.getElementById('shiftMode').value = 'single';
+            document.getElementById('shiftHours').value = 8;
+            // ★★★ 重置时默认选中 1:20 ★★★
+            document.getElementById('mgmtRatioSelect').value = '20';
+            document.getElementById('equipWorkHoursDisplay').textContent = '8';
+            document.getElementById('totalHoursDisplay').textContent = '8';
+            document.getElementById('dockAvailableTimeDisplay').textContent = '8';
             document.querySelectorAll('#funcGrid .func-item input[type="checkbox"]').forEach(cb => cb.checked = true);
 
+            // 重置显示
             document.getElementById('totalArea').innerHTML = `0 <span class="unit">m²</span>`;
             document.getElementById('totalDim').textContent = '-';
             document.getElementById('fullStorageArea').innerHTML = `0 <span class="unit">m²</span>`;
@@ -2251,9 +2549,35 @@
             document.getElementById('dockOutbound').textContent = '0';
             document.getElementById('dockWidthDisplay').textContent = '3.5';
             document.getElementById('dockDailyCapacity').textContent = '0';
+            document.getElementById('dockAvailableTimeDisplay').textContent = '0';
+            document.getElementById('forkliftCount').innerHTML = `0 <span class="eq-suffix">台</span>`;
+            document.getElementById('palletJackCount').innerHTML = `0 <span class="eq-suffix">台</span>`;
+            document.getElementById('totalEquipCount').innerHTML = `0 <span class="eq-suffix">台</span>`;
+            document.getElementById('dailyWorkload').innerHTML = `0 <span class="eq-suffix">m³</span>`;
+            document.getElementById('dockCountDisplay').innerHTML = `0 <span class="eq-suffix">个</span>`;
+            document.getElementById('adjustedForkliftEff').textContent = '0';
+            document.getElementById('adjustedReceivingEff').textContent = '0';
+            document.getElementById('adjustedShippingEff').textContent = '0';
+            document.getElementById('adjustedRepackEff').textContent = '0';
+            document.getElementById('forkliftOperatorCount').innerHTML = `0 <span class="staff-suffix">人</span>`;
+            document.getElementById('receiverCount').innerHTML = `0 <span class="staff-suffix">人</span>`;
+            document.getElementById('shipperCount').innerHTML = `0 <span class="staff-suffix">人</span>`;
+            document.getElementById('repackStaffCount').innerHTML = `0 <span class="staff-suffix">人</span>`;
+            document.getElementById('dataClerkCount').innerHTML = `0 <span class="staff-suffix">人</span>`;
+            document.getElementById('supervisorCount').innerHTML = `0 <span class="staff-suffix">人</span>`;
+            document.getElementById('managerCount').innerHTML = `0 <span class="staff-suffix">人</span>`;
+            document.getElementById('totalStaffCount').innerHTML = `0 <span class="staff-suffix">人</span>`;
+            document.getElementById('opsStaffCount').textContent = '0';
+            document.getElementById('mgmtStaffCount').textContent = '0';
+            document.getElementById('totalEquipment').textContent = '0';
+            document.getElementById('equipDetail').textContent = '铲车+地牛';
+            document.getElementById('totalStaff').textContent = '0';
+            document.getElementById('staffDetail').textContent = '操作+管理';
+            document.getElementById('shiftLabel').textContent = '单班模式';
+            document.getElementById('shiftDisplay').textContent = '单班 (8h)';
             document.getElementById('areaDetail').innerHTML =
                 `<div style="grid-column:1/-1;font-size:8px;color:#7a8eaa;font-weight:600;padding-bottom:1px;">📋 各功能区面积明细</div>
-                <div class="area-item" style="border-bottom:none;color:#8aa0b8;font-size:9px;grid-column:1/-1;text-align:center;">请点击「计算 & 生成3D」查看</div>`;
+                <div class="area-item" style="border-bottom:none;color:#8aa0b8;font-size:9px;grid-column:1/-1;text-align:center;">请点击「计算 &amp; 生成3D」查看</div>`;
             document.getElementById('colorLegend').innerHTML = '';
             document.getElementById('statusText').textContent = '已重置';
 
@@ -2294,7 +2618,6 @@
             this.textContent = allChecked ? '全选' : '取消全选';
         });
 
-        // 保存/加载事件
         document.getElementById('savePlanBtn').addEventListener('click', savePlan);
         document.getElementById('loadPlanBtn').addEventListener('click', loadPlan);
         document.getElementById('delRecordBtn').addEventListener('click', deleteCurrentRecord);
@@ -2305,14 +2628,10 @@
 
         window.addEventListener('load', function() {
             setTimeout(initThree, 500);
-            setTimeout(() => {
-                if (!is3DInitialized) {
-                    initThree();
-                }
-            }, 3000);
+            setTimeout(() => { if (!is3DInitialized) initThree(); }, 3000);
             refreshLoadSelect();
-            // 默认名称
             document.getElementById('saveNameInput').value = '方案_' + new Date().toLocaleString().replace(/[\/:]/g, '-');
+            updateEquipHoursDisplay();
         });
 
         window.addEventListener('resize', function() {
@@ -2326,9 +2645,16 @@
             }
         });
 
-        console.log('🏗️ 仓库规划工具 (精简参数版 + 保存/加载) 已加载');
-        console.log('📌 固定参数: 翻包系数=0.35, 道口利用系数=0.85, 进货道口占比=55%');
-        console.log('💾 支持保存/加载/删除规划方案');
+        console.log('🏗️ 仓库规划工具 (设备时长随班次) 已加载');
+        console.log('📊 行业基准: 铲车30m³/h, 收货18m³/h, 发货20m³/h, 翻包12m³/h');
+        console.log('📈 效率自动调整: 基于面积(1000m²衰减2.5%) + 通道(10%衰减6%)');
+        console.log('🔧 ★★★ 设备工作时长 = 单班时长 × 班次数 ★★★');
+        console.log('🔄 道口可用时间 = 单班时长 × 班次数');
+        console.log('👤 所有操作岗位 = 单班人数 × 班次数');
+        console.log('📋 数据员基准 = 1000 m³/人');
+        console.log('⚙️ 经理固定1人');
+        console.log('👔 ★★★ 管理人员配比可配置 (默认1:20) ★★★');
+        console.log('👔 ★★★ 双班主管 = 单班主管 × 2 ★★★');
     </script>
 </body>
 </html>
