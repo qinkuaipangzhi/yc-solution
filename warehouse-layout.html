@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>仓库规划工具 - 行业基准版 (设备时长随班次)</title>
+    <title>仓库规划工具 - 行业基准版 (道口收/发分离)</title>
     <style>
         * {
             margin: 0;
@@ -61,7 +61,7 @@
 
         .main-grid {
             display: grid;
-            grid-template-columns: 520px 1fr;
+            grid-template-columns: 540px 1fr;
             gap: 12px;
             min-height: 600px;
         }
@@ -124,6 +124,9 @@
         }
         .input-row.three-col {
             grid-template-columns: 1fr 1fr 1fr;
+        }
+        .input-row.four-col {
+            grid-template-columns: 1fr 1fr 1fr 1fr;
         }
         .input-group {
             display: flex;
@@ -654,6 +657,41 @@
             margin-top: 1px;
         }
 
+        /* 道口分离样式 */
+        .dock-section {
+            border: 2px solid #d48c2c40;
+            background: #fdfaf5;
+            border-radius: 6px;
+            padding: 8px 10px;
+        }
+        .dock-section .dock-sub-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: #1f3a5f;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border-bottom: 1px dashed #e8eef5;
+            padding-bottom: 3px;
+        }
+        .dock-section .dock-sub-title .badge-receive {
+            font-size: 7px;
+            background: #1a5d8c;
+            color: white;
+            padding: 0 6px;
+            border-radius: 30px;
+            line-height: 16px;
+        }
+        .dock-section .dock-sub-title .badge-ship {
+            font-size: 7px;
+            background: #d48c2c;
+            color: white;
+            padding: 0 6px;
+            border-radius: 30px;
+            line-height: 16px;
+        }
+
         @media (max-width: 768px) {
             body { padding: 6px; }
             .panel-left { max-height: none; }
@@ -684,7 +722,7 @@
 
     <div class="container">
         <div class="header">
-            <h1>🏗️ 仓库规划工具 <span style="font-size:13px;font-weight:400;opacity:0.8;">— 设备时长随班次</span></h1>
+            <h1>🏗️ 仓库规划工具 <span style="font-size:13px;font-weight:400;opacity:0.8;">— 道口收/发分离</span></h1>
             <div class="badge-group">
                 <span class="badge">📐 面积计算</span>
                 <span class="badge green">🚶 动线分析</span>
@@ -749,7 +787,7 @@
                     </div>
                 </div>
 
-                <!-- ===== 设备参数 (设备时长随班次) ===== -->
+                <!-- ===== 设备参数 ===== -->
                 <div class="input-section" style="border:2px solid #2a7f8e40;background:#f0f8fc;">
                     <div class="section-title">🛠️ 设备参数 <span class="hint">(工作时长随班次自动变化)</span></div>
                     <div class="input-row three-col">
@@ -861,24 +899,55 @@
                     </div>
                 </div>
 
-                <!-- 道口参数 -->
-                <div class="input-section">
-                    <div class="section-title">🚛 道口参数</div>
-                    <div class="input-row three-col">
-                        <div class="input-group"><label>⏱️ 单车操作时长 <span class="hint">(分钟/车)</span></label><input type="number" id="dockOperTime" value="30" min="5" max="120" step="5"></div>
-                        <div class="input-group"><label>📐 道口宽度 <span class="hint">(m)</span></label><input type="number" id="dockWidth" value="3.5" min="2.5" max="5" step="0.1"></div>
-                        <div class="input-group"><label>🚛 单车平均货量 <span class="hint">(m³/车)</span></label><input type="number" id="avgLoadPerTruck" value="25" min="5" max="80" step="5"></div>
+                <!-- ===== ★★★ 道口参数 (收/发分离) ★★★ ===== -->
+                <div class="dock-section">
+                    <div class="section-title" style="margin-bottom:4px;">🚛 道口参数 <span class="hint">(收货/发货独立配置)</span></div>
+
+                    <!-- 收货道口参数 -->
+                    <div class="dock-sub-title">
+                        📥 收货道口 <span class="badge-receive">满箱收货 + 空箱发出</span>
                     </div>
-                    <div class="input-row three-col" style="margin-top:3px;">
-                        <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
-                            <span style="font-size:9px;color:#6a8aaa;">📌 利用系数: 0.85 (固定)</span>
+                    <div class="input-row three-col" style="margin-bottom:4px;">
+                        <div class="input-group">
+                            <label>单车操作时长 <span class="hint">(分钟/车)</span></label>
+                            <input type="number" id="receiveDockOperTime" value="25" min="5" max="120" step="5">
+                            <span class="info-tip">卸货+入库，通常比装车快</span>
                         </div>
-                        <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
-                            <span style="font-size:9px;color:#6a8aaa;">📌 进货占比: 55% (固定)</span>
+                        <div class="input-group">
+                            <label>单车平均货量 <span class="hint">(m³/车)</span></label>
+                            <input type="number" id="receiveAvgLoad" value="28" min="5" max="80" step="5">
+                            <span class="info-tip">收货车辆装载量</span>
                         </div>
-                        <div class="input-group" style="opacity:0.5;background:#f0f3f6;border-radius:4px;padding:4px 6px;display:flex;align-items:center;justify-content:center;">
-                            <span style="font-size:9px;color:#6a8aaa;">📌 道口可用时间 = 单班时长 × 班次数</span>
+                        <div class="input-group">
+                            <label>道口宽度 <span class="hint">(m)</span></label>
+                            <input type="number" id="receiveDockWidth" value="3.5" min="2.5" max="5" step="0.1">
                         </div>
+                    </div>
+
+                    <!-- 发货道口参数 -->
+                    <div class="dock-sub-title" style="margin-top:4px;">
+                        📤 发货道口 <span class="badge-ship">满箱发货 + 空箱接收</span>
+                    </div>
+                    <div class="input-row three-col">
+                        <div class="input-group">
+                            <label>单车操作时长 <span class="hint">(分钟/车)</span></label>
+                            <input type="number" id="shipDockOperTime" value="35" min="5" max="120" step="5">
+                            <span class="info-tip">拣货+装车，通常比卸货慢</span>
+                        </div>
+                        <div class="input-group">
+                            <label>单车平均货量 <span class="hint">(m³/车)</span></label>
+                            <input type="number" id="shipAvgLoad" value="22" min="5" max="80" step="5">
+                            <span class="info-tip">发货车辆装载量</span>
+                        </div>
+                        <div class="input-group">
+                            <label>道口宽度 <span class="hint">(m)</span></label>
+                            <input type="number" id="shipDockWidth" value="3.5" min="2.5" max="5" step="0.1">
+                        </div>
+                    </div>
+                    <div style="font-size:8px;color:#8aa0b8;margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;">
+                        <span>📌 收货流量 = 满箱进货 + 空箱发出</span>
+                        <span>📌 发货流量 = 满箱出货 + 空箱接收</span>
+                        <span>📌 利用系数: 0.85 (固定)</span>
                     </div>
                 </div>
 
@@ -982,12 +1051,13 @@
                     </div>
                 </div>
 
+                <!-- ===== 道口信息 ===== -->
                 <div class="dock-info" id="dockInfo">
-                    <span class="item">🚛 道口：<strong id="dockTotal">0</strong> 个</span>
-                    <span class="item">📥 进货：<strong id="dockInbound">0</strong> 个</span>
-                    <span class="item">📤 出货：<strong id="dockOutbound">0</strong> 个</span>
-                    <span class="item">📐 宽度：<strong id="dockWidthDisplay">3.5</strong> m</span>
-                    <span class="item">⏱️ 日处理：<strong id="dockDailyCapacity">0</strong> m³/天</span>
+                    <span class="item">🚛 总道口：<strong id="dockTotal">0</strong> 个</span>
+                    <span class="item">📥 收货道口：<strong id="dockReceiveTotal">0</strong> 个 <span class="tag">满箱收货+空箱发出</span></span>
+                    <span class="item">📤 发货道口：<strong id="dockShipTotal">0</strong> 个 <span class="tag">满箱发货+空箱接收</span></span>
+                    <span class="item">⏱️ 收货操作：<strong id="dockReceiveTime">0</strong> 分钟/车</span>
+                    <span class="item">⏱️ 发货操作：<strong id="dockShipTime">0</strong> 分钟/车</span>
                     <span class="item">⏱️ 可用时间：<strong id="dockAvailableTimeDisplay">8</strong> 小时/天</span>
                 </div>
 
@@ -1007,7 +1077,7 @@
                         <button id="resetView">复位</button>
                     </div>
                     <div class="three-overlay">
-                        🖱️ 拖拽旋转 · 滚轮缩放 · <span class="highlight">设备时长随班次</span>
+                        🖱️ 拖拽旋转 · 滚轮缩放 · <span class="highlight">道口收/发分离</span>
                     </div>
                 </div>
 
@@ -1055,13 +1125,12 @@
         const FIXED_PARAMS = {
             repackFactor: 0.35,
             dockUtilFactor: 0.85,
-            inboundDockRatio: 0.55,
             equipBackupFactor: 1.2,
             dataClerkBase: 1000
         };
 
         // ============================================================
-        //  效率调整函数（基于面积和动线）
+        //  效率调整函数
         // ============================================================
         function adjustEfficiency(baseEff, totalArea, aisleRatio, type) {
             const areaFactor = 1 / (1 + (totalArea / 1000) * 0.025);
@@ -1098,7 +1167,7 @@
         }
 
         // ============================================================
-        //  计算引擎
+        //  计算引擎 (道口收/发分离)
         // ============================================================
 
         function calculateWarehouse(params) {
@@ -1109,8 +1178,9 @@
                 fullTurnover, emptyTurnover,
                 fullStackHeight, emptyStackHeight,
                 emptyVolumeFactor, aisleRatio,
-                dockOperTime, dockWidth,
-                avgLoadPerTruck,
+                receiveDockOperTime, shipDockOperTime,
+                receiveAvgLoad, shipAvgLoad,
+                receiveDockWidth, shipDockWidth,
                 forkliftEfficiency, palletJackEfficiency,
                 forkliftUtil, palletJackUtil,
                 receivingEfficiency, shippingEfficiency,
@@ -1121,16 +1191,13 @@
 
             const repackFactor = FIXED_PARAMS.repackFactor;
             const dockUtilFactor = FIXED_PARAMS.dockUtilFactor;
-            const inboundDockRatio = FIXED_PARAMS.inboundDockRatio;
             const equipBackupFactor = FIXED_PARAMS.equipBackupFactor;
             const dataClerkBase = FIXED_PARAMS.dataClerkBase;
 
             const isDoubleShift = shiftMode === 'double';
             const shiftCount = isDoubleShift ? 2 : 1;
-
-            // ★★★ 设备工作时长 = 单班时长 × 班次数 ★★★
-            const equipWorkHours = shiftHours * shiftCount;
             const dockAvailableHours = shiftHours * shiftCount;
+            const equipWorkHours = shiftHours * shiftCount;
 
             // ===== 面积计算 =====
             const fullAvgFlow = (fullInbound + fullOutbound) / 2;
@@ -1186,17 +1253,30 @@
             const aisleArea = Math.round(totalFuncArea * (aisleRatio / 100));
             const totalArea = totalFuncArea + aisleArea;
 
-            // ===== 总流量 =====
-            const totalFlow = fullInbound + fullOutbound + emptyInbound + emptyOutbound;
+            // ===== 流量分类 =====
+            // 收货道口流量 = 满箱进货 + 空箱发出
+            const receiveFlow = fullInbound + emptyOutbound;
+            // 发货道口流量 = 满箱出货 + 空箱接收
+            const shipFlow = fullOutbound + emptyInbound;
+            const totalFlow = receiveFlow + shipFlow;
 
-            // ===== 道口计算 =====
-            const operTimeHours = dockOperTime / 60;
-            const trucksPerDockPerDay = (dockAvailableHours / operTimeHours) * dockUtilFactor;
-            const capacityPerDock = trucksPerDockPerDay * avgLoadPerTruck;
-            const rawDocks = Math.ceil(totalFlow / capacityPerDock);
-            const totalDocks = Math.max(2, rawDocks);
-            const inboundDocks = Math.max(1, Math.round(totalDocks * inboundDockRatio));
-            const outboundDocks = Math.max(1, totalDocks - inboundDocks);
+            // ===== ★★★ 道口计算 (收/发分离) ★★★ =====
+            // 收货道口
+            const receiveOperTimeHours = receiveDockOperTime / 60;
+            const receiveTrucksPerDock = (dockAvailableHours / receiveOperTimeHours) * dockUtilFactor;
+            const receiveCapacityPerDock = receiveTrucksPerDock * receiveAvgLoad;
+            const receiveRawDocks = Math.ceil(receiveFlow / receiveCapacityPerDock);
+            const receiveDocks = Math.max(1, receiveRawDocks);
+
+            // 发货道口
+            const shipOperTimeHours = shipDockOperTime / 60;
+            const shipTrucksPerDock = (dockAvailableHours / shipOperTimeHours) * dockUtilFactor;
+            const shipCapacityPerDock = shipTrucksPerDock * shipAvgLoad;
+            const shipRawDocks = Math.ceil(shipFlow / shipCapacityPerDock);
+            const shipDocks = Math.max(1, shipRawDocks);
+
+            // 总道口数
+            const totalDocks = receiveDocks + shipDocks;
 
             // ===== 效率调整 =====
             const adjForkliftEff = adjustEfficiency(forkliftEfficiency, totalArea, aisleRatio, 'forklift');
@@ -1231,16 +1311,16 @@
 
             // 收货员
             let singleReceiver = 0;
-            if (fullInbound > 0 && adjReceivingEff > 0) {
-                singleReceiver = Math.ceil(fullInbound / (adjReceivingEff * singleShiftEffectiveHours));
+            if (receiveFlow > 0 && adjReceivingEff > 0) {
+                singleReceiver = Math.ceil(receiveFlow / (adjReceivingEff * singleShiftEffectiveHours));
             }
             singleReceiver = Math.max(1, singleReceiver);
             const receiverCount = singleReceiver * shiftCount;
 
             // 发货员
             let singleShipper = 0;
-            if (fullOutbound > 0 && adjShippingEff > 0) {
-                singleShipper = Math.ceil(fullOutbound / (adjShippingEff * singleShiftEffectiveHours));
+            if (shipFlow > 0 && adjShippingEff > 0) {
+                singleShipper = Math.ceil(shipFlow / (adjShippingEff * singleShiftEffectiveHours));
             }
             singleShipper = Math.max(1, singleShipper);
             const shipperCount = singleShipper * shiftCount;
@@ -1261,7 +1341,7 @@
             // 操作人员总数
             const opsTotal = forkliftOperatorCount + receiverCount + shipperCount + repackStaffCount + dataClerkCount;
 
-            // ★★★ 管理人员 ★★★
+            // 管理人员
             const singleSupervisor = Math.max(1, Math.ceil(opsTotal / mgmtRatio));
             let supervisorCount = singleSupervisor;
             if (isDoubleShift) {
@@ -1280,19 +1360,23 @@
             const length = baseLength + margin * 2;
 
             const dockPositions = [];
+            // 按比例分配道口位置：先排收货道口，再排发货道口
+            const totalDocksForPos = totalDocks;
             const usableWidth = width - 1.0;
-            const dockSpacing = usableWidth / (totalDocks + 1);
-            for (let i = 0; i < totalDocks; i++) {
+            const dockSpacing = usableWidth / (totalDocksForPos + 1);
+
+            for (let i = 0; i < totalDocksForPos; i++) {
                 const pos = (i + 1) * dockSpacing - width / 2 + 0.5;
-                const isInbound = i < inboundDocks;
+                const isReceive = i < receiveDocks;
+                const isInbound = isReceive; // 收货道口标记为inbound，发货为outbound
                 dockPositions.push({
                     x: pos,
                     z: length / 2,
-                    type: isInbound ? 'inbound' : 'outbound',
-                    label: isInbound ? `进货${Math.floor(i)+1}` : `出货${Math.floor(i-inboundDocks)+1}`,
-                    width: dockWidth,
+                    type: isReceive ? 'receive' : 'ship',
+                    label: isReceive ? `收货${Math.floor(i)+1}` : `发货${Math.floor(i-receiveDocks)+1}`,
+                    width: isReceive ? receiveDockWidth : shipDockWidth,
                     depth: 2,
-                    isInbound: isInbound,
+                    isInbound: isReceive,
                     index: i
                 });
             }
@@ -1316,14 +1400,20 @@
                 layout,
                 dockPositions,
                 flowPaths,
-                totalDocks,
-                inboundDocks,
-                outboundDocks,
-                dockWidth,
-                totalFlow,
-                capacityPerDock: Math.round(capacityPerDock),
-                totalTrucks: Math.ceil(totalFlow / avgLoadPerTruck),
-                operTimeHours: operTimeHours,
+                totalDocks: totalDocks,
+                receiveDocks: receiveDocks,
+                shipDocks: shipDocks,
+                receiveFlow: Math.round(receiveFlow),
+                shipFlow: Math.round(shipFlow),
+                receiveDockOperTime: receiveDockOperTime,
+                shipDockOperTime: shipDockOperTime,
+                receiveAvgLoad: receiveAvgLoad,
+                shipAvgLoad: shipAvgLoad,
+                receiveDockWidth: receiveDockWidth,
+                shipDockWidth: shipDockWidth,
+                receiveCapacityPerDock: Math.round(receiveCapacityPerDock),
+                shipCapacityPerDock: Math.round(shipCapacityPerDock),
+                totalFlow: totalFlow,
                 dockAvailableHours: dockAvailableHours,
                 equipWorkHours: equipWorkHours,
                 shiftMode: shiftMode,
@@ -1457,10 +1547,11 @@
             const outFull = getCenter('full_outbound');
             const outEmpty = getCenter('empty_outbound');
 
+            // 收货道口（满箱进货→满箱收货区→满箱存放）
             if (recvFull && storageFull && fullInbound > 0) {
-                const inboundDocks = docks.filter(d => d.isInbound);
-                if (inboundDocks.length > 0) {
-                    const dock = inboundDocks[0];
+                const receiveDocks = docks.filter(d => d.type === 'receive');
+                if (receiveDocks.length > 0) {
+                    const dock = receiveDocks[0];
                     paths.push({
                         type: 'inbound',
                         color: FLOW_COLORS.inbound,
@@ -1476,10 +1567,11 @@
                 }
             }
 
+            // 空箱接收→空箱存放（发货道口）
             if (recvEmpty && storageEmpty && emptyInbound > 0) {
-                const inboundDocks = docks.filter(d => d.isInbound);
-                if (inboundDocks.length > 1) {
-                    const dock = inboundDocks[1] || inboundDocks[0];
+                const shipDocks = docks.filter(d => d.type === 'ship');
+                if (shipDocks.length > 0) {
+                    const dock = shipDocks[0];
                     paths.push({
                         type: 'empty_inbound',
                         color: FLOW_COLORS.empty,
@@ -1495,6 +1587,7 @@
                 }
             }
 
+            // 翻包作业
             if (repack && storageFull && repackVolume > 0) {
                 paths.push({
                     type: 'repack',
@@ -1522,10 +1615,11 @@
                 }
             }
 
+            // 满箱存放→满箱发出→发货道口
             if (outFull && storageFull && fullOutbound > 0) {
-                const outboundDocks = docks.filter(d => !d.isInbound);
-                if (outboundDocks.length > 0) {
-                    const dock = outboundDocks[0];
+                const shipDocks = docks.filter(d => d.type === 'ship');
+                if (shipDocks.length > 0) {
+                    const dock = shipDocks[0];
                     paths.push({
                         type: 'outbound',
                         color: FLOW_COLORS.outbound,
@@ -1541,10 +1635,11 @@
                 }
             }
 
+            // 空箱存放→空箱发出→收货道口
             if (outEmpty && storageEmpty && emptyOutbound > 0) {
-                const outboundDocks = docks.filter(d => !d.isInbound);
-                if (outboundDocks.length > 1) {
-                    const dock = outboundDocks[1] || outboundDocks[0];
+                const receiveDocks = docks.filter(d => d.type === 'receive');
+                if (receiveDocks.length > 0) {
+                    const dock = receiveDocks[0];
                     paths.push({
                         type: 'empty_outbound',
                         color: FLOW_COLORS.empty,
@@ -1572,7 +1667,6 @@
             document.querySelectorAll('#funcGrid .func-item input[type="checkbox"]').forEach(cb => {
                 enabled[cb.dataset.func] = cb.checked;
             });
-            // ★★★ 修正：默认值与下拉框默认值一致 ★★★
             const mgmtRatio = parseInt(document.getElementById('mgmtRatioSelect').value) || 20;
             return {
                 fullInbound: parseFloat(document.getElementById('fullInbound').value) || 0,
@@ -1586,9 +1680,12 @@
                 emptyStackHeight: parseFloat(document.getElementById('emptyStackHeight').value) || 2.8,
                 emptyVolumeFactor: parseFloat(document.getElementById('emptyVolumeFactor').value) || 0.4,
                 aisleRatio: parseFloat(document.getElementById('aisleRatio').value) || 25,
-                dockOperTime: parseFloat(document.getElementById('dockOperTime').value) || 30,
-                dockWidth: parseFloat(document.getElementById('dockWidth').value) || 3.5,
-                avgLoadPerTruck: parseFloat(document.getElementById('avgLoadPerTruck').value) || 25,
+                receiveDockOperTime: parseFloat(document.getElementById('receiveDockOperTime').value) || 25,
+                shipDockOperTime: parseFloat(document.getElementById('shipDockOperTime').value) || 35,
+                receiveAvgLoad: parseFloat(document.getElementById('receiveAvgLoad').value) || 28,
+                shipAvgLoad: parseFloat(document.getElementById('shipAvgLoad').value) || 22,
+                receiveDockWidth: parseFloat(document.getElementById('receiveDockWidth').value) || 3.5,
+                shipDockWidth: parseFloat(document.getElementById('shipDockWidth').value) || 3.5,
                 forkliftEfficiency: parseFloat(document.getElementById('forkliftEfficiency').value) || 30,
                 palletJackEfficiency: parseFloat(document.getElementById('palletJackEfficiency').value) || 15,
                 forkliftUtil: parseFloat(document.getElementById('forkliftUtil').value) || 70,
@@ -1667,13 +1764,13 @@
             document.getElementById('aislePct').textContent = `占比 ${Math.round(result.aisleArea/total*100)}%`;
 
             document.getElementById('dockCount').textContent = result.totalDocks;
-            document.getElementById('dockDetail').textContent = `${result.inboundDocks}进/${result.outboundDocks}出`;
+            document.getElementById('dockDetail').textContent = `${result.receiveDocks}进/${result.shipDocks}出`;
 
             document.getElementById('dockTotal').textContent = result.totalDocks;
-            document.getElementById('dockInbound').textContent = result.inboundDocks;
-            document.getElementById('dockOutbound').textContent = result.outboundDocks;
-            document.getElementById('dockWidthDisplay').textContent = result.dockWidth.toFixed(1);
-            document.getElementById('dockDailyCapacity').textContent = result.capacityPerDock;
+            document.getElementById('dockReceiveTotal').textContent = result.receiveDocks;
+            document.getElementById('dockShipTotal').textContent = result.shipDocks;
+            document.getElementById('dockReceiveTime').textContent = result.receiveDockOperTime;
+            document.getElementById('dockShipTime').textContent = result.shipDockOperTime;
             document.getElementById('dockAvailableTimeDisplay').textContent = result.dockAvailableHours || 0;
 
             updateEquipmentDisplay(result);
@@ -1712,7 +1809,7 @@
             const staff = result.staff || {};
             const shiftText = result.isDoubleShift ? '双班' : '单班';
             document.getElementById('statusText').textContent =
-                `✅ ${shiftText} · ${result.enabledCount}功能区 · ${result.totalDocks}道口 · ${result.equipment.totalCount}台设备 · ${staff.totalStaff}人 · ${total} m²`;
+                `✅ ${shiftText} · ${result.enabledCount}功能区 · ${result.totalDocks}道口(${result.receiveDocks}收/${result.shipDocks}发) · ${result.equipment.totalCount}台设备 · ${staff.totalStaff}人 · ${total} m²`;
 
             generate3D(result);
         }
@@ -1755,7 +1852,7 @@
             });
         }
 
-        function createTruck(color, isInbound) {
+        function createTruck(color, isInbound, type) {
             const group = new THREE.Group();
             const bodyMat = new THREE.MeshStandardMaterial({ color: color || 0xcc4444, roughness: 0.6, metalness: 0.3 });
             const cabMat = new THREE.MeshStandardMaterial({ color: 0x446688, roughness: 0.5, metalness: 0.2 });
@@ -1794,8 +1891,8 @@
             });
 
             const lightMat = new THREE.MeshStandardMaterial({
-                color: isInbound ? 0xffff44 : 0xff4444,
-                emissive: isInbound ? 0xffff44 : 0xff4444,
+                color: type === 'receive' ? 0x44ff44 : 0xff6644,
+                emissive: type === 'receive' ? 0x44ff44 : 0xff6644,
                 emissiveIntensity: 0.3
             });
             const headlight = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), lightMat);
@@ -2080,7 +2177,8 @@
                 frameTop.renderOrder = 2;
                 scene.add(frameTop);
 
-                const labelColor = dock.isInbound ? 0xff6644 : 0x4488ff;
+                // 道口颜色标识：收货=绿色，发货=橙色
+                const labelColor = dock.type === 'receive' ? 0x44dd88 : 0xff8844;
                 const labelDot = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8),
                     new THREE.MeshStandardMaterial({ color: labelColor, emissive: labelColor,
                         emissiveIntensity: 0.4, depthWrite: false })
@@ -2089,16 +2187,35 @@
                 labelDot.renderOrder = 3;
                 scene.add(labelDot);
 
-                const truckColor = dock.isInbound ? 0xcc4444 : 0x4488cc;
-                const truck = createTruck(truckColor, dock.isInbound);
+                // 卡车颜色：收货绿色调，发货橙色调
+                const truckColor = dock.type === 'receive' ? 0x44aa44 : 0xcc8844;
+                const truck = createTruck(truckColor, dock.type === 'receive', dock.type);
                 truck.position.set(doorX, 0.05, hl + 3.5);
-                truck.rotation.y = dock.isInbound ? 0 : Math.PI;
+                truck.rotation.y = dock.type === 'receive' ? 0 : Math.PI;
                 scene.add(truck);
 
                 const forklift = createForklift();
                 forklift.position.set(doorX + 1.2, 0.05, hl + 2.0);
-                forklift.rotation.y = dock.isInbound ? -0.3 : 0.3;
+                forklift.rotation.y = dock.type === 'receive' ? -0.3 : 0.3;
                 scene.add(forklift);
+
+                const markMat = new THREE.MeshStandardMaterial({
+                    color: dock.type === 'receive' ? 0x44dd88 : 0xff8844,
+                    transparent: true,
+                    opacity: 0.3,
+                    depthWrite: false,
+                    polygonOffset: true,
+                    polygonOffsetFactor: -3,
+                    polygonOffsetUnits: -3
+                });
+                const mark = new THREE.Mesh(
+                    new THREE.PlaneGeometry(dock.width * 0.8, 1.0),
+                    markMat
+                );
+                mark.rotation.x = -Math.PI / 2;
+                mark.position.set(doorX, 0.02, hl + 1.0);
+                mark.renderOrder = 0;
+                scene.add(mark);
 
                 currentX = rightEdge;
             });
@@ -2345,6 +2462,8 @@
                 result: result,
                 area: result.totalArea,
                 docks: result.totalDocks,
+                receiveDocks: result.receiveDocks,
+                shipDocks: result.shipDocks,
                 equipment: result.equipment.totalCount,
                 staff: result.staff.totalStaff,
                 shift: params.shiftMode
@@ -2357,6 +2476,8 @@
                 timestamp: Date.now(),
                 area: result.totalArea,
                 docks: result.totalDocks,
+                receiveDocks: result.receiveDocks,
+                shipDocks: result.shipDocks,
                 equipment: result.equipment.totalCount,
                 staff: result.staff.totalStaff,
                 shift: params.shiftMode
@@ -2364,8 +2485,9 @@
             setSavedList(list);
             localStorage.setItem('warehouse_data_' + id, JSON.stringify(data));
             refreshLoadSelect();
-            showToast('✅ 方案 "' + name + '" 已保存 (' + result.totalArea + 'm², ' + result.totalDocks + '道口, ' + result
-                .equipment.totalCount + '台设备, ' + result.staff.totalStaff + '人)');
+            showToast('✅ 方案 "' + name + '" 已保存 (' + result.totalArea + 'm², ' + result.totalDocks + '道口(' + result
+                .receiveDocks + '收/' + result.shipDocks + '发), ' + result.equipment.totalCount + '台设备, ' + result
+                .staff.totalStaff + '人)');
         }
 
         function loadPlan() {
@@ -2391,9 +2513,12 @@
                 document.getElementById('emptyStackHeight').value = params.emptyStackHeight || 2.8;
                 document.getElementById('emptyVolumeFactor').value = params.emptyVolumeFactor || 0.4;
                 document.getElementById('aisleRatio').value = params.aisleRatio || 25;
-                document.getElementById('dockOperTime').value = params.dockOperTime || 30;
-                document.getElementById('dockWidth').value = params.dockWidth || 3.5;
-                document.getElementById('avgLoadPerTruck').value = params.avgLoadPerTruck || 25;
+                document.getElementById('receiveDockOperTime').value = params.receiveDockOperTime || 25;
+                document.getElementById('shipDockOperTime').value = params.shipDockOperTime || 35;
+                document.getElementById('receiveAvgLoad').value = params.receiveAvgLoad || 28;
+                document.getElementById('shipAvgLoad').value = params.shipAvgLoad || 22;
+                document.getElementById('receiveDockWidth').value = params.receiveDockWidth || 3.5;
+                document.getElementById('shipDockWidth').value = params.shipDockWidth || 3.5;
                 document.getElementById('forkliftEfficiency').value = params.forkliftEfficiency || 30;
                 document.getElementById('palletJackEfficiency').value = params.palletJackEfficiency || 15;
                 document.getElementById('forkliftUtil').value = params.forkliftUtil || 70;
@@ -2469,12 +2594,10 @@
         //  主计算 & 事件绑定
         // ============================================================
 
-        // 更新设备工作时长显示
         document.getElementById('shiftHours').addEventListener('input', updateEquipHoursDisplay);
         document.getElementById('shiftHours').addEventListener('change', updateEquipHoursDisplay);
         document.getElementById('shiftMode').addEventListener('change', function() {
             updateEquipHoursDisplay();
-            // 更新总时长显示
             var val = parseFloat(document.getElementById('shiftHours').value) || 8;
             var shiftCount = this.value === 'double' ? 2 : 1;
             document.getElementById('totalHoursDisplay').textContent = val * shiftCount;
@@ -2511,9 +2634,12 @@
             document.getElementById('emptyStackHeight').value = 2.8;
             document.getElementById('emptyVolumeFactor').value = 0.4;
             document.getElementById('aisleRatio').value = 25;
-            document.getElementById('dockOperTime').value = 30;
-            document.getElementById('dockWidth').value = 3.5;
-            document.getElementById('avgLoadPerTruck').value = 25;
+            document.getElementById('receiveDockOperTime').value = 25;
+            document.getElementById('shipDockOperTime').value = 35;
+            document.getElementById('receiveAvgLoad').value = 28;
+            document.getElementById('shipAvgLoad').value = 22;
+            document.getElementById('receiveDockWidth').value = 3.5;
+            document.getElementById('shipDockWidth').value = 3.5;
             document.getElementById('forkliftEfficiency').value = 30;
             document.getElementById('palletJackEfficiency').value = 15;
             document.getElementById('forkliftUtil').value = 70;
@@ -2524,7 +2650,6 @@
             document.getElementById('staffUtilRate').value = 85;
             document.getElementById('shiftMode').value = 'single';
             document.getElementById('shiftHours').value = 8;
-            // ★★★ 重置时默认选中 1:20 ★★★
             document.getElementById('mgmtRatioSelect').value = '20';
             document.getElementById('equipWorkHoursDisplay').textContent = '8';
             document.getElementById('totalHoursDisplay').textContent = '8';
@@ -2545,10 +2670,10 @@
             document.getElementById('dockCount').textContent = '0';
             document.getElementById('dockDetail').textContent = '-';
             document.getElementById('dockTotal').textContent = '0';
-            document.getElementById('dockInbound').textContent = '0';
-            document.getElementById('dockOutbound').textContent = '0';
-            document.getElementById('dockWidthDisplay').textContent = '3.5';
-            document.getElementById('dockDailyCapacity').textContent = '0';
+            document.getElementById('dockReceiveTotal').textContent = '0';
+            document.getElementById('dockShipTotal').textContent = '0';
+            document.getElementById('dockReceiveTime').textContent = '0';
+            document.getElementById('dockShipTime').textContent = '0';
             document.getElementById('dockAvailableTimeDisplay').textContent = '0';
             document.getElementById('forkliftCount').innerHTML = `0 <span class="eq-suffix">台</span>`;
             document.getElementById('palletJackCount').innerHTML = `0 <span class="eq-suffix">台</span>`;
@@ -2645,16 +2770,10 @@
             }
         });
 
-        console.log('🏗️ 仓库规划工具 (设备时长随班次) 已加载');
-        console.log('📊 行业基准: 铲车30m³/h, 收货18m³/h, 发货20m³/h, 翻包12m³/h');
-        console.log('📈 效率自动调整: 基于面积(1000m²衰减2.5%) + 通道(10%衰减6%)');
-        console.log('🔧 ★★★ 设备工作时长 = 单班时长 × 班次数 ★★★');
-        console.log('🔄 道口可用时间 = 单班时长 × 班次数');
-        console.log('👤 所有操作岗位 = 单班人数 × 班次数');
-        console.log('📋 数据员基准 = 1000 m³/人');
-        console.log('⚙️ 经理固定1人');
-        console.log('👔 ★★★ 管理人员配比可配置 (默认1:20) ★★★');
-        console.log('👔 ★★★ 双班主管 = 单班主管 × 2 ★★★');
+        console.log('🏗️ 仓库规划工具 (道口收/发分离) v2.0 加载完成');
+        console.log('📐 功能区配置:', Object.keys(FUNC_CONFIG).length, '个');
+        console.log('🔄 支持单班/双班切换，道口收货/发货独立计算');
+        console.log('💡 提示: 修改参数后点击「计算 & 生成3D」查看结果');
     </script>
 </body>
 </html>
