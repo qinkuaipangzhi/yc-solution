@@ -916,14 +916,15 @@
     }
 
     // ========== 日志 ==========
-    function addLog(msg, isError = false) {
+    function addLog(msg, isError) {
+        if (isError === undefined) isError = false;
         const time = new Date().toLocaleTimeString();
         const prefix = isError ? '❌' : '📌';
         const color = isError ? '#ffb4a2' : '#b9e0ff';
-        logArea.innerHTML += `<span style="color:${color}">${prefix} [${time}] ${msg}</span><br>`;
+        logArea.innerHTML += '<span style="color:' + color + '">' + prefix + ' [' + time + '] ' + msg + '</span><br>';
         logArea.scrollTop = logArea.scrollHeight;
         if (logArea.innerHTML.split('<br>').length > 60) {
-            const lines = logArea.innerHTML.split('<br>');
+            var lines = logArea.innerHTML.split('<br>');
             logArea.innerHTML = lines.slice(-40).join('<br>');
         }
     }
@@ -931,7 +932,7 @@
     // ========== ★★★ 数据传递功能 ★★★ ==========
     function getPassData() {
         try {
-            const raw = localStorage.getItem(PASS_KEY);
+            var raw = localStorage.getItem(PASS_KEY);
             if (raw) return JSON.parse(raw);
         } catch (e) {}
         return null;
@@ -954,20 +955,20 @@
     }
 
     function checkPassStatus() {
-        const passData = getPassData();
+        var passData = getPassData();
         if (passData && passData.tool === TOOL_ID && passData.data && passData.data.length > 0) {
             dataPassBar.classList.add('show');
-            passInfo.textContent = `K-Means聚类 (${passData.data.length} 条地址)`;
+            passInfo.textContent = 'K-Means聚类 (' + passData.data.length + ' 条地址)';
             saveAndPassBtn.disabled = true;
             if (isInWorkflow) {
                 workflowStatus.textContent = '✅ 数据已保存';
             }
             return true;
         } else {
-            const successResults = dataRows.filter(r => r.status === '成功');
+            var successResults = dataRows.filter(function(r) { return r.status === '成功'; });
             if (successResults.length > 0) {
                 dataPassBar.classList.add('show');
-                passInfo.textContent = `K-Means聚类 (${successResults.length} 条地址)`;
+                passInfo.textContent = 'K-Means聚类 (' + successResults.length + ' 条地址)';
                 saveAndPassBtn.disabled = false;
                 if (isInWorkflow) {
                     workflowStatus.textContent = '📦 数据待保存';
@@ -985,35 +986,39 @@
 
     // ========== ★★★ 核心：保存并通知父页面 ★★★ ==========
     function saveAndPass() {
-        const successResults = dataRows.filter(r => r.status === '成功' && r.lng !== null && r.lat !== null);
+        var successResults = dataRows.filter(function(r) {
+            return r.status === '成功' && r.lng !== null && r.lat !== null;
+        });
         if (successResults.length === 0) {
             showToast('⚠️ 没有成功解析的地址可以传递', 'error');
             return;
         }
 
-        const passData = {
+        var passData = {
             tool: TOOL_ID,
             timestamp: new Date().toISOString(),
             count: successResults.length,
-            data: successResults.map(r => ({
-                '站点代码': r.code || '',
-                '站点名称': r.name || '',
-                '地址': r.addr,
-                '经度': r.lng,
-                '纬度': r.lat,
-                '省': r.province || '',
-                '市': r.city || '',
-                '区': r.district || ''
-            }))
+            data: successResults.map(function(r) {
+                return {
+                    '站点代码': r.code || '',
+                    '站点名称': r.name || '',
+                    '地址': r.addr,
+                    '经度': r.lng,
+                    '纬度': r.lat,
+                    '省': r.province || '',
+                    '市': r.city || '',
+                    '区': r.district || ''
+                };
+            })
         };
 
         savePassData(passData);
         dataPassBar.classList.add('show');
-        passInfo.textContent = `K-Means聚类 (${successResults.length} 条地址)`;
+        passInfo.textContent = 'K-Means聚类 (' + successResults.length + ' 条地址)';
         saveAndPassBtn.disabled = true;
 
-        showToast(`✅ 已保存 ${successResults.length} 条地址数据`, 'success');
-        addLog(`💾 已保存 ${successResults.length} 条数据，供下游工具使用`, 'success');
+        showToast('✅ 已保存 ' + successResults.length + ' 条地址数据', 'success');
+        addLog('💾 已保存 ' + successResults.length + ' 条数据，供下游工具使用', 'success');
 
         if (isInWorkflow) {
             workflowStatus.textContent = '✅ 已保存，通知父页面...';
@@ -1027,12 +1032,12 @@
                 count: successResults.length,
                 data: passData
             }, '*');
-            addLog(`📤 已通知父页面: 数据已保存 (${successResults.length} 条)`, 'success');
+            addLog('📤 已通知父页面: 数据已保存 (' + successResults.length + ' 条)', 'success');
             if (isInWorkflow) {
                 workflowStatus.textContent = '✅ 已通知工作流';
             }
         } catch (e) {
-            addLog(`⚠️ 通知父页面失败: ${e.message}`, true);
+            addLog('⚠️ 通知父页面失败: ' + e.message, true);
             if (isInWorkflow) {
                 workflowStatus.textContent = '⚠️ 通知失败，请手动继续';
             }
@@ -1041,41 +1046,38 @@
 
     // ========== 渲染表格 ==========
     function renderTable() {
-        let html = '';
+        var html = '';
         if (dataRows.length === 0) {
-            html = `<tr class="empty-row"><td colspan="7">📭 请上传Excel文件</td></tr>`;
+            html = '<tr class="empty-row"><td colspan="7">📭 请上传Excel文件</td></tr>';
         } else {
-            dataRows.forEach((row, idx) => {
-                let statusClass = 'status-pending';
-                let statusText = row.status || '待查询';
-                if (row.status === '成功') { statusClass = 'status-ok'; }
-                else if (row.status === '失败' || (row.status && row.status.includes('最终失败'))) { statusClass = 'status-fail'; }
-                else if (row.status && row.status.includes('重试')) { statusClass = 'status-retry'; }
+            dataRows.forEach(function(row, idx) {
+                var statusClass = 'status-pending';
+                var statusText = row.status || '待查询';
+                if (row.status === '成功') { statusClass = 'status-ok'; } else if (row.status === '失败' || (row
+                        .status && row.status.includes('最终失败'))) { statusClass = 'status-fail'; } else if (row
+                    .status && row.status.includes('重试')) { statusClass = 'status-retry'; }
 
-                const lngDisplay = (row.lng !== null && row.lng !== undefined && row.lng !== '') ? row.lng : '-';
-                const latDisplay = (row.lat !== null && row.lat !== undefined && row.lat !== '') ? row.lat : '-';
+                var lngDisplay = (row.lng !== null && row.lng !== undefined && row.lng !== '') ? row.lng : '-';
+                var latDisplay = (row.lat !== null && row.lat !== undefined && row.lat !== '') ? row.lat : '-';
 
-                html += `<tr>
-                    <td>${idx + 1}</td>
-                    <td>${escHtml(row.code)}</td>
-                    <td>${escHtml(row.name)}</td>
-                    <td style="font-size:0.5rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(row.addr)}">${escHtml(row.addr)}</td>
-                    <td>${lngDisplay}</td>
-                    <td>${latDisplay}</td>
-                    <td class="${statusClass}">${statusText}</td>
-                </tr>`;
+                html += '<tr><td>' + (idx + 1) + '</td><td>' + escHtml(row.code) + '</td><td>' + escHtml(row.name) +
+                    '</td><td style="font-size:0.5rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' +
+                    escHtml(row.addr) + '">' + escHtml(row.addr) + '</td><td>' + lngDisplay + '</td><td>' +
+                    latDisplay + '</td><td class="' + statusClass + '">' + statusText + '</td></tr>';
             });
         }
         tableBody.innerHTML = html;
-        rowCount.textContent = `共 ${dataRows.length} 条`;
+        rowCount.textContent = '共 ' + dataRows.length + ' 条';
         totalCount.textContent = dataRows.length;
-        const succ = dataRows.filter(r => r.status === '成功').length;
-        const fail = dataRows.filter(r => r.status === '失败' || (r.status && r.status.includes('最终失败'))).length;
+        var succ = dataRows.filter(function(r) { return r.status === '成功'; }).length;
+        var fail = dataRows.filter(function(r) { return r.status === '失败' || (r.status && r.status.includes(
+            '最终失败')); }).length;
         successCount.textContent = succ;
         failCount.textContent = fail;
 
-        const hasResult = dataRows.some(r => r.status === '成功' || r.status === '失败' || (r.status && r.status.includes('最终失败')));
-        const hasData = dataRows.length > 0;
+        var hasResult = dataRows.some(function(r) { return r.status === '成功' || r.status === '失败' || (r.status && r
+                .status.includes('最终失败')); });
+        var hasData = dataRows.length > 0;
         exportResultBtn.disabled = !hasResult || isQuerying;
         copyResultBtn.disabled = !hasResult || isQuerying;
         queryBtn.disabled = !hasData || isQuerying;
@@ -1089,108 +1091,113 @@
 
     function escHtml(str) {
         if (!str) return '';
-        return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m);
+        return String(str).replace(/[&<>]/g, function(m) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m;
+        });
     }
 
     // ========== 解析Excel ==========
-    async function parseExcelToRows(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
+    function parseExcelToRows(file) {
+        return new Promise(function(resolve, reject) {
+            var reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+                    var data = new Uint8Array(e.target.result);
+                    var workbook = XLSX.read(data, { type: 'array' });
+                    var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    var rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
                     if (!rows || rows.length === 0) { resolve([]); return; }
-                    const headers = Object.keys(rows[0]);
-                    const codeCol = headers.find(h => /站点代码|站点编号|code|代码/i.test(h));
-                    const nameCol = headers.find(h => /站点名称|站点名|名称|name/i.test(h));
-                    const addrCol = headers.find(h => /站点地址|地址|addr|详细地址/i.test(h));
+                    var headers = Object.keys(rows[0]);
+                    var codeCol = headers.find(function(h) { return /站点代码|站点编号|code|代码/i.test(h); });
+                    var nameCol = headers.find(function(h) { return /站点名称|站点名|名称|name/i.test(h); });
+                    var addrCol = headers.find(function(h) { return /站点地址|地址|addr|详细地址/i.test(h); });
 
                     if (!codeCol || !nameCol || !addrCol) {
-                        addLog(`文件 ${file.name} 缺少必要列！需要: 站点代码, 站点名称, 站点地址`, true);
+                        addLog('文件 ' + file.name + ' 缺少必要列！需要: 站点代码, 站点名称, 站点地址', true);
                         resolve([]);
                         return;
                     }
 
-                    const result = [];
-                    for (let row of rows) {
-                        let code = row[codeCol]?.toString().trim();
-                        let name = row[nameCol]?.toString().trim();
-                        let addr = row[addrCol]?.toString().trim();
+                    var result = [];
+                    for (var i = 0; i < rows.length; i++) {
+                        var row = rows[i];
+                        var code = row[codeCol]?.toString().trim();
+                        var name = row[nameCol]?.toString().trim();
+                        var addr = row[addrCol]?.toString().trim();
                         if (code && name && addr) {
-                            result.push({ code, name, addr });
+                            result.push({ code: code, name: name, addr: addr });
                         }
                     }
                     resolve(result);
                 } catch (err) { reject(err); }
             };
-            reader.onerror = () => reject(new Error(`读取失败 ${file.name}`));
+            reader.onerror = function() { reject(new Error('读取失败 ' + file.name)); };
             reader.readAsArrayBuffer(file);
         });
     }
 
     // ========== 处理上传文件 ==========
-    async function handleFiles(filesList) {
+    function handleFiles(filesList) {
         if (isQuerying) { addLog('查询进行中，请等待完成', true); return; }
-        const excelFiles = [];
-        for (let f of filesList) {
-            const ext = f.name.split('.').pop().toLowerCase();
-            if (['xlsx','xls','csv'].includes(ext)) excelFiles.push(f);
-            else addLog(`跳过非Excel: ${f.name}`, false);
+        var excelFiles = [];
+        for (var fi = 0; fi < filesList.length; fi++) {
+            var f = filesList[fi];
+            var ext = f.name.split('.').pop().toLowerCase();
+            if (['xlsx', 'xls', 'csv'].includes(ext)) excelFiles.push(f);
+            else addLog('跳过非Excel: ' + f.name, false);
         }
         if (!excelFiles.length) { addLog('未找到有效Excel文件', true); return; }
 
-        uploadedFiles.push(...excelFiles);
+        uploadedFiles.push.apply(uploadedFiles, excelFiles);
         updateFileUI();
 
-        let totalAdded = 0;
-        for (let f of excelFiles) {
-            addLog(`解析文件: ${f.name}`);
-            const rows = await parseExcelToRows(f);
-            for (let r of rows) {
-                if (!dataRows.some(d => d.code === r.code && d.addr === r.addr)) {
-                    dataRows.push({
-                        id: nextId++,
-                        code: r.code,
-                        name: r.name,
-                        addr: r.addr,
-                        lng: null,
-                        lat: null,
-                        status: '待查询',
-                        province: '',
-                        city: '',
-                        district: ''
-                    });
-                    totalAdded++;
+        var totalAdded = 0;
+        excelFiles.forEach(function(f) {
+            addLog('解析文件: ' + f.name);
+            parseExcelToRows(f).then(function(rows) {
+                rows.forEach(function(r) {
+                    if (!dataRows.some(function(d) { return d.code === r.code && d.addr === r.addr; })) {
+                        dataRows.push({
+                            id: nextId++,
+                            code: r.code,
+                            name: r.name,
+                            addr: r.addr,
+                            lng: null,
+                            lat: null,
+                            status: '待查询',
+                            province: '',
+                            city: '',
+                            district: ''
+                        });
+                        totalAdded++;
+                    }
+                });
+                addLog('从 ' + f.name + ' 解析到 ' + rows.length + ' 条记录');
+                renderTable();
+                updateDownloadBarVisibility();
+                addLog('✅ 共加载 ' + totalAdded + ' 条站点数据', false);
+                if (isMapInitialized) {
+                    renderMapMarkers();
                 }
-            }
-            addLog(`从 ${f.name} 解析到 ${rows.length} 条记录`);
-        }
-        renderTable();
-        updateDownloadBarVisibility();
-        addLog(`✅ 共加载 ${totalAdded} 条站点数据`, false);
-
-        if (isMapInitialized) {
-            renderMapMarkers();
-        }
-        mapStatus.textContent = `📌 ${dataRows.length} 条，点击「查询」获取坐标`;
-        checkPassStatus();
+                mapStatus.textContent = '📌 ' + dataRows.length + ' 条，点击「查询」获取坐标';
+                checkPassStatus();
+            });
+        });
     }
 
     // ========== 文件UI ==========
     function updateFileUI() {
-        const cnt = uploadedFiles.length;
+        var cnt = uploadedFiles.length;
         if (cnt === 0) {
             fileStatsArea.style.display = 'none';
             fileListBox.style.display = 'none';
             return;
         }
         fileStatsArea.style.display = 'inline-flex';
-        fileStatsArea.innerHTML = `📁 ${cnt} 个文件`;
+        fileStatsArea.innerHTML = '📁 ' + cnt + ' 个文件';
         fileListBox.style.display = 'block';
-        fileListBox.innerHTML = uploadedFiles.map(f => `<span class="file-tag">📄 ${f.name}</span>`).join('');
+        fileListBox.innerHTML = uploadedFiles.map(function(f) { return '<span class="file-tag">📄 ' + f.name +
+            '</span>'; }).join('');
     }
 
     // ========== 清空 ==========
@@ -1198,7 +1205,7 @@
         if (isQuerying) {
             abortFlag = true;
             addLog('正在终止查询...', false);
-            setTimeout(() => doClear(), 400);
+            setTimeout(function() { doClear(); }, 400);
         } else {
             doClear();
         }
@@ -1247,32 +1254,34 @@
                 attributionControl: true
             });
 
-            let layerLoaded = false;
-            let currentIdx = 0;
+            var layerLoaded = false;
+            var currentIdx = 0;
 
             function tryLoadLayer(index) {
                 if (index >= TILE_LAYERS.length) {
                     if (!layerLoaded) mapStatus.textContent = '⚠️ 地图加载失败';
                     return;
                 }
-                const layer = TILE_LAYERS[index];
-                const tileLayer = L.tileLayer(layer.url, layer.options);
-                let loaded = false;
+                var layer = TILE_LAYERS[index];
+                var tileLayer = L.tileLayer(layer.url, layer.options);
+                var loaded = false;
 
-                const onLoad = () => {
-                    if (!loaded) { loaded = true; layerLoaded = true; mapStatus.textContent = '✅ 地图就绪'; }
+                var onLoad = function() {
+                    if (!loaded) { loaded = true;
+                        layerLoaded = true;
+                        mapStatus.textContent = '✅ 地图就绪'; }
                 };
-                const onError = () => {
+                var onError = function() {
                     if (!loaded) {
                         loaded = true;
                         if (mapInstance) mapInstance.removeLayer(tileLayer);
-                        setTimeout(() => { if (!layerLoaded) tryLoadLayer(index + 1); }, 500);
+                        setTimeout(function() { if (!layerLoaded) tryLoadLayer(index + 1); }, 500);
                     }
                 };
                 tileLayer.on('load', onLoad);
                 tileLayer.on('tileload', onLoad);
                 tileLayer.on('tileerror', onError);
-                setTimeout(() => { if (!loaded) onError(); }, 8000);
+                setTimeout(function() { if (!loaded) onError(); }, 8000);
                 tileLayer.addTo(mapInstance);
             }
             tryLoadLayer(0);
@@ -1287,7 +1296,7 @@
 
     function clearMapMarkers() {
         if (mapLayers.length > 0) {
-            mapLayers.forEach(layer => {
+            mapLayers.forEach(function(layer) {
                 if (mapInstance) mapInstance.removeLayer(layer);
             });
             mapLayers = [];
@@ -1299,96 +1308,110 @@
         if (!isMapInitialized || !mapInstance) return;
         clearMapMarkers();
 
-        const successRows = dataRows.filter(r => r.status === '成功' && r.lng !== null && r.lat !== null);
+        var successRows = dataRows.filter(function(r) { return r.status === '成功' && r.lng !== null && r.lat !== null; });
 
         if (successRows.length === 0) {
-            mapStatus.textContent = `📌 ${dataRows.length} 条，暂无坐标`;
+            mapStatus.textContent = '📌 ' + dataRows.length + ' 条，暂无坐标';
             mapCount.textContent = '📍 0 个';
             return;
         }
 
-        const bounds = [];
-        successRows.forEach((row) => {
-            const icon = L.divIcon({
-                html: `<div style="background:#4A9EFF;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+        var bounds = [];
+        successRows.forEach(function(row) {
+            var icon = L.divIcon({
+                html: '<div style="background:#4A9EFF;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
                 className: '',
                 iconSize: [12, 12],
                 iconAnchor: [6, 6]
             });
-            const popupContent = `<strong>${escHtml(row.name)}</strong><br>📍 ${row.lng}, ${row.lat}<br>🏷️ ${escHtml(row.code)}<br>📌 ${escHtml(row.addr)}`;
-            const marker = L.marker([row.lat, row.lng], { icon }).bindPopup(popupContent);
+            var popupContent = '<strong>' + escHtml(row.name) + '</strong><br>📍 ' + row.lng + ', ' + row.lat +
+                '<br>🏷️ ' + escHtml(row.code) + '<br>📌 ' + escHtml(row.addr);
+            var marker = L.marker([row.lat, row.lng], { icon: icon }).bindPopup(popupContent);
             mapInstance.addLayer(marker);
             mapLayers.push(marker);
             bounds.push([row.lat, row.lng]);
         });
 
-        mapCount.textContent = `📍 ${successRows.length} 个`;
+        mapCount.textContent = '📍 ' + successRows.length + ' 个';
 
         if (bounds.length > 0) {
             try {
                 mapInstance.fitBounds(bounds, { padding: [40, 40] });
             } catch (e) {
-                const centerLat = successRows.reduce((s, r) => s + r.lat, 0) / successRows.length;
-                const centerLng = successRows.reduce((s, r) => s + r.lng, 0) / successRows.length;
+                var centerLat = successRows.reduce(function(s, r) { return s + r.lat; }, 0) / successRows.length;
+                var centerLng = successRows.reduce(function(s, r) { return s + r.lng; }, 0) / successRows.length;
                 mapInstance.setView([centerLat, centerLng], 8);
             }
-            mapStatus.textContent = `✅ ${successRows.length} 个已标记`;
+            mapStatus.textContent = '✅ ' + successRows.length + ' 个已标记';
         }
     }
 
     // ========== 高德地理编码 ==========
-    async function geocodeAddressWithRetry(address, key) {
-        for (let attempt = 1; attempt <= CONFIG.MAX_RETRIES + 1; attempt++) {
-            if (abortFlag) return { lng: null, lat: null, status: 'abort', info: '已终止' };
+    function geocodeAddressWithRetry(address, key) {
+        return new Promise(function(resolve) {
+            var attempt = 1;
 
-            try {
-                const url = `https://restapi.amap.com/v3/geocode/geo?address=${encodeURIComponent(address)}&output=json&key=${key}`;
-                const response = await fetch(url);
-                const data = await response.json();
+            function doRequest() {
+                if (abortFlag) {
+                    resolve({ lng: null, lat: null, status: 'abort', info: '已终止' });
+                    return;
+                }
 
-                if (data.status === '0' && data.info && data.info.includes(CONFIG.RATE_LIMIT_ERROR)) {
-                    if (attempt <= CONFIG.MAX_RETRIES) {
-                        await new Promise(r => setTimeout(r, CONFIG.RETRY_DELAY));
-                        continue;
-                    } else {
-                        return { lng: null, lat: null, status: 'failed', info: '限流超限' };
+                var url = 'https://restapi.amap.com/v3/geocode/geo?address=' + encodeURIComponent(address) +
+                    '&output=json&key=' + key;
+                fetch(url).then(function(response) { return response.json(); }).then(function(data) {
+                    if (data.status === '0' && data.info && data.info.includes(CONFIG.RATE_LIMIT_ERROR)) {
+                        if (attempt <= CONFIG.MAX_RETRIES) {
+                            attempt++;
+                            setTimeout(doRequest, CONFIG.RETRY_DELAY);
+                            return;
+                        } else {
+                            resolve({ lng: null, lat: null, status: 'failed', info: '限流超限' });
+                            return;
+                        }
                     }
-                }
 
-                if (data.status === '1' && data.geocodes && data.geocodes.length > 0) {
-                    const location = data.geocodes[0].location;
-                    const [lng, lat] = location.split(',').map(Number);
-                    const addressComponent = data.geocodes[0].addressComponent || {};
-                    return {
-                        lng,
-                        lat,
-                        status: 'ok',
-                        province: addressComponent.province || '',
-                        city: addressComponent.city || '',
-                        district: addressComponent.district || ''
-                    };
-                } else {
-                    return { lng: null, lat: null, status: 'failed', info: data.info || '无结果' };
-                }
-            } catch (err) {
-                if (attempt <= CONFIG.MAX_RETRIES) {
-                    await new Promise(r => setTimeout(r, CONFIG.RETRY_DELAY));
-                    continue;
-                }
-                return { lng: null, lat: null, status: 'error', info: err.message };
+                    if (data.status === '1' && data.geocodes && data.geocodes.length > 0) {
+                        var location = data.geocodes[0].location;
+                        var parts = location.split(',').map(Number);
+                        var addressComponent = data.geocodes[0].addressComponent || {};
+                        resolve({
+                            lng: parts[0],
+                            lat: parts[1],
+                            status: 'ok',
+                            province: addressComponent.province || '',
+                            city: addressComponent.city || '',
+                            district: addressComponent.district || ''
+                        });
+                    } else {
+                        if (attempt <= CONFIG.MAX_RETRIES) {
+                            attempt++;
+                            setTimeout(doRequest, CONFIG.RETRY_DELAY);
+                            return;
+                        }
+                        resolve({ lng: null, lat: null, status: 'failed', info: data.info || '无结果' });
+                    }
+                }).catch(function(err) {
+                    if (attempt <= CONFIG.MAX_RETRIES) {
+                        attempt++;
+                        setTimeout(doRequest, CONFIG.RETRY_DELAY);
+                        return;
+                    }
+                    resolve({ lng: null, lat: null, status: 'error', info: err.message });
+                });
             }
-        }
-        return { lng: null, lat: null, status: 'error', info: '未知错误' };
+            doRequest();
+        });
     }
 
     // ========== 批量查询 ==========
-    async function startQuery() {
+    function startQuery() {
         if (isQuerying) { addLog('已有查询进行中', true); return; }
         if (dataRows.length === 0) { addLog('请先上传包含站点数据的Excel文件', true); return; }
-        const key = amapKeyInput.value.trim();
+        var key = amapKeyInput.value.trim();
         if (!key || key.length < 10) { addLog('请填写有效的高德地图Web服务API Key', true); return; }
 
-        dataRows.forEach(r => {
+        dataRows.forEach(function(r) {
             r.lng = null;
             r.lat = null;
             r.status = '待查询';
@@ -1410,37 +1433,34 @@
             workflowStatus.textContent = '⏳ 查询中...';
         }
 
-        const total = dataRows.length;
-        let completed = 0;
-        let success = 0;
-        let failed = 0;
-        let requestTimestamps = [];
+        var total = dataRows.length;
+        var completed = 0;
+        var success = 0;
+        var failed = 0;
+        var requestTimestamps = [];
 
-        addLog(`🚀 开始查询 ${total} 个地址 (限流: QPS ≤ ${CONFIG.QPS_LIMIT})...`);
+        addLog('🚀 开始查询 ' + total + ' 个地址 (限流: QPS ≤ ' + CONFIG.QPS_LIMIT + ')...');
 
-        for (let i = 0; i < dataRows.length; i++) {
-            if (abortFlag) {
-                addLog('⛔ 查询已终止', false);
-                break;
+        function processNext(i) {
+            if (i >= dataRows.length || abortFlag) {
+                finishQuery();
+                return;
             }
 
-            const now = Date.now();
-            requestTimestamps = requestTimestamps.filter(t => now - t < 1000);
-            while (requestTimestamps.length >= CONFIG.QPS_LIMIT) {
-                const oldest = requestTimestamps[0];
-                const waitTime = 1000 - (now - oldest) + 50;
+            var now = Date.now();
+            requestTimestamps = requestTimestamps.filter(function(t) { return now - t < 1000; });
+            if (requestTimestamps.length >= CONFIG.QPS_LIMIT) {
+                var oldest = requestTimestamps[0];
+                var waitTime = 1000 - (now - oldest) + 50;
                 if (waitTime > 0 && waitTime < 2000) {
-                    await new Promise(r => setTimeout(r, waitTime));
+                    setTimeout(function() { processNext(i); }, waitTime);
+                    return;
                 }
-                const newNow = Date.now();
-                requestTimestamps = requestTimestamps.filter(t => newNow - t < 1000);
-                if (requestTimestamps.length < CONFIG.QPS_LIMIT) break;
             }
             requestTimestamps.push(Date.now());
 
-            const row = dataRows[i];
-            try {
-                const result = await geocodeAddressWithRetry(row.addr, key);
+            var row = dataRows[i];
+            geocodeAddressWithRetry(row.addr, key).then(function(result) {
                 if (result.status === 'ok') {
                     row.lng = result.lng;
                     row.lat = result.lat;
@@ -1451,62 +1471,66 @@
                     success++;
                 } else if (result.status === 'abort') {
                     row.status = '已终止';
-                    break;
+                    abortFlag = true;
                 } else {
-                    row.status = `失败(${result.info || '未知'})`;
+                    row.status = '失败(' + (result.info || '未知') + ')';
                     failed++;
                 }
-            } catch (e) {
-                row.status = `失败(${e.message})`;
-                failed++;
+
+                completed++;
+                var pct = (completed / total) * 100;
+                progressFill.style.width = Math.min(pct, 100) + '%';
+                progressText.textContent = '⏳ ' + completed + '/' + total + ' (' + Math.round(pct) + '%) 成功:' +
+                    success + ' 失败:' + failed;
+
+                if (i % 3 === 0 || i === total - 1 || abortFlag) {
+                    renderTable();
+                }
+
+                if (!abortFlag && i < dataRows.length - 1) {
+                    setTimeout(function() { processNext(i + 1); }, CONFIG.REQUEST_INTERVAL);
+                } else {
+                    finishQuery();
+                }
+            });
+        }
+
+        function finishQuery() {
+            isQuerying = false;
+            queryBtn.disabled = false;
+            stopBtn.disabled = true;
+            exportResultBtn.disabled = false;
+            copyResultBtn.disabled = false;
+
+            progressFill.style.width = '100%';
+            progressText.textContent = '✅ 完成！成功 ' + success + ' 条，失败 ' + failed + ' 条';
+            renderTable();
+
+            if (isMapInitialized) {
+                renderMapMarkers();
             }
 
-            completed++;
-            const pct = (completed / total) * 100;
-            progressFill.style.width = `${Math.min(pct, 100)}%`;
-            progressText.textContent = `⏳ ${completed}/${total} (${Math.round(pct)}%) 成功:${success} 失败:${failed}`;
+            addLog('✅ 查询结束，成功 ' + success + ' 条，失败 ' + failed + ' 条', false);
 
-            if (i % 3 === 0 || i === total - 1) {
-                renderTable();
+            generateResultBlob();
+            if (success > 0 || failed > 0) {
+                showDownloadBar(success, failed);
             }
+            mapStatus.textContent = '✅ 查询完成 · 成功 ' + success + ' · 失败 ' + failed;
 
-            if (i < dataRows.length - 1 && !abortFlag) {
-                await new Promise(r => setTimeout(r, CONFIG.REQUEST_INTERVAL));
+            // ★★★ 查询完成后自动保存并通知父页面 ★★★
+            if (success > 0) {
+                setTimeout(function() {
+                    saveAndPass();
+                }, 300);
+            } else {
+                if (isInWorkflow) {
+                    workflowStatus.textContent = '⚠️ 查询完成但无成功数据';
+                }
             }
         }
 
-        isQuerying = false;
-        queryBtn.disabled = false;
-        stopBtn.disabled = true;
-        exportResultBtn.disabled = false;
-        copyResultBtn.disabled = false;
-
-        progressFill.style.width = '100%';
-        progressText.textContent = `✅ 完成！成功 ${success} 条，失败 ${failed} 条`;
-        renderTable();
-
-        if (isMapInitialized) {
-            renderMapMarkers();
-        }
-
-        addLog(`✅ 查询结束，成功 ${success} 条，失败 ${failed} 条`, false);
-
-        generateResultBlob();
-        if (success > 0 || failed > 0) {
-            showDownloadBar(success, failed);
-        }
-        mapStatus.textContent = `✅ 查询完成 · 成功 ${success} · 失败 ${failed}`;
-
-        // ★★★ 查询完成后自动保存并通知父页面 ★★★
-        if (success > 0) {
-            setTimeout(() => {
-                saveAndPass();
-            }, 300);
-        } else {
-            if (isInWorkflow) {
-                workflowStatus.textContent = '⚠️ 查询完成但无成功数据';
-            }
-        }
+        processNext(0);
     }
 
     function stopQuery() {
@@ -1521,27 +1545,29 @@
 
     // ========== 生成结果Blob ==========
     function generateResultBlob() {
-        const exportData = dataRows.map(r => ({
-            '站点代码': r.code,
-            '站点名称': r.name,
-            '站点地址': r.addr,
-            '经度': r.lng !== null && r.lng !== undefined ? r.lng : '',
-            '纬度': r.lat !== null && r.lat !== undefined ? r.lat : '',
-            '省': r.province || '',
-            '市': r.city || '',
-            '区': r.district || '',
-            '查询状态': r.status || '待查询'
-        }));
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        const wb = XLSX.utils.book_new();
+        var exportData = dataRows.map(function(r) {
+            return {
+                '站点代码': r.code,
+                '站点名称': r.name,
+                '站点地址': r.addr,
+                '经度': r.lng !== null && r.lng !== undefined ? r.lng : '',
+                '纬度': r.lat !== null && r.lat !== undefined ? r.lat : '',
+                '省': r.province || '',
+                '市': r.city || '',
+                '区': r.district || '',
+                '查询状态': r.status || '待查询'
+            };
+        });
+        var ws = XLSX.utils.json_to_sheet(exportData);
+        var wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, '经纬度结果');
-        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        var buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
         resultBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     }
 
     function showDownloadBar(success, failed) {
         fixedBar.classList.remove('hidden-bar');
-        dlStatus.innerHTML = `📦 查询完成！成功 ${success} 条，失败 ${failed} 条`;
+        dlStatus.innerHTML = '📦 查询完成！成功 ' + success + ' 条，失败 ' + failed + ' 条';
         downloadBtn.disabled = false;
     }
 
@@ -1552,10 +1578,10 @@
     }
 
     function updateDownloadBarVisibility() {
-        const hasData = dataRows.some(r => r.status === '成功' || r.status === '失败');
+        var hasData = dataRows.some(function(r) { return r.status === '成功' || r.status === '失败'; });
         if (hasData && !isQuerying) {
-            const succ = dataRows.filter(r => r.status === '成功').length;
-            const fail = dataRows.filter(r => r.status === '失败').length;
+            var succ = dataRows.filter(function(r) { return r.status === '成功'; }).length;
+            var fail = dataRows.filter(function(r) { return r.status === '失败'; }).length;
             generateResultBlob();
             showDownloadBar(succ, fail);
         } else if (!hasData) {
@@ -1566,13 +1592,13 @@
     function downloadResult() {
         if (!resultBlob) { addLog('没有可下载的结果，请先查询', true); return; }
         try {
-            const url = URL.createObjectURL(resultBlob);
-            const a = document.createElement('a');
+            var url = URL.createObjectURL(resultBlob);
+            var a = document.createElement('a');
             a.href = url;
-            a.download = `站点经纬度_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`;
+            a.download = '站点经纬度_' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.xlsx';
             document.body.appendChild(a);
             a.click();
-            setTimeout(() => {
+            setTimeout(function() {
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             }, 200);
@@ -1583,47 +1609,48 @@
     }
 
     function copyResultsToClipboard() {
-        if (!dataRows.length || !dataRows.some(r => r.status === '成功' || r.status === '失败')) {
+        if (!dataRows.length || !dataRows.some(function(r) { return r.status === '成功' || r.status === '失败'; })) {
             addLog('没有可复制的结果，请先查询', true);
             return;
         }
-        const headers = ['站点代码', '站点名称', '站点地址', '经度', '纬度', '省', '市', '区', '查询状态'];
-        let csv = headers.join('\t') + '\n';
-        dataRows.forEach(r => {
-            const lng = r.lng !== null && r.lng !== undefined ? r.lng : '';
-            const lat = r.lat !== null && r.lat !== undefined ? r.lat : '';
+        var headers = ['站点代码', '站点名称', '站点地址', '经度', '纬度', '省', '市', '区', '查询状态'];
+        var csv = headers.join('\t') + '\n';
+        dataRows.forEach(function(r) {
+            var lng = r.lng !== null && r.lng !== undefined ? r.lng : '';
+            var lat = r.lat !== null && r.lat !== undefined ? r.lat : '';
             csv += [r.code, r.name, r.addr, lng, lat, r.province || '', r.city || '', r.district || '', r.status ||
                 '待查询'
             ].join('\t') + '\n';
         });
 
-        navigator.clipboard.writeText(csv).then(() => {
+        navigator.clipboard.writeText(csv).then(function() {
             showToast('✅ 已复制 ' + dataRows.length + ' 条数据到剪贴板！');
-            addLog(`📋 已复制 ${dataRows.length} 条数据到剪贴板`, false);
-        }).catch(() => {
-            const textarea = document.createElement('textarea');
+            addLog('📋 已复制 ' + dataRows.length + ' 条数据到剪贴板', false);
+        }).catch(function() {
+            var textarea = document.createElement('textarea');
             textarea.value = csv;
             document.body.appendChild(textarea);
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
             showToast('✅ 已复制 ' + dataRows.length + ' 条数据到剪贴板！');
-            addLog(`📋 已复制 ${dataRows.length} 条数据到剪贴板`, false);
+            addLog('📋 已复制 ' + dataRows.length + ' 条数据到剪贴板', false);
         });
     }
 
-    let toastTimer = null;
+    var toastTimer = null;
 
-    function showToast(msg, type = 'info') {
+    function showToast(msg, type) {
+        if (!type) type = 'info';
         copyToast.textContent = msg;
-        copyToast.className = `copy-toast show`;
+        copyToast.className = 'copy-toast show';
         if (type === 'error') {
             copyToast.style.background = '#b13b3b';
         } else {
             copyToast.style.background = '#2a7f6e';
         }
         clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => { copyToast.classList.remove('show'); }, 3000);
+        toastTimer = setTimeout(function() { copyToast.classList.remove('show'); }, 3000);
     }
 
     function exportCurrentResult() { downloadResult(); }
@@ -1631,72 +1658,81 @@
     function resetAll() {
         if (isQuerying) {
             abortFlag = true;
-            setTimeout(() => { doClear(); }, 300);
+            setTimeout(function() { doClear(); }, 300);
         } else {
             doClear();
         }
     }
 
     function downloadTemplate() {
-        const headers = ['站点代码', '站点名称', '站点地址'];
-        const sampleData = [
+        var headers = ['站点代码', '站点名称', '站点地址'];
+        var sampleData = [
             ['S001', '上海仓库', '上海市浦东新区世纪大道1号'],
             ['S002', '北京物流中心', '北京市通州区物流园区路4号'],
             ['S003', '广州分拨中心', '广东省广州市白云区白云大道北1号']
         ];
-        const wsData = [headers, ...sampleData];
-        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        var wsData = [headers].concat(sampleData);
+        var ws = XLSX.utils.aoa_to_sheet(wsData);
         ws['!cols'] = [{ wch: 14 }, { wch: 20 }, { wch: 40 }];
-        const wb = XLSX.utils.book_new();
+        var wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, '站点数据');
-        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        var buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        var blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
         a.href = url;
         a.download = '站点数据模板.xlsx';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
         addLog('📥 已下载Excel模板', false);
     }
 
     // ========== 文件上传处理（递归） ==========
-    async function getAllFilesFromEntry(entry) {
-        const files = [];
-        if (entry.isFile) {
-            const file = await new Promise(resolve => entry.file(resolve));
-            files.push(file);
-        } else if (entry.isDirectory) {
-            const reader = entry.createReader();
-            const entries = await new Promise((resolve) => {
-                let results = [];
+    function getAllFilesFromEntry(entry) {
+        return new Promise(function(resolve) {
+            var files = [];
+            if (entry.isFile) {
+                entry.file(function(file) {
+                    files.push(file);
+                    resolve(files);
+                });
+            } else if (entry.isDirectory) {
+                var reader = entry.createReader();
+                var results = [];
+
                 function readBatch() {
-                    reader.readEntries(async (batch) => {
-                        if (batch.length === 0) resolve(results);
-                        else { results.push(...batch); readBatch(); }
+                    reader.readEntries(function(entries) {
+                        if (entries.length === 0) {
+                            Promise.all(results).then(function(allFiles) {
+                                resolve(allFiles.flat());
+                            });
+                            return;
+                        }
+                        var promises = entries.map(function(e) { return getAllFilesFromEntry(e); });
+                        Promise.all(promises).then(function(batches) {
+                            results.push.apply(results, batches);
+                            readBatch();
+                        });
                     });
                 }
                 readBatch();
-            });
-            for (let sub of entries) {
-                const subFiles = await getAllFilesFromEntry(sub);
-                files.push(...subFiles);
+            } else {
+                resolve(files);
             }
-        }
-        return files;
+        });
     }
 
     // ========== 事件绑定 ==========
-    folderInput.addEventListener('change', async (e) => {
+    folderInput.addEventListener('change', function(e) {
         if (e.target.files.length) {
-            await handleFiles(Array.from(e.target.files));
+            handleFiles(Array.from(e.target.files));
         }
         folderInput.value = '';
     });
-    fileInput.addEventListener('change', async (e) => {
-        if (e.target.files.length) await handleFiles(Array.from(e.target.files));
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length) handleFiles(Array.from(e.target.files));
         fileInput.value = '';
     });
     clearBtn.addEventListener('click', clearAll);
@@ -1706,7 +1742,8 @@
     resetBottomBtn.addEventListener('click', resetAll);
     exportResultBtn.addEventListener('click', exportCurrentResult);
     copyResultBtn.addEventListener('click', copyResultsToClipboard);
-    downloadTemplateBtn.addEventListener('click', (e) => { e.preventDefault(); downloadTemplate(); });
+    downloadTemplateBtn.addEventListener('click', function(e) { e.preventDefault();
+        downloadTemplate(); });
 
     // ★★★ 数据传递事件 ★★★
     saveAndPassBtn.addEventListener('click', saveAndPass);
@@ -1715,7 +1752,7 @@
     // ★★★ 监听来自父页面的消息 ★★★
     window.addEventListener('message', function(event) {
         if (event.data && event.data.type === 'toolbox_request_data') {
-            const passData = getPassData();
+            var passData = getPassData();
             if (passData && passData.tool === TOOL_ID) {
                 event.source.postMessage({
                     type: 'toolbox_data_response',
@@ -1732,32 +1769,41 @@
         }
     });
 
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#1f6392'; });
-    dropZone.addEventListener('dragleave', () => dropZone.style.borderColor = '#bdd2ec';
-        dropZone.style.backgroundColor = '#fafcff'; });
-    dropZone.addEventListener('drop', async (e) => {
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropZone.style.borderColor = '#1f6392';
+    });
+    dropZone.addEventListener('dragleave', function() {
+        dropZone.style.borderColor = '#bdd2ec';
+        dropZone.style.backgroundColor = '#fafcff';
+    });
+    dropZone.addEventListener('drop', function(e) {
         e.preventDefault();
         dropZone.style.borderColor = '#bdd2ec';
         dropZone.style.backgroundColor = '#fafcff';
-        const items = e.dataTransfer.items;
-        let allFiles = [];
-        for (let i = 0; i < items.length; i++) {
-            const entry = items[i].webkitGetAsEntry();
+        var items = e.dataTransfer.items;
+        var allFiles = [];
+        var promises = [];
+        for (var i = 0; i < items.length; i++) {
+            var entry = items[i].webkitGetAsEntry();
             if (entry) {
-                const files = await getAllFilesFromEntry(entry);
-                allFiles.push(...files);
+                promises.push(getAllFilesFromEntry(entry).then(function(files) {
+                    allFiles.push.apply(allFiles, files);
+                }));
             } else if (items[i].kind === 'file') {
                 allFiles.push(items[i].getAsFile());
             }
         }
-        if (allFiles.length) await handleFiles(allFiles);
-        else addLog('未获取到文件', true);
+        Promise.all(promises).then(function() {
+            if (allFiles.length) handleFiles(allFiles);
+            else addLog('未获取到文件', true);
+        });
     });
 
     // ========== 窗口resize ==========
     window.addEventListener('resize', function() {
         if (mapInstance) {
-            setTimeout(() => mapInstance.invalidateSize(), 200);
+            setTimeout(function() { mapInstance.invalidateSize(); }, 200);
         }
     });
 
@@ -1765,7 +1811,7 @@
     renderTable();
     hideDownloadBar();
     updateFileUI();
-    addLog(`📋 限流：${CONFIG.QPS_LIMIT}次/秒，重试${CONFIG.MAX_RETRIES}次`, false);
+    addLog('📋 限流：' + CONFIG.QPS_LIMIT + '次/秒，重试' + CONFIG.MAX_RETRIES + '次', false);
     addLog('📋 上传包含「站点代码、站点名称、站点地址」的Excel文件', false);
     addLog('🗺️ 地图将自动展示查询成功的站点', false);
     addLog('🔗 工具联动：查询成功后自动保存数据，供K-Means聚类使用', false);
@@ -1773,7 +1819,7 @@
     // ★★★ 检测是否在工作流中 ★★★
     detectWorkflowMode();
 
-    setTimeout(() => {
+    setTimeout(function() {
         initMap();
         checkPassStatus();
     }, 400);
