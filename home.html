@@ -4,789 +4,109 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>物流工具箱 - 首页 (工作流真实联动版)</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        /* ===== 所有样式 ===== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
-        }
+        /* ===== 基础样式 ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif; }
+        body { background: #f0f3f7; height: 100vh; overflow: hidden; }
+        .app-container { display: flex; height: 100vh; width: 100%; }
 
-        body {
-            background: #f0f3f7;
-            height: 100vh;
-            overflow: hidden;
-        }
+        /* 左侧导航 */
+        .sidebar { width: 280px; min-width: 280px; background: linear-gradient(180deg, #1e3a5f 0%, #0f2b44 100%); color: #e0eefa; display: flex; flex-direction: column; box-shadow: 2px 0 16px rgba(0,0,0,0.15); z-index: 10; }
+        .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-brand h1 { font-size: 20px; font-weight: 700; color: #f9e0a8; display: flex; align-items: center; gap: 10px; }
+        .sidebar-brand p { font-size: 12px; opacity: 0.6; margin-top: 4px; }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0 20px; }
+        .nav-section { margin-bottom: 6px; }
+        .nav-section-title { padding: 8px 20px 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.35); cursor: pointer; user-select: none; display: flex; justify-content: space-between; }
+        .nav-section-title .arrow { transition: transform 0.2s; }
+        .nav-section-title .arrow.collapsed { transform: rotate(-90deg); }
+        .nav-items { overflow: hidden; transition: max-height 0.3s ease; }
+        .nav-items.collapsed { max-height: 0 !important; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 9px 20px 9px 32px; cursor: pointer; transition: 0.15s; border-left: 3px solid transparent; font-size: 14px; color: rgba(255,255,255,0.7); text-decoration: none; }
+        .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+        .nav-item.active { background: rgba(255,255,255,0.10); border-left-color: #ffb347; color: #fff; }
+        .nav-item .icon { font-size: 16px; width: 22px; text-align: center; }
+        .nav-item.workflow-item { border-left-color: #f5d742; background: rgba(245,215,66,0.08); }
+        .nav-item.workflow-item .badge { background: #f5d742; color: #1e3a5f; margin-left: auto; padding: 1px 10px; border-radius: 30px; font-size: 10px; }
 
-        .app-container {
-            display: flex;
-            height: 100vh;
-            width: 100%;
-        }
+        /* 右侧主内容 */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #f0f3f7; }
+        .content-header { background: white; padding: 16px 28px; border-bottom: 1px solid #e2edf5; display: flex; justify-content: space-between; align-items: center; min-height: 64px; z-index: 10; }
+        .content-header h2 { font-size: 18px; font-weight: 600; color: #1f3a5f; }
+        .content-header .logout-top { background: rgba(26,93,140,0.08); border: 1px solid #cbdde9; padding: 6px 18px; border-radius: 30px; font-size: 13px; color: #1a5d8c; cursor: pointer; }
+        .content-body { flex: 1; overflow: hidden; padding: 16px 20px; background: #f0f3f7; position: relative; min-height: 0; height: 100%; }
 
-        .sidebar {
-            width: 280px;
-            min-width: 280px;
-            background: linear-gradient(180deg, #1e3a5f 0%, #0f2b44 100%);
-            color: #e0eefa;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 2px 0 16px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
-            position: relative;
-            z-index: 10;
-        }
+        /* 常规工具嵌入 iframe */
+        .iframe-wrapper { width: 100%; height: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid #e2edf5; position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
+        .iframe-wrapper iframe { width: 100%; height: 100%; border: none; display: block; flex: 1; }
 
-        .sidebar-brand {
-            padding: 20px 20px 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            flex-shrink: 0;
-        }
-        .sidebar-brand h1 {
-            font-size: 20px;
-            font-weight: 700;
-            color: #f9e0a8;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .sidebar-brand p {
-            font-size: 12px;
-            opacity: 0.6;
-            margin-top: 4px;
-            letter-spacing: 1px;
-        }
+        /* 工作流覆盖面板 */
+        .workflow-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 100; display: none; align-items: center; justify-content: center; border-radius: 12px; }
+        .workflow-overlay.active { display: flex; }
+        .workflow-panel { background: white; border-radius: 1.2rem; max-width: 720px; width: 90%; max-height: 85vh; overflow-y: auto; padding: 24px 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.3s ease; }
+        .workflow-panel .wf-title { font-size: 18px; font-weight: 700; color: #1f3a5f; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #e8eef5; padding-bottom: 12px; }
+        .wf-steps { margin: 16px 0; }
+        .wf-step { display: flex; align-items: flex-start; gap: 14px; padding: 10px 0; border-bottom: 1px solid #f0f4f8; }
+        .wf-step .step-num { width: 28px; height: 28px; border-radius: 50%; background: #e8eef5; color: #4a6a8a; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+        .wf-step.done .step-num { background: #2a7f6e; color: white; }
+        .wf-step .step-info { flex: 1; }
+        .wf-step .step-info .step-name { font-weight: 600; color: #1f3a5f; font-size: 14px; }
+        .wf-step .step-info .step-status { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+        .wf-step .step-info .step-status .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .wf-step .step-info .step-status .dot.done { background: #2a7f6e; }
+        .wf-step .step-action .btn { border: none; padding: 4px 14px; border-radius: 60px; font-weight: 600; font-size: 11px; cursor: pointer; }
+        .wf-step .step-action .btn-success { background: #2a7f6e; color: white; }
+        .wf-footer { display: flex; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e8eef5; }
+        .wf-footer .btn { border: none; padding: 8px 24px; border-radius: 60px; font-weight: 700; font-size: 13px; cursor: pointer; }
+        .wf-footer .btn-success { background: #2a7f6e; color: white; }
+        .wf-footer .btn-danger { background: #fce4e4; color: #b13b3b; border: 1px solid #f5c2c2; }
+        .wf-log { background: #0f1a24; border-radius: 8px; padding: 8px 12px; max-height: 80px; overflow-y: auto; margin-top: 12px; font-family: monospace; font-size: 11px; color: #c9e1f0; }
+        
+        /* 工具全屏弹窗（工作流执行时使用） */
+        .tool-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; }
+        .tool-modal-overlay.active { display: flex; }
+        .tool-modal-box { width: 95%; height: 95%; background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden; }
+        .tool-modal-header { height: 45px; background: #f8fafd; border-bottom: 1px solid #e2edf5; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
+        .tool-modal-header .close-btn { border: 1px solid #f5c2c2; background: #fce4e4; color: #b13b3b; padding: 4px 16px; border-radius: 30px; cursor: pointer; font-size: 13px; }
+        .tool-modal-box iframe { width: 100%; flex: 1; border: none; min-height: 0; }
 
-        .sidebar-nav {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px 0 20px;
-        }
-        .sidebar-nav::-webkit-scrollbar {
-            width: 4px;
-        }
-        .sidebar-nav::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-        }
-        .sidebar-nav::-webkit-scrollbar-track {
-            background: transparent;
-        }
+        /* 常规欢迎页 */
+        .welcome-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 40px; background: white; border-radius: 12px; border: 1px solid #e2edf5; overflow-y: auto; }
+        .welcome-content .tool-grid { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; justify-content: center; }
+        .welcome-content .tool-grid .card { background: #f8fafd; border: 1px solid #e2edf5; border-radius: 12px; padding: 16px 24px; cursor: pointer; transition: 0.2s; }
+        .welcome-content .tool-grid .card:hover { border-color: #1a5d8c; transform: translateY(-2px); }
+        
+        /* 工作流选择页 */
+        .workflow-list-page { padding: 20px; height: 100%; overflow-y: auto; }
+        .workflow-card { background: white; border-radius: 14px; border: 1px solid #e2edf5; padding: 20px; margin-bottom: 16px; cursor: pointer; transition: 0.2s; }
+        .workflow-card:hover { border-color: #f5d742; transform: translateY(-2px); }
+        .workflow-card .wf-name { font-size: 18px; font-weight: 700; color: #1f3a5f; }
+        .workflow-card .wf-desc { font-size: 14px; color: #7a8eaa; margin-top: 8px; }
+        .workflow-card .wf-action { margin-top: 12px; display: inline-block; background: #f5d742; color: #1e3a5f; font-size: 10px; font-weight: 700; padding: 2px 12px; border-radius: 30px; }
 
-        .nav-section {
-            margin-bottom: 6px;
-        }
-        .nav-section-title {
-            padding: 8px 20px 6px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: rgba(255, 255, 255, 0.35);
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .nav-section-title .arrow {
-            font-size: 10px;
-            transition: transform 0.2s;
-        }
-        .nav-section-title .arrow.collapsed {
-            transform: rotate(-90deg);
-        }
-
-        .nav-items {
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-        .nav-items.collapsed {
-            max-height: 0 !important;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 9px 20px 9px 32px;
-            cursor: pointer;
-            transition: 0.15s;
-            border-left: 3px solid transparent;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-        }
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.06);
-            color: #fff;
-        }
-        .nav-item.active {
-            background: rgba(255, 255, 255, 0.10);
-            border-left-color: #ffb347;
-            color: #fff;
-        }
-        .nav-item .icon {
-            font-size: 16px;
-            width: 22px;
-            text-align: center;
-            flex-shrink: 0;
-        }
-        .nav-item .badge {
-            margin-left: auto;
-            background: rgba(255, 255, 255, 0.12);
-            padding: 1px 10px;
-            border-radius: 30px;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-        .nav-item.workflow-item {
-            border-left-color: #f5d742;
-            background: rgba(245, 215, 66, 0.08);
-        }
-        .nav-item.workflow-item:hover {
-            background: rgba(245, 215, 66, 0.15);
-        }
-        .nav-item.workflow-item .badge {
-            background: #f5d742;
-            color: #1e3a5f;
-        }
-
-        .sidebar-footer {
-            padding: 14px 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.25);
-            text-align: center;
-            flex-shrink: 0;
-        }
-
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: #f0f3f7;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .content-header {
-            background: white;
-            padding: 16px 28px;
-            border-bottom: 1px solid #e2edf5;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-            min-height: 64px;
-            z-index: 10;
-        }
-        .content-header h2 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1f3a5f;
-        }
-        .content-header .breadcrumb {
-            font-size: 13px;
-            color: #7a8eaa;
-        }
-        .content-header .breadcrumb span {
-            color: #1a5d8c;
-        }
-        .content-header .logout-top {
-            background: rgba(26, 93, 140, 0.08);
-            border: 1px solid #cbdde9;
-            padding: 6px 18px;
-            border-radius: 30px;
-            font-size: 13px;
-            color: #1a5d8c;
-            cursor: pointer;
-            transition: 0.2s;
-            font-weight: 500;
-        }
-        .content-header .logout-top:hover {
-            background: #1a5d8c;
-            color: white;
-            border-color: #1a5d8c;
-        }
-
-        .content-body {
-            flex: 1;
-            overflow: hidden;
-            padding: 16px 20px 20px;
-            background: #f0f3f7;
-            position: relative;
-            min-height: 0;
-            height: 100%;
-        }
-
-        /* ===== ★★★ 新增：工具全屏弹窗样式 ★★★ ===== */
-        .tool-modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 2000;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(2px);
-        }
-        .tool-modal-overlay.active {
-            display: flex;
-        }
-        .tool-modal-box {
-            width: 95%;
-            height: 95%;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .tool-modal-header {
-            height: 45px;
-            background: #f8fafd;
-            border-bottom: 1px solid #e2edf5;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 16px;
-            flex-shrink: 0;
-        }
-        .tool-modal-header .title {
-            font-weight: 600;
-            color: #1f3a5f;
-            font-size: 16px;
-        }
-        .tool-modal-header .close-btn {
-            border: 1px solid #f5c2c2;
-            background: #fce4e4;
-            color: #b13b3b;
-            padding: 4px 16px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-        }
-        .tool-modal-box iframe {
-            width: 100%;
-            flex: 1;
-            border: none;
-            min-height: 0;
-        }
-
-        /* ===== 原工作流覆盖层样式 ===== */
-        .workflow-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            z-index: 100;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
-            pointer-events: none;
-        }
-        .workflow-overlay.active {
-            display: flex;
-            pointer-events: auto;
-        }
-
-        .workflow-panel {
-            background: white;
-            border-radius: 1.2rem;
-            max-width: 720px;
-            width: 90%;
-            max-height: 85vh;
-            overflow-y: auto;
-            padding: 24px 28px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: slideUp 0.3s ease;
-            pointer-events: auto;
-        }
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .workflow-panel::-webkit-scrollbar {
-            width: 4px;
-        }
-        .workflow-panel::-webkit-scrollbar-thumb {
-            background: #c8d8e8;
-            border-radius: 8px;
-        }
-
-        .workflow-panel .wf-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1f3a5f;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-bottom: 2px solid #e8eef5;
-            padding-bottom: 12px;
-        }
-        .workflow-panel .wf-title .wf-badge {
-            font-size: 11px;
-            background: #f5d742;
-            color: #1e3a5f;
-            padding: 2px 12px;
-            border-radius: 30px;
-            font-weight: 600;
-        }
-
-        .wf-steps {
-            margin: 16px 0;
-        }
-        .wf-step {
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-            padding: 10px 0;
-            border-bottom: 1px solid #f0f4f8;
-        }
-        .wf-step:last-child {
-            border-bottom: none;
-        }
-        .wf-step .step-num {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: #e8eef5;
-            color: #4a6a8a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 13px;
-            flex-shrink: 0;
-        }
-        .wf-step.active .step-num {
-            background: #1a5d8c;
-            color: white;
-        }
-        .wf-step.done .step-num {
-            background: #2a7f6e;
-            color: white;
-        }
-        .wf-step.error .step-num {
-            background: #b13b3b;
-            color: white;
-        }
-        .wf-step .step-info {
-            flex: 1;
-        }
-        .wf-step .step-info .step-name {
-            font-weight: 600;
-            color: #1f3a5f;
-            font-size: 14px;
-        }
-        .wf-step .step-info .step-desc {
-            font-size: 12px;
-            color: #7a8eaa;
-            margin-top: 2px;
-        }
-        .wf-step .step-info .step-status {
-            font-size: 11px;
-            margin-top: 4px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .wf-step .step-info .step-status .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        .wf-step .step-info .step-status .dot.pending {
-            background: #c8d8e8;
-        }
-        .wf-step .step-info .step-status .dot.running {
-            background: #ffb347;
-            animation: pulse 0.8s infinite;
-        }
-        .wf-step .step-info .step-status .dot.done {
-            background: #2a7f6e;
-        }
-        .wf-step .step-info .step-status .dot.error {
-            background: #b13b3b;
-        }
-        @keyframes pulse {
-            0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.3;
-            }
-        }
-
-        .wf-step .step-action {
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-        .wf-step .step-action .btn {
-            border: none;
-            padding: 4px 14px;
-            border-radius: 60px;
-            font-weight: 600;
-            font-size: 11px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .wf-step .step-action .btn-primary {
-            background: #1a5d8c;
-            color: white;
-        }
-        .wf-step .step-action .btn-primary:hover {
-            background: #0e466b;
-        }
-        .wf-step .step-action .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .wf-step .step-action .btn-success {
-            background: #2a7f6e;
-            color: white;
-        }
-        .wf-step .step-action .btn-success:hover {
-            background: #1e6657;
-        }
-        .wf-step .step-action .btn-outline {
-            background: #eef3fc;
-            color: #1f4970;
-            border: 1px solid #cde0ee;
-        }
-        .wf-step .step-action .btn-outline:hover {
-            background: #e2ebf5;
-        }
-
-        .wf-footer {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid #e8eef5;
-            flex-wrap: wrap;
-        }
-        .wf-footer .btn {
-            border: none;
-            padding: 8px 24px;
-            border-radius: 60px;
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
-            transition: 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .wf-footer .btn-success {
-            background: #2a7f6e;
-            color: white;
-        }
-        .wf-footer .btn-success:hover {
-            background: #1e6657;
-        }
-        .wf-footer .btn-success:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .wf-footer .btn-outline {
-            background: #eef3fc;
-            color: #1f4970;
-            border: 1px solid #cde0ee;
-        }
-        .wf-footer .btn-outline:hover {
-            background: #e2ebf5;
-        }
-        .wf-footer .btn-danger {
-            background: #fce4e4;
-            color: #b13b3b;
-            border: 1px solid #f5c2c2;
-        }
-        .wf-footer .btn-danger:hover {
-            background: #fccfcf;
-        }
-
-        .wf-log {
-            background: #0f1a24;
-            border-radius: 8px;
-            padding: 8px 12px;
-            max-height: 80px;
-            overflow-y: auto;
-            margin-top: 12px;
-            font-family: monospace;
-            font-size: 11px;
-            color: #c9e1f0;
-            line-height: 1.6;
-        }
-        .wf-log::-webkit-scrollbar {
-            width: 3px;
-        }
-        .wf-log::-webkit-scrollbar-thumb {
-            background: #446688;
-            border-radius: 8px;
-        }
-        .wf-log .log-entry {
-            display: flex;
-            gap: 10px;
-        }
-        .wf-log .log-time {
-            color: #6a8aaa;
-            min-width: 65px;
-        }
-        .wf-log .log-msg {
-            color: #b9e0ff;
-        }
-        .wf-log .log-msg.error {
-            color: #ffb4a2;
-        }
-        .wf-log .log-msg.success {
-            color: #8de0b0;
-        }
-        .wf-log .log-msg.info {
-            color: #ffd78a;
-        }
-
-        /* 其他页面样式 */
-        .stats-dashboard {
-            height: 100%;
-            overflow-y: auto;
-            padding: 4px 0 12px;
-            background: #f0f3f7;
-        }
-        .stats-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-        .stats-summary .stat-card {
-            background: white;
-            border-radius: 14px;
-            padding: 18px 20px;
-            border: 1px solid #e2edf5;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-        .stats-summary .stat-card .stat-label {
-            font-size: 12px;
-            color: #7a8eaa;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .stats-summary .stat-card .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1f3a5f;
-            margin-top: 4px;
-        }
-        .stats-charts-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-        .stats-chart-box {
-            background: white;
-            border-radius: 14px;
-            border: 1px solid #e2edf5;
-            padding: 16px 18px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-        .stats-chart-box .chart-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1f3a5f;
-            margin-bottom: 10px;
-        }
-        .stats-chart-box .chart-container {
-            position: relative;
-            height: 220px;
-        }
-        .stats-table-wrap {
-            background: white;
-            border-radius: 14px;
-            border: 1px solid #e2edf5;
-            overflow: hidden;
-            margin-top: 4px;
-        }
-        .stats-table-wrap .table-header {
-            padding: 12px 18px;
-            background: #f8fafd;
-            border-bottom: 1px solid #e2edf5;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-            font-size: 14px;
-            color: #1f3a5f;
-        }
-        .stats-table-wrap table {
-            width: 100%;
-            font-size: 13px;
-            border-collapse: collapse;
-        }
-        .stats-table-wrap table th {
-            background: #f5f8fc;
-            color: #2c4a6e;
-            font-weight: 600;
-            padding: 8px 14px;
-            text-align: left;
-            border-bottom: 2px solid #dce6f0;
-            font-size: 12px;
-        }
-        .stats-table-wrap table td {
-            padding: 7px 14px;
-            border-bottom: 1px solid #e8eef5;
-            color: #2c3e66;
-        }
-
-        .welcome-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            text-align: center;
-            padding: 40px;
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e2edf5;
-            overflow-y: auto;
-        }
-        .welcome-content .logo-big {
-            font-size: 72px;
-            margin-bottom: 20px;
-        }
-        .welcome-content h2 {
-            font-size: 28px;
-            color: #1f3a5f;
-            margin-bottom: 10px;
-        }
-        .welcome-content p {
-            color: #7a8eaa;
-            font-size: 16px;
-            max-width: 480px;
-            line-height: 1.7;
-        }
-        .welcome-content .tool-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 14px;
-            margin-top: 28px;
-            justify-content: center;
-            max-width: 800px;
-        }
-        .welcome-content .tool-grid .card {
-            background: #f8fafd;
-            border: 1px solid #e2edf5;
-            border-radius: 12px;
-            padding: 16px 24px;
-            cursor: pointer;
-            transition: 0.2s;
-            text-align: left;
-            min-width: 180px;
-            flex: 1 0 auto;
-            max-width: 220px;
-        }
-        .welcome-content .tool-grid .card:hover {
-            border-color: #1a5d8c;
-            background: #f1f6fc;
-            transform: translateY(-2px);
-        }
-        .welcome-content .tool-grid .card .icon {
-            font-size: 24px;
-        }
-        .welcome-content .tool-grid .card .name {
-            font-weight: 600;
-            color: #1f3a5f;
-            margin-top: 4px;
-            font-size: 14px;
-        }
-        .welcome-content .tool-grid .card .desc {
-            font-size: 12px;
-            color: #7a8eaa;
-            margin-top: 2px;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 200px;
-                min-width: 200px;
-            }
-        }
-        @media (max-width: 600px) {
-            .sidebar {
-                width: 56px;
-                min-width: 56px;
-            }
-            .sidebar-brand h1 {
-                font-size: 0;
-            }
-            .sidebar-brand h1 span {
-                font-size: 24px;
-            }
-            .sidebar-brand p,
-            .nav-item .label,
-            .nav-section-title,
-            .sidebar-footer {
-                display: none;
-            }
-            .nav-item {
-                padding: 12px 16px;
-                justify-content: center;
-            }
-            .nav-item .icon {
-                font-size: 20px;
-                width: auto;
-            }
-            .workflow-panel {
-                padding: 12px 14px;
-            }
-        }
+        .copy-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2a7f6e; color: white; padding: 10px 24px; border-radius: 60px; font-weight: 600; z-index: 3000; display: none; }
+        .copy-toast.show { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
-
     <div class="app-container">
         <!-- 左侧导航 -->
         <nav class="sidebar" id="sidebar">
-            <div class="sidebar-brand">
-                <h1><span>📦</span> 物流工具箱</h1>
-                <p>Logistics Toolbox</p>
-            </div>
+            <div class="sidebar-brand"><h1>📦 物流工具箱</h1><p>Logistics Toolbox</p></div>
             <div class="sidebar-nav" id="sidebarNav"></div>
-            <div class="sidebar-footer">v2.0 · 工作流真实联动</div>
         </nav>
 
         <!-- 右侧内容区 -->
         <main class="main-content">
             <header class="content-header">
                 <h2 id="pageTitle">📦 物流工具箱</h2>
-                <span class="breadcrumb" id="breadcrumb">首页 / <span id="breadcrumbCurrent">欢迎</span></span>
                 <button class="logout-top" id="logoutTopBtn">🚪 退出登录</button>
             </header>
 
             <div class="content-body" id="contentBody">
-                <!-- 内容区由 JS 动态渲染 -->
+                <!-- 工作流步骤面板 -->
                 <div class="workflow-overlay" id="workflowOverlay">
                     <div class="workflow-panel" id="workflowPanel"></div>
                 </div>
@@ -794,532 +114,187 @@
         </main>
     </div>
 
-    <!-- ★★★ 新增：工具全屏弹窗挂载点 ★★★ -->
+    <!-- 工具全屏执行弹窗 -->
     <div id="toolModalOverlay" class="tool-modal-overlay"></div>
 
     <script>
         // ============================================================
-        //  工具导航配置
+        //  全局配置
         // ============================================================
-        var TOOLS = [{
-            id: 'welcome',
-            icon: '🏠',
-            label: '首页',
-            section: '导航',
-            desc: '工具箱主页',
-            isWelcome: true
-        }, {
-            id: 'workflow',
-            icon: '⚡',
-            label: '工作流',
-            section: '导航',
-            desc: '工作流自动化',
-            isWorkflow: true
-        }, {
-            id: 'excel-merge-sheets',
-            icon: '📊',
-            label: '多Sheet并表工具',
-            section: 'Excel工具',
-            desc: '合并多Sheet为一个',
-            file: 'excel-merge-sheets.html'
-        }, {
-            id: 'address-geocode',
-            icon: '📍',
-            label: '地址转经纬度',
-            section: '地理编码',
-            desc: '批量地址→经纬度',
-            file: 'address-geocode.html'
-        }, {
-            id: 'route-distance',
-            icon: '🗺️',
-            label: '线路排程·距离计算',
-            section: '路线规划',
-            desc: '站点排序+距离+轨迹',
-            file: 'route-distance.html'
-        }, {
-            id: 'od-distance',
-            icon: '📏',
-            label: '起终点距离测算',
-            section: '路线规划',
-            desc: '批量OD距离计算',
-            file: 'od-distance.html'
-        }, {
-            id: 'kmeans-cluster',
-            icon: '🧠',
-            label: 'K-Means聚类规划',
-            section: '智能规划',
-            desc: '容量约束聚类',
-            file: 'kmeans-cluster.html'
-        }, {
-            id: 'cargo-loading-3d',
-            icon: '📦',
-            label: '3D车厢装载可视化',
-            section: '3D可视化',
-            desc: '堆叠层数限制',
-            file: 'cargo-loading-3d.html'
-        }, {
-            id: 'warehouse-layout',
-            icon: '🏭',
-            label: '仓库布局规划',
-            section: '仓库规划',
-            desc: '面积计算·3D布局·动线·道口',
-            file: 'warehouse-layout.html'
-        }, {
-            id: 'warehouse-location',
-            icon: '🏗️',
-            label: '仓库选址分析',
-            section: '仓库规划',
-            desc: '前置仓/末端仓推荐',
-            file: 'warehouse-location.html'
-        }, {
-            id: 'supply-chain-network',
-            icon: '🌐',
-            label: '供应链网络可视化',
-            section: '仓库规划',
-            desc: '提货点·目的点·前置仓·末端仓',
-            file: 'supply-chain-network.html'
-        }, {
-            id: 'dock-scheduling',
-            icon: '🚚',
-            label: '到货窗口排程',
-            section: '仓库规划',
-            desc: '道口·拖拽排程·周视图·复制',
-            file: 'dock-scheduling.html'
-        }, {
-            id: 'vmi-pull-balance',
-            icon: '⚖️',
-            label: 'VMI拉动平衡',
-            section: '仓库规划',
-            desc: '补货计算·需求日历·参数配置',
-            file: 'vmi-pull-balance.html'
-        }, {
-            id: 'stats',
-            icon: '📈',
-            label: '使用统计',
-            section: '系统',
-            desc: '工具使用分析',
-            isStats: true
-        }];
+        var TOOLS = [
+            { id: 'welcome', icon: '🏠', label: '首页', section: '导航', isWelcome: true },
+            { id: 'workflow', icon: '⚡', label: '一键串联', section: '导航', isWorkflow: true },
+            { id: 'address-geocode', icon: '📍', label: '地址转经纬度', section: '地理编码', file: 'address-geocode.html' },
+            { id: 'kmeans-cluster', icon: '🧠', label: 'K-Means聚类', section: '智能规划', file: 'kmeans-cluster.html' },
+            { id: 'route-distance', icon: '🗺️', label: '线路排程', section: '路线规划', file: 'route-distance.html' }
+        ];
 
-        // ============================================================
-        //  工作流配置
-        // ============================================================
         var WORKFLOWS = [{
             id: 'address-to-cluster',
             name: '地址→经纬度→聚类',
             description: '上传地址文件 → 解析经纬度 → 自动导入聚类工具进行分组',
-            icon: '📍➜🧠',
             steps: [
                 { tool: 'address-geocode', label: '地址转经纬度', desc: '上传Excel文件，批量查询经纬度坐标' },
                 { tool: 'kmeans-cluster', label: 'K-Means聚类', desc: '自动导入经纬度数据，按容量约束分组' }
             ]
-        }, {
-            id: 'cluster-to-route',
-            name: '聚类→排程',
-            description: '已有站点数据 → 聚类分组 → 自动导入排程工具排序',
-            icon: '🧠➜🗺️',
-            steps: [
-                { tool: 'kmeans-cluster', label: 'K-Means聚类', desc: '按地理位置和容量约束分组' },
-                { tool: 'route-distance', label: '线路排程', desc: '自动导入分组结果，生成最优访问顺序' }
-            ]
-        }, {
-            id: 'address-to-route',
-            name: '地址→经纬度→聚类→排程（完整链路）',
-            description: '从原始地址开始，自动完成地址解析、聚类分组、线路排程',
-            icon: '📍➜🧠➜🗺️',
-            steps: [
-                { tool: 'address-geocode', label: '地址转经纬度', desc: '上传Excel文件，批量查询经纬度坐标' },
-                { tool: 'kmeans-cluster', label: 'K-Means聚类', desc: '自动导入经纬度数据，按容量约束分组' },
-                { tool: 'route-distance', label: '线路排程', desc: '自动导入分组结果，生成最优访问顺序' }
-            ]
         }];
 
-        // ============================================================
-        //  统计数据管理
-        // ============================================================
-        var STATS_KEY = 'toolbox_stats_data';
-
-        function getStatsData() {
-            try {
-                var raw = localStorage.getItem(STATS_KEY);
-                if (raw) return JSON.parse(raw);
-            } catch (e) {}
-            return { totalVisits: 0, toolUsage: {}, history: [] };
-        }
-
-        function saveStatsData(data) {
-            localStorage.setItem(STATS_KEY, JSON.stringify(data));
-        }
-
-        function recordToolUsage(toolId) {
-            var data = getStatsData();
-            var now = new Date();
-            var timeStr = now.toLocaleString('zh-CN');
-
-            data.totalVisits = (data.totalVisits || 0) + 1;
-
-            if (!data.toolUsage[toolId]) {
-                data.toolUsage[toolId] = { count: 0, firstUse: timeStr, lastUse: timeStr };
-            }
-            data.toolUsage[toolId].count += 1;
-            data.toolUsage[toolId].lastUse = timeStr;
-
-            if (!data.history) data.history = [];
-            data.history.push({
-                toolId: toolId,
-                time: timeStr,
-                timestamp: now.getTime()
-            });
-
-            if (data.history.length > 500) {
-                data.history = data.history.slice(-500);
-            }
-
-            saveStatsData(data);
-            return data;
-        }
-
-        function clearStatsData() {
-            if (confirm('确定要清空所有统计数据吗？此操作不可恢复！')) {
-                saveStatsData({ totalVisits: 0, toolUsage: {}, history: [] });
-                loadTool('stats');
-            }
-        }
-
-        // ============================================================
-        //  ★★★ 工作流执行引擎 ★★★
-        // ============================================================
         var PASS_KEY = 'toolbox_data_pass';
-        var workflowState = {
-            isRunning: false,
-            currentStep: 0,
-            results: {},
-            errors: [],
-            logs: [],
-            workflow: null,
-            activeToolId: null
-        };
+        var workflowState = { isRunning: false, currentStep: 0, results: {}, errors: [], logs: [], workflow: null };
 
-        function addWorkflowLog(msg, type) {
-            if (!type) type = 'info';
-            var time = new Date().toLocaleTimeString();
-            workflowState.logs.push({ time: time, msg: msg, type: type });
-            renderWorkflowLogs();
-        }
-
-        function renderWorkflowLogs() {
-            var container = document.getElementById('wfLog');
-            if (!container) return;
+        // ============================================================
+        //  主渲染逻辑
+        // ============================================================
+        function renderNav() {
+            var nav = document.getElementById('sidebarNav');
             var html = '';
-            for (var i = 0; i < workflowState.logs.length; i++) {
-                var log = workflowState.logs[i];
-                var cls = log.type === 'error' ? 'error' : log.type === 'success' ? 'success' : 'info';
-                html += '<div class="log-entry"><span class="log-time">' + log.time + '</span><span class="log-msg ' + cls + '">' + log.msg + '</span></div>';
+            for (var i = 0; i < TOOLS.length; i++) {
+                var t = TOOLS[i];
+                html += `<a class="nav-item ${t.isWorkflow ? 'workflow-item' : ''}" href="#" onclick="loadTool('${t.id}')">
+                            <span class="icon">${t.icon}</span><span>${t.label}</span>
+                         </a>`;
             }
-            container.innerHTML = html;
-            container.scrollTop = container.scrollHeight;
+            nav.innerHTML = html;
         }
 
-        // ============================================================
-        //  ★★★ 核心：启动工作流 ★★★
-        // ============================================================
-        function startWorkflow(workflowId) {
-            var workflow = null;
-            for (var i = 0; i < WORKFLOWS.length; i++) {
-                if (WORKFLOWS[i].id === workflowId) {
-                    workflow = WORKFLOWS[i];
-                    break;
-                }
-            }
-            if (!workflow) {
-                alert('未找到工作流: ' + workflowId);
+        function loadTool(toolId) {
+            if (workflowState.isRunning) {
+                alert('工作流正在执行中，请先完成或取消工作流！');
                 return;
             }
+            var body = document.getElementById('contentBody');
+            body.innerHTML = '';
 
-            // 检查是否已有工作流在运行
-            if (workflowState.isRunning) {
-                var overlay = document.getElementById('workflowOverlay');
-                if (overlay.classList.contains('active')) {
-                    alert('已有工作流正在执行中，请等待完成');
-                    return;
-                } else {
-                    workflowState.isRunning = false;
-                    workflowState.currentStep = 0;
-                    workflowState.results = {};
-                    workflowState.errors = [];
-                    workflowState.logs = [];
-                    workflowState.workflow = null;
-                    workflowState.activeToolId = null;
-                    console.log('🔧 强制重置工作流状态');
-                }
+            if (toolId === 'welcome') {
+                body.innerHTML = `
+                    <div class="welcome-content">
+                        <div class="logo-big" style="font-size: 72px;">📦</div>
+                        <h2 style="font-size: 28px; color: #1f3a5f;">物流工具箱</h2>
+                        <p style="color: #7a8eaa;">点击左侧菜单选择工具，或点击「一键串联」执行自动化工作流。</p>
+                    </div>`;
+            } else if (toolId === 'workflow') {
+                var container = document.createElement('div');
+                container.className = 'workflow-list-page';
+                var cardsHtml = WORKFLOWS.map(wf => `
+                    <div class="workflow-card" onclick="startWorkflow('${wf.id}')">
+                        <div class="wf-name">${wf.name}</div>
+                        <div class="wf-desc">${wf.description}</div>
+                        <div class="wf-action">🚀 点击执行</div>
+                    </div>`).join('');
+                container.innerHTML = `<h2 style="margin-bottom:16px;">⚡ 一键串联</h2>${cardsHtml}`;
+                body.appendChild(container);
+            } else {
+                // 加载普通工具
+                var tool = TOOLS.find(t => t.id === toolId);
+                if (!tool || !tool.file) return;
+
+                var wrapper = document.createElement('div');
+                wrapper.className = 'iframe-wrapper';
+                
+                var iframe = document.createElement('iframe');
+                iframe.src = tool.file;
+                iframe.allow = 'geolocation';
+                wrapper.appendChild(iframe);
+                body.appendChild(wrapper);
+                
+                document.getElementById('pageTitle').textContent = tool.icon + ' ' + tool.label;
             }
+        }
 
-            // 重置状态
+        // ============================================================
+        //  ★★★ 工作流核心执行逻辑 ★★★
+        // ============================================================
+        function startWorkflow(workflowId) {
+            var workflow = WORKFLOWS.find(w => w.id === workflowId);
+            if (!workflow) return;
+
             workflowState.isRunning = true;
             workflowState.currentStep = 0;
             workflowState.results = {};
-            workflowState.errors = [];
             workflowState.logs = [];
             workflowState.workflow = workflow;
-            workflowState.activeToolId = null;
+            localStorage.removeItem(PASS_KEY); // 清空旧的传递数据
 
-            localStorage.removeItem(PASS_KEY);
-
-            var body = document.getElementById('contentBody');
-            var oldIframe = body.querySelector('.iframe-wrapper');
-            if (oldIframe) oldIframe.remove();
-            var oldContent = body.querySelector('.welcome-content, .stats-dashboard, .tool-error');
-            if (oldContent) oldContent.remove();
+            document.getElementById('contentBody').innerHTML = ''; // 清空主页
 
             var overlay = document.getElementById('workflowOverlay');
             overlay.classList.add('active');
-
             renderWorkflowPanel(workflow);
 
-            addWorkflowLog('🚀 开始执行工作流: ' + workflow.name, 'info');
-
-            setTimeout(function() {
-                executeStep(0);
-            }, 400);
+            setTimeout(function() { executeStep(0); }, 400);
         }
 
-        // ============================================================
-        //  渲染工作流面板
-        // ============================================================
         function renderWorkflowPanel(workflow) {
             var panel = document.getElementById('workflowPanel');
-
             var stepsHtml = '';
             for (var i = 0; i < workflow.steps.length; i++) {
                 var step = workflow.steps[i];
                 stepsHtml += `
-                        <div class="wf-step" id="wfStep_${i}">
-                            <div class="step-num">${i + 1}</div>
-                            <div class="step-info">
-                                <div class="step-name">${step.label}</div>
-                                <div class="step-desc">${step.desc}</div>
-                                <div class="step-status">
-                                    <span class="dot pending"></span>
-                                    <span class="status-text">等待执行</span>
-                                </div>
-                            </div>
-                            <div class="step-action">
-                                <button class="btn btn-outline" id="wfStepBtn_${i}" disabled>
-                                    等待中
-                                </button>
-                            </div>
+                    <div class="wf-step" id="wfStep_${i}">
+                        <div class="step-num">${i + 1}</div>
+                        <div class="step-info">
+                            <div class="step-name">${step.label}</div>
+                            <div class="step-desc">${step.desc}</div>
+                            <div class="step-status"><span class="dot pending"></span><span class="status-text">等待执行</span></div>
                         </div>
-                    `;
+                    </div>`;
             }
 
             panel.innerHTML = `
-                    <div class="wf-title">
-                        ⚡ ${workflow.name}
-                        <span class="wf-badge">${workflow.steps.length} 步</span>
-                    </div>
+                <div class="wf-title">⚡ ${workflow.name}</div>
+                <div class="wf-steps">${stepsHtml}</div>
+                <div class="wf-log" id="wfLog"></div>
+                <div class="wf-footer">
+                    <button class="btn btn-danger" onclick="cancelWorkflow()">✕ 取消</button>
+                    <button class="btn btn-success" id="wfNextBtn" disabled>⏳ 等待当前步骤...</button>
+                </div>`;
+        }
 
-                    <div class="wf-steps" id="wfSteps">
-                        ${stepsHtml}
-                    </div>
-
-                    <div class="wf-log" id="wfLog">
-                        <div class="log-entry">
-                            <span class="log-time">${new Date().toLocaleTimeString()}</span>
-                            <span class="log-msg info">📋 工作流已启动，请按顺序执行各步骤</span>
-                        </div>
-                    </div>
-
-                    <div class="wf-footer">
-                        <button class="btn btn-success" id="wfNextBtn" disabled>⏳ 等待当前步骤...</button>
-                        <button class="btn btn-danger" id="wfCancelBtn">✕ 取消</button>
-                    </div>
-                `;
-
-            document.getElementById('wfCancelBtn').addEventListener('click', function() {
-                if (confirm('确定要取消当前工作流吗？')) {
-                    cancelWorkflow();
-                }
-            });
-
-            for (var j = 0; j < workflow.steps.length; j++) {
-                var btn = document.getElementById('wfStepBtn_' + j);
-                if (btn) {
-                    btn.addEventListener('click', function(idx) {
-                        return function() { executeStep(idx); };
-                    }(j));
-                }
+        function addWorkflowLog(msg, type) {
+            if (!type) type = 'info';
+            var container = document.getElementById('wfLog');
+            if (container) {
+                container.innerHTML += `<div style="color:${type === 'error' ? '#ffb4a2' : '#b9e0ff'}">${new Date().toLocaleTimeString()} - ${msg}</div>`;
+                container.scrollTop = container.scrollHeight;
             }
-
-            for (var k = 0; k < workflow.steps.length; k++) {
-                updateStepUI(k, 'pending', '等待执行');
-                var btnEl = document.getElementById('wfStepBtn_' + k);
-                if (btnEl) {
-                    if (k === 0) {
-                        btnEl.textContent = '▶ 执行';
-                        btnEl.className = 'btn btn-primary';
-                        btnEl.disabled = false;
-                    } else {
-                        btnEl.textContent = '⏳ 等待上一步';
-                        btnEl.className = 'btn btn-outline';
-                        btnEl.disabled = true;
-                    }
-                }
-            }
-
-            updateNextButton();
         }
 
         function updateStepUI(idx, status, text) {
             var stepEl = document.getElementById('wfStep_' + idx);
             if (!stepEl) return;
-
             stepEl.className = 'wf-step ' + status;
-
-            var statusText = stepEl.querySelector('.status-text');
-            var dot = stepEl.querySelector('.dot');
-            if (statusText) statusText.textContent = text;
-
-            if (dot) {
-                dot.className = 'dot ' + status;
-            }
-
-            var btn = document.getElementById('wfStepBtn_' + idx);
-            if (btn) {
-                if (status === 'done') {
-                    btn.textContent = '✅ 已完成';
-                    btn.className = 'btn btn-success';
-                    btn.disabled = true;
-                } else if (status === 'running') {
-                    btn.textContent = '⏳ 执行中...';
-                    btn.className = 'btn btn-primary';
-                    btn.disabled = true;
-                } else if (status === 'error') {
-                    btn.textContent = '❌ 失败';
-                    btn.className = 'btn btn-danger';
-                    btn.disabled = true;
-                } else if (status === 'pending') {
-                    btn.textContent = '▶ 执行';
-                    btn.className = 'btn btn-primary';
-                    btn.disabled = false;
-                }
-            }
+            stepEl.querySelector('.status-text').textContent = text;
+            stepEl.querySelector('.dot').className = 'dot ' + status;
         }
 
-        function updateNextButton() {
-            var btn = document.getElementById('wfNextBtn');
-            if (!btn) return;
-
-            var workflow = workflowState.workflow;
-            var currentStep = workflowState.currentStep;
-
-            var allDone = true;
-            for (var i = 0; i < workflow.steps.length; i++) {
-                var el = document.getElementById('wfStep_' + i);
-                if (el && !el.classList.contains('done')) {
-                    allDone = false;
-                    break;
-                }
-            }
-
-            if (allDone && workflowState.errors.length === 0) {
-                btn.textContent = '🎉 工作流完成!';
-                btn.className = 'btn btn-success';
-                btn.disabled = false;
-                btn.onclick = function() {
-                    closeWorkflow('完成');
-                };
-                return;
-            }
-
-            if (workflowState.errors.length > 0) {
-                btn.textContent = '❌ 工作流失败，请取消';
-                btn.className = 'btn btn-danger';
-                btn.disabled = true;
-                return;
-            }
-
-            var currentStepEl = document.getElementById('wfStep_' + currentStep);
-            if (currentStepEl && currentStepEl.classList.contains('done')) {
-                if (currentStep < workflow.steps.length - 1) {
-                    btn.textContent = '▶ 执行下一步 (' + (currentStep + 1) + '/' + workflow.steps.length + ')';
-                    btn.className = 'btn btn-success';
-                    btn.disabled = false;
-                    btn.onclick = function() {
-                        executeStep(currentStep + 1);
-                    };
-                    return;
-                } else {
-                    btn.textContent = '🎉 全部完成!';
-                    btn.className = 'btn btn-success';
-                    btn.disabled = false;
-                    btn.onclick = function() {
-                        closeWorkflow('完成');
-                    };
-                    return;
-                }
-            }
-
-            btn.textContent = '⏳ 等待当前步骤完成...';
-            btn.className = 'btn btn-outline';
-            btn.disabled = true;
-        }
-
-        // ============================================================
-        //  ★★★ 核心：执行步骤（弹窗模式版，修复 iframe 不显示问题） ★★★
-        // ============================================================
+        // ★★★ 核心：执行步骤（弹窗模式） ★★★
         function executeStep(idx) {
             var workflow = workflowState.workflow;
-            if (!workflow) return;
-
             var step = workflow.steps[idx];
-            var tool = null;
-            for (var i = 0; i < TOOLS.length; i++) {
-                if (TOOLS[i].id === step.tool) {
-                    tool = TOOLS[i];
-                    break;
-                }
-            }
-            if (!tool) {
-                addWorkflowLog('❌ 工具 ' + step.tool + ' 未找到', 'error');
-                workflowState.errors.push({ step: idx, error: '工具 ' + step.tool + ' 未找到' });
-                updateStepUI(idx, 'error', '工具未找到');
-                updateNextButton();
-                return;
-            }
+            var tool = TOOLS.find(t => t.id === step.tool);
+
+            if (!tool) return;
 
             workflowState.currentStep = idx;
             updateStepUI(idx, 'running', '执行中...');
-            addWorkflowLog('📌 步骤 ' + (idx + 1) + ': ' + step.label + ' - 弹出工具 ' + tool.icon + ' ' + tool.label, 'info');
+            addWorkflowLog(`📌 正在弹出工具: ${tool.label}`);
 
-            var filePath = tool.file;
-            if (!filePath) {
-                addWorkflowLog('❌ 工具 ' + tool.label + ' 未指定文件路径', 'error');
-                workflowState.errors.push({ step: idx, error: '文件路径未配置' });
-                updateStepUI(idx, 'error', '文件路径未配置');
-                updateNextButton();
-                return;
-            }
-
-            // ★★★ 获取全屏弹窗挂载点，并激活 ★★★
+            // 激活工具全屏弹窗
             var toolModalOverlay = document.getElementById('toolModalOverlay');
-            toolModalOverlay.innerHTML = ''; // 清除旧内容
+            toolModalOverlay.innerHTML = '';
             toolModalOverlay.classList.add('active');
 
-            // 构建弹窗 DOM
             var modalBox = document.createElement('div');
             modalBox.className = 'tool-modal-box';
-
-            // 顶部标题栏
+            
             var header = document.createElement('div');
             header.className = 'tool-modal-header';
-            header.innerHTML = `<span class="title">${tool.icon} ${tool.label} (工作流步骤 ${idx + 1}/${workflow.steps.length})</span>`;
-            
-            // 关闭按钮（允许用户手动关闭弹窗回到工作流面板）
+            header.innerHTML = `<span style="font-weight:600;">${tool.icon} ${tool.label} (步骤 ${idx + 1}/${workflow.steps.length})</span>`;
             var closeBtn = document.createElement('button');
             closeBtn.className = 'close-btn';
             closeBtn.innerText = '✕ 关闭';
             closeBtn.onclick = function() {
-                if (confirm('确定要关闭当前工具吗？未完成的数据可能丢失。')) {
+                if (confirm('确定要关闭当前工具吗？')) {
                     toolModalOverlay.classList.remove('active');
                     updateStepUI(idx, 'pending', '等待执行');
                 }
@@ -1327,550 +302,96 @@
             header.appendChild(closeBtn);
             modalBox.appendChild(header);
 
-            // ★★★ 创建 iframe（填满弹窗） ★★★
             var iframe = document.createElement('iframe');
-            iframe.src = filePath;
+            iframe.src = tool.file;
             iframe.allow = 'geolocation';
-
-            iframe.onload = function() {
-                console.log('✅ 工具弹窗加载完成: ' + filePath);
-                addWorkflowLog('✅ 工具已弹出: ' + tool.label, 'success');
-                // 强制刷新尺寸，确保内部布局正常
-                setTimeout(function() {
-                    try { iframe.contentWindow.dispatchEvent(new Event('resize')); } catch (e) {}
-                }, 300);
-            };
             modalBox.appendChild(iframe);
             toolModalOverlay.appendChild(modalBox);
 
-            // ★★★ 监听子工具数据完成消息（自动关闭并进入下一步） ★★★
+            // 监听子工具完成的消息
             var messageHandler = function(event) {
-                if (event.data && event.data.type === 'toolbox_data_saved') {
-                    var toolId = event.data.tool;
-                    if (toolId === step.tool) {
-                        addWorkflowLog('✅ 检测到 ' + toolId + ' 数据已保存: ' + (event.data.count || 0) + ' 条', 'success');
-                        updateStepUI(idx, 'done', '✅ 已完成');
-                        workflowState.results[step.tool] = event.data;
-                        addWorkflowLog('✅ 步骤 ' + (idx + 1) + ' 完成: ' + step.label, 'success');
-                        
-                        // ★★★ 自动关闭弹窗，回到工作流面板 ★★★
-                        setTimeout(function() {
-                            toolModalOverlay.classList.remove('active'); // 隐藏全屏弹窗
-                            updateNextButton(); // 激活下一步按钮
-                        }, 800);
+                if (event.data && event.data.type === 'toolbox_data_saved' && event.data.tool === step.tool) {
+                    addWorkflowLog(`✅ ${tool.label} 数据已保存 (${event.data.count} 条)`, 'success');
+                    
+                    // 标记本步骤为完成
+                    updateStepUI(idx, 'done', '✅ 已完成');
+                    workflowState.results[step.tool] = event.data;
 
-                        window.removeEventListener('message', messageHandler);
-                    }
+                    // 自动关闭当前工具弹窗
+                    setTimeout(function() {
+                        toolModalOverlay.classList.remove('active');
+                        addWorkflowLog(`✅ 步骤 ${idx + 1} 完成`, 'success');
+                        
+                        // 如果所有步骤都完成了，激活“完成”按钮
+                        if (idx === workflow.steps.length - 1) {
+                            var nextBtn = document.getElementById('wfNextBtn');
+                            nextBtn.textContent = '🎉 工作流完成!';
+                            nextBtn.disabled = false;
+                            nextBtn.onclick = function() {
+                                closeWorkflow('完成');
+                            };
+                        } else {
+                            var nextBtn = document.getElementById('wfNextBtn');
+                            nextBtn.textContent = '▶ 执行下一步';
+                            nextBtn.disabled = false;
+                            nextBtn.onclick = function() {
+                                executeStep(idx + 1);
+                            };
+                        }
+                    }, 800);
+
+                    window.removeEventListener('message', messageHandler);
                 }
             };
             window.addEventListener('message', messageHandler);
 
-            addWorkflowLog('📋 请在弹窗内完成数据操作，完成后将自动关闭并进入下一步', 'info');
+            addWorkflowLog('请完成工具操作，完成后将自动跳转下一步', 'info');
         }
 
+        // 取消工作流
         function cancelWorkflow() {
-            workflowState.isRunning = false;
-            closeWorkflow('已取消');
-            addWorkflowLog('❌ 工作流已取消', 'error');
+            if (confirm('确定要取消工作流吗？')) {
+                closeWorkflow('已取消');
+            }
         }
 
+        // ============================================================
+        //  ★★★ 修复：关闭工作流并保留结果的展示 ★★★
+        // ============================================================
         function closeWorkflow(reason) {
-            // ★★★ 新增：清理残留的工具弹窗 ★★★
-            var toolModal = document.getElementById('toolModalOverlay');
-            if (toolModal) toolModal.classList.remove('active');
-
-            var overlay = document.getElementById('workflowOverlay');
-            overlay.classList.remove('active');
+            document.getElementById('workflowOverlay').classList.remove('active');
+            document.getElementById('toolModalOverlay').classList.remove('active');
 
             workflowState.isRunning = false;
             workflowState.currentStep = 0;
             workflowState.results = {};
-            workflowState.errors = [];
             workflowState.workflow = null;
-            workflowState.activeToolId = null;
 
             document.getElementById('pageTitle').textContent = '📦 物流工具箱';
-            document.getElementById('breadcrumbCurrent').textContent = '欢迎';
 
-            var body = document.getElementById('contentBody');
-            var iframeWrapper = body.querySelector('.iframe-wrapper');
-            if (iframeWrapper) iframeWrapper.remove();
-            var loadingHint = document.getElementById('wfLoadingHint');
-            if (loadingHint) loadingHint.remove();
-
-            // ★★★ 修改：点击“完成”后，不回到欢迎页，而是直接加载聚类工具（最后一步） ★★★
+            // ★★★ 核心修改：点击“完成”后，强制加载聚类工具（最后一步），而不是回到首页 ★★★
             if (reason === '完成') {
-                addWorkflowLog('🎉 工作流执行完成!', 'success');
-                setTimeout(function() { showToast('✅ 工作流执行完成!'); }, 300);
-                
-                // ★★★ 核心修改：直接加载最后一个工具（聚类） ★★★
-                // 如果您的完整链路最后一步是聚类，则调用 loadTool('kmeans-cluster')
-                // 如果是“完整链路”（地址->聚类->排程），请改成 loadTool('route-distance')
+                // 这里必须确保加载的是工作流的最后一个工具（比如聚类工具）
                 loadTool('kmeans-cluster'); 
-                
             } else {
-                addWorkflowLog('⏹️ 工作流已' + reason, 'info');
-                loadTool('welcome'); // 取消时才回到欢迎页
-            }
-        }
-
-        function showToast(msg) {
-            var toast = document.createElement('div');
-            toast.style.cssText =
-                'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#2a7f6e;color:white;padding:10px 24px;border-radius:60px;font-weight:600;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:1000;animation:fadeInDown 0.3s ease;';
-            toast.textContent = msg;
-            document.body.appendChild(toast);
-            setTimeout(function() {
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.3s';
-                setTimeout(function() { toast.remove(); }, 400);
-            }, 3000);
-        }
-
-        // ============================================================
-        //  渲染导航树
-        // ============================================================
-        function renderNav() {
-            var nav = document.getElementById('sidebarNav');
-            var sections = {};
-
-            for (var i = 0; i < TOOLS.length; i++) {
-                var t = TOOLS[i];
-                if (!sections[t.section]) sections[t.section] = [];
-                sections[t.section].push(t);
-            }
-
-            var html = '';
-            var isFirst = true;
-            for (var section in sections) {
-                var items = sections[section];
-                var collapsedClass = isFirst ? '' : 'collapsed';
-                var arrowClass = isFirst ? '' : 'collapsed';
-                html += `
-                        <div class="nav-section">
-                            <div class="nav-section-title" onclick="toggleSection(this)">
-                                ${section}
-                                <span class="arrow ${arrowClass}">▼</span>
-                            </div>
-                            <div class="nav-items ${collapsedClass}" style="max-height:${isFirst ? '999px' : '0'}">
-                    `;
-                for (var j = 0; j < items.length; j++) {
-                    var t2 = items[j];
-                    var active = t2.isWelcome ? 'active' : '';
-                    var extraClass = t2.isWorkflow ? 'workflow-item' : '';
-                    var badgeText = t2.isWorkflow ? '⚡ 自动化' : '';
-                    html += `
-                            <a class="nav-item ${active} ${extraClass}" href="#" data-id="${t2.id}" onclick="loadTool('${t2.id}')">
-                                <span class="icon">${t2.icon}</span>
-                                <span class="label">${t2.label}</span>
-                                ${badgeText ? `<span class="badge">${badgeText}</span>` : ''}
-                            </a>
-                        `;
-                }
-                html += `</div></div>`;
-                isFirst = false;
-            }
-            nav.innerHTML = html;
-        }
-
-        function toggleSection(el) {
-            var items = el.nextElementSibling;
-            var arrow = el.querySelector('.arrow');
-            if (items.classList.contains('collapsed')) {
-                items.classList.remove('collapsed');
-                items.style.maxHeight = items.scrollHeight + 'px';
-                arrow.classList.remove('collapsed');
-            } else {
-                items.classList.add('collapsed');
-                items.style.maxHeight = '0';
-                arrow.classList.add('collapsed');
+                // 如果取消，则回到首页
+                loadTool('welcome');
             }
         }
 
         // ============================================================
-        //  统计页面
-        // ============================================================
-        var usageChartInstance = null;
-        var trendChartInstance = null;
-
-        function renderStatsPage() {
-            var data = getStatsData();
-            var body = document.getElementById('contentBody');
-
-            var oldContent = body.querySelector('.welcome-content, .iframe-wrapper, .stats-dashboard, .tool-error');
-            if (oldContent) oldContent.remove();
-
-            var toolNameMap = {};
-            for (var i = 0; i < TOOLS.length; i++) {
-                toolNameMap[TOOLS[i].id] = TOOLS[i].label;
-            }
-
-            var totalUsage = data.totalVisits || 0;
-            var toolCount = 0;
-            for (var key in data.toolUsage) {
-                if (data.toolUsage.hasOwnProperty(key)) toolCount++;
-            }
-
-            var mostUsedTool = '无数据';
-            var mostUsedCount = 0;
-            for (var id in data.toolUsage) {
-                if (data.toolUsage.hasOwnProperty(id)) {
-                    var stat = data.toolUsage[id];
-                    if (stat.count > mostUsedCount) {
-                        mostUsedCount = stat.count;
-                        mostUsedTool = toolNameMap[id] || id;
-                    }
-                }
-            }
-
-            var today = new Date().toDateString();
-            var todayCount = 0;
-            if (data.history) {
-                for (var h = 0; h < data.history.length; h++) {
-                    var hDate = new Date(data.history[h].timestamp).toDateString();
-                    if (hDate === today) todayCount++;
-                }
-            }
-
-            var sortedTools = [];
-            for (var id2 in data.toolUsage) {
-                if (data.toolUsage.hasOwnProperty(id2)) {
-                    sortedTools.push({ id: id2, stat: data.toolUsage[id2] });
-                }
-            }
-            sortedTools.sort(function(a, b) { return b.stat.count - a.stat.count; });
-
-            var tableHtml = '';
-            if (sortedTools.length === 0) {
-                tableHtml = '<div class="empty-stats">📭 暂无使用记录，开始使用工具吧！</div>';
-            } else {
-                tableHtml = '<table><thead><tr><th>#</th><th>工具名称</th><th>使用次数</th><th>首次使用</th><th>最近使用</th></tr></thead><tbody>';
-                for (var si = 0; si < sortedTools.length; si++) {
-                    var item = sortedTools[si];
-                    var name = toolNameMap[item.id] || item.id;
-                    tableHtml += '<tr><td>' + (si + 1) + '</td><td><strong>' + name + '</strong></td><td>' + item.stat.count + '</td><td>' + (item.stat.firstUse || '-') + '</td><td>' + (item.stat.lastUse || '-') + '</td></tr>';
-                }
-                tableHtml += '</tbody></table>';
-            }
-
-            var dashboard = document.createElement('div');
-            dashboard.className = 'stats-dashboard';
-            var filterCount = 0;
-            for (var ti = 0; ti < TOOLS.length; ti++) {
-                if (!TOOLS[ti].isWelcome && !TOOLS[ti].isStats) filterCount++;
-            }
-            dashboard.innerHTML = `
-                        <div class="stats-summary">
-                            <div class="stat-card color-primary"><span class="stat-icon">📊</span><div class="stat-label">总访问量</div><div class="stat-value">${totalUsage}</div><div class="stat-sub">累计工具使用次数</div></div>
-                            <div class="stat-card color-success"><span class="stat-icon">🔧</span><div class="stat-label">已使用工具</div><div class="stat-value">${toolCount}</div><div class="stat-sub">共 ${filterCount} 个工具</div></div>
-                            <div class="stat-card color-warning"><span class="stat-icon">🏆</span><div class="stat-label">最常用工具</div><div class="stat-value">${mostUsedTool}</div><div class="stat-sub">使用 ${mostUsedCount} 次</div></div>
-                            <div class="stat-card color-purple"><span class="stat-icon">📅</span><div class="stat-label">今日使用</div><div class="stat-value">${todayCount}</div><div class="stat-sub">${today}</div></div>
-                        </div>
-
-                        <div class="stats-charts-row">
-                            <div class="stats-chart-box"><div class="chart-title">📊 各工具使用次数</div><div class="chart-container"><canvas id="usageChart"></canvas></div></div>
-                            <div class="stats-chart-box"><div class="chart-title">📈 使用趋势 (最近30条)</div><div class="chart-container"><canvas id="trendChart"></canvas></div></div>
-                        </div>
-
-                        <div class="stats-table-wrap">
-                            <div class="table-header"><span>📋 工具使用明细</span></div>
-                            <div class="table-scroll">${tableHtml}</div>
-                        </div>
-                    `;
-
-            body.insertBefore(dashboard, document.getElementById('workflowOverlay'));
-
-            var ctx1 = document.getElementById('usageChart');
-            if (ctx1) {
-                if (usageChartInstance) { usageChartInstance.destroy(); usageChartInstance = null; }
-                var labels = [], values = [], colors = [];
-                var palette = ['#4A9EFF', '#2ED573', '#FF9F43', '#A29BFE', '#FF6B6B', '#48DBFB', '#FECA57', '#6C5CE7', '#00B894', '#FD79A8'];
-                for (var si2 = 0; si2 < sortedTools.length; si2++) {
-                    var item2 = sortedTools[si2];
-                    var name2 = toolNameMap[item2.id] || item2.id;
-                    labels.push(name2.length > 8 ? name2.substring(0, 6) + '..' : name2);
-                    values.push(item2.stat.count);
-                    colors.push(palette[si2 % palette.length]);
-                }
-                usageChartInstance = new Chart(ctx1, {
-                    type: 'bar',
-                    data: { labels: labels, datasets: [{ label: '使用次数', data: values, backgroundColor: colors.map(function(c) { return c + '80'; }), borderColor: colors, borderWidth: 2, borderRadius: 4 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
-                });
-            }
-
-            var ctx2 = document.getElementById('trendChart');
-            if (ctx2) {
-                if (trendChartInstance) { trendChartInstance.destroy(); trendChartInstance = null; }
-                var history = data.history || [];
-                var recent = history.slice(-30);
-                var timeMap = {};
-                for (var hi = 0; hi < recent.length; hi++) {
-                    var date = new Date(recent[hi].timestamp);
-                    var key = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
-                    if (!timeMap[key]) timeMap[key] = 0;
-                    timeMap[key]++;
-                }
-                var trendLabels = [];
-                var trendValues = [];
-                for (var tk in timeMap) {
-                    if (timeMap.hasOwnProperty(tk)) {
-                        trendLabels.push(tk);
-                        trendValues.push(timeMap[tk]);
-                    }
-                }
-                if (trendLabels.length < 2) { trendLabels.push('暂无足够数据'); trendValues.push(0); }
-                trendChartInstance = new Chart(ctx2, {
-                    type: 'line',
-                    data: { labels: trendLabels, datasets: [{ label: '使用次数', data: trendValues, borderColor: '#1a5d8c', backgroundColor: 'rgba(26,93,140,0.1)', fill: true, tension: 0.3, pointBackgroundColor: '#1a5d8c', pointRadius: 4 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
-                });
-            }
-        }
-
-        // ============================================================
-        //  ★★★ 加载工具 ★★★
-        // ============================================================
-        function loadTool(toolId) {
-            var tool = null;
-            for (var i = 0; i < TOOLS.length; i++) {
-                if (TOOLS[i].id === toolId) {
-                    tool = TOOLS[i];
-                    break;
-                }
-            }
-            if (!tool) return;
-
-            var overlay = document.getElementById('workflowOverlay');
-            if (workflowState.isRunning && overlay.classList.contains('active')) {
-                var currentStep = workflowState.currentStep;
-                var workflow = workflowState.workflow;
-                if (workflow && workflow.steps && workflow.steps[currentStep]) {
-                    var currentToolId = workflow.steps[currentStep].tool;
-                    if (toolId === currentToolId) {
-                        // 允许加载
-                    } else {
-                        alert('工作流正在执行中，请先完成当前步骤（' + workflow.steps[currentStep].label + '）');
-                        return;
-                    }
-                } else {
-                    alert('工作流正在执行中，请先完成或取消工作流');
-                    return;
-                }
-            }
-
-            if (workflowState.isRunning && !overlay.classList.contains('active')) {
-                workflowState.isRunning = false;
-                workflowState.currentStep = 0;
-                workflowState.results = {};
-                workflowState.errors = [];
-                workflowState.workflow = null;
-                workflowState.activeToolId = null;
-                console.log('🔧 自动重置异常的工作流状态');
-            }
-
-            if (!tool.isWelcome && !tool.isStats) {
-                recordToolUsage(toolId);
-            }
-
-            var navItems = document.querySelectorAll('.nav-item');
-            for (var ni = 0; ni < navItems.length; ni++) {
-                navItems[ni].classList.remove('active');
-            }
-            var navItem = document.querySelector('.nav-item[data-id="' + toolId + '"]');
-            if (navItem) navItem.classList.add('active');
-
-            document.getElementById('pageTitle').textContent = tool.icon + ' ' + tool.label;
-            document.getElementById('breadcrumbCurrent').textContent = tool.label;
-
-            var body = document.getElementById('contentBody');
-
-            var oldContent = body.querySelector('.welcome-content, .iframe-wrapper, .stats-dashboard, .tool-error');
-            if (oldContent) oldContent.remove();
-
-            if (tool.isWelcome) {
-                renderWelcome(body);
-                return;
-            }
-
-            if (tool.isWorkflow) {
-                renderWorkflowPage(body);
-                return;
-            }
-
-            if (tool.isStats) {
-                renderStatsPage();
-                return;
-            }
-
-            var filePath = tool.file;
-            if (!filePath) {
-                var errorDiv = document.createElement('div');
-                errorDiv.className = 'tool-error';
-                errorDiv.innerHTML =
-                    '<div class="icon-big">🔧</div><h3>' + tool.label + '</h3><p>此工具配置错误，未指定文件路径。</p>';
-                body.insertBefore(errorDiv, document.getElementById('workflowOverlay'));
-                return;
-            }
-
-            var iframeWrapper = document.createElement('div');
-            iframeWrapper.className = 'iframe-wrapper';
-            iframeWrapper.style.cssText = 'width:100%;height:100%;background:white;border-radius:12px;overflow:hidden;border:1px solid #e2edf5;position:relative;z-index:1;flex:1;display:flex;flex-direction:column;';
-
-            var iframe = document.createElement('iframe');
-            iframe.src = filePath;
-            iframe.allow = 'geolocation';
-            iframe.style.cssText = 'width:100%;height:100%;border:none;display:block;flex:1;';
-            iframeWrapper.appendChild(iframe);
-
-            body.insertBefore(iframeWrapper, document.getElementById('workflowOverlay'));
-        }
-
-        // ============================================================
-        //  工作流页面
-        // ============================================================
-        function renderWorkflowPage(body) {
-            var container = document.createElement('div');
-            container.style.cssText = 'height:100%;overflow-y:auto;padding:4px 0 12px;';
-
-            var cardsHtml = '';
-            for (var wi = 0; wi < WORKFLOWS.length; wi++) {
-                var wf = WORKFLOWS[wi];
-                var stepsHtml = '';
-                for (var si = 0; si < wf.steps.length; si++) {
-                    var s = wf.steps[si];
-                    stepsHtml +=
-                        '<span style="background:#f0f4f8;padding:2px 10px;border-radius:30px;font-size:10px;font-weight:600;color:#1a5d8c;">' +
-                        (si + 1) + '. ' + s.label + '</span>';
-                    if (si < wf.steps.length - 1) {
-                        stepsHtml += '<span style="color:#c0d0e0;">→</span>';
-                    }
-                }
-
-                cardsHtml += `
-                        <div style="background:white;border-radius:14px;border:1px solid #e2edf5;padding:20px 24px;box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:0.2s;cursor:pointer;" 
-                             onmouseover="this.style.borderColor='#b0c8e0';this.style.transform='translateY(-2px)'" 
-                             onmouseout="this.style.borderColor='#e2edf5';this.style.transform='none'"
-                             onclick="startWorkflow('${wf.id}')">
-                            <div style="font-size:28px;margin-bottom:8px;">${wf.icon}</div>
-                            <div style="font-size:16px;font-weight:700;color:#1f3a5f;">${wf.name}</div>
-                            <div style="font-size:13px;color:#7a8eaa;margin-top:4px;">${wf.description}</div>
-                            <div style="display:flex;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid #e8eef5;font-size:12px;color:#4a6a8a;flex-wrap:wrap;">
-                                ${stepsHtml}
-                            </div>
-                            <div style="margin-top:8px;display:inline-block;background:#f5d742;color:#1e3a5f;font-size:9px;font-weight:700;padding:1px 12px;border-radius:30px;text-transform:uppercase;letter-spacing:0.5px;">🚀 点击执行</div>
-                        </div>
-                    `;
-            }
-
-            container.innerHTML = `
-                        <div style="margin-bottom:16px;">
-                            <h2 style="font-size:22px;color:#1f3a5f;">⚡ 工作流 · 工作流自动化</h2>
-                            <p style="color:#7a8eaa;font-size:14px;margin-top:4px;">选择预置的工作流，系统将自动按顺序打开工具并传递数据</p>
-                            <p style="color:#7a8eaa;font-size:13px;margin-top:2px;">📍 支持联动的工具：地址转经纬度 → K-Means聚类 → 线路排程</p>
-                            <p style="color:#d48c2c;font-size:13px;margin-top:4px;background:#fff8e1;padding:6px 12px;border-radius:8px;">💡 工作流启动后，<strong>直接在内容区操作工具</strong>，完成后点击「下一步」继续</p>
-                        </div>
-
-                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;">
-                            ${cardsHtml}
-                        </div>
-
-                        <div style="margin-top:20px;background:#fff8e1;border-radius:12px;padding:14px 18px;border:1px solid #f5dca8;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-                            <span style="font-size:20px;">💡</span>
-                            <div style="font-size:13px;color:#4a3a2a;">
-                                <strong>工作流说明：</strong>点击工作流卡片后，系统会按顺序打开每个工具。
-                                您需要在每个工具中完成操作（如上传文件、点击查询），完成后点击「下一步」继续。
-                                数据会在工具间自动传递！<br>
-                                <span style="color:#d48c2c;">⚠️ 请直接在内容区操作，不要点击导航栏菜单切换工具。</span>
-                            </div>
-                        </div>
-                    `;
-
-            body.insertBefore(container, document.getElementById('workflowOverlay'));
-        }
-
-        // ============================================================
-        //  欢迎页
-        // ============================================================
-        function renderWelcome(body) {
-            var container = document.createElement('div');
-            container.className = 'welcome-content';
-
-            var cardsHtml = '';
-            for (var i = 0; i < TOOLS.length; i++) {
-                var t = TOOLS[i];
-                if (t.isWelcome || t.isStats) continue;
-                var badge = t.isWorkflow ? '<span style="font-size:8px;color:#f5d742;font-weight:700;">⚡ 自动化</span>' : '';
-                cardsHtml += `
-                        <div class="card" onclick="loadTool('${t.id}')">
-                            <div class="icon">${t.icon}</div>
-                            <div class="name">${t.label}</div>
-                            <div class="desc">${t.desc || ''}</div>
-                            ${badge}
-                        </div>
-                    `;
-            }
-
-            container.innerHTML = `
-                        <div class="logo-big">📦</div>
-                        <h2>物流工具箱</h2>
-                        <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析、3D装载可视化、仓库规划等核心工具</p>
-                        <div class="tool-grid">
-                            ${cardsHtml}
-                            <div class="card" onclick="loadTool('stats')" style="border-color:#6c5b7b;background:#f5f0f8;">
-                                <div class="icon">📈</div>
-                                <div class="name">使用统计</div>
-                                <div class="desc">查看工具使用分析</div>
-                            </div>
-                        </div>
-                    `;
-
-            body.insertBefore(container, document.getElementById('workflowOverlay'));
-        }
-
-        // ============================================================
-        //  事件绑定 & 初始化
+        //  初始化
         // ============================================================
         document.getElementById('logoutTopBtn').addEventListener('click', function() {
-            sessionStorage.removeItem('isLoggedIn');
-            sessionStorage.removeItem('username');
-            window.location.href = 'index.html';
+            alert('退出登录');
         });
 
         window.loadTool = loadTool;
-        window.toggleSection = toggleSection;
         window.startWorkflow = startWorkflow;
-        window.clearStatsData = clearStatsData;
+        window.cancelWorkflow = cancelWorkflow;
 
         renderNav();
         loadTool('welcome');
-
-        window.addEventListener('load', function() {
-            var overlay = document.getElementById('workflowOverlay');
-            if (overlay) overlay.classList.remove('active');
-            workflowState.isRunning = false;
-            workflowState.currentStep = 0;
-            workflowState.results = {};
-            workflowState.errors = [];
-            workflowState.workflow = null;
-            workflowState.activeToolId = null;
-            console.log('🔧 页面加载完成，工作流状态已重置');
-        });
-
-        window.addEventListener('resize', function() {
-            var navItems = document.querySelectorAll('.nav-items');
-            for (var i = 0; i < navItems.length; i++) {
-                var el = navItems[i];
-                if (!el.classList.contains('collapsed')) {
-                    el.style.maxHeight = el.scrollHeight + 'px';
-                }
-            }
-        });
-
-        console.log('📦 物流工具箱 (工作流真实联动版) 已加载');
-        console.log('📋 所有工具已保留，共 ' + TOOLS.length + ' 个');
-        console.log('⚡ 支持联动的工具: address-geocode → kmeans-cluster → route-distance');
-        console.log('💡 点击「工作流」菜单，选择工作流开始自动化');
     </script>
 </body>
 </html>
