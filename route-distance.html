@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>智能线路站点排序 - 限流优化版 + BI图表</title>
+    <title>智能线路站点排序 - 限流优化版 + BI图表 + 工作流联动</title>
     <!-- SheetJS 核心库 -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js">
     </script>
@@ -12,7 +12,7 @@
     </script>
     <!-- Leaflet CSS + JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js">
     </script>
     <style>
         /* ========== 所有原样式保持不变 ========== */
@@ -69,6 +69,10 @@
         .badge.bi {
             background: #6a4c9c;
         }
+        .badge.link {
+            background: #6c5b7b;
+        }
+
         .upload-card {
             background: white;
             border-radius: 1.8rem;
@@ -220,6 +224,104 @@
             border: 1px solid #cde0ee;
             padding: 8px 6px;
             text-align: left;
+        }
+
+        /* ★★★ 工作流状态提示栏 ★★★ */
+        .workflow-hint {
+            background: linear-gradient(135deg, #e8f0fa, #d4e4f0);
+            border-radius: 0.8rem;
+            padding: 8px 14px;
+            border: 1px solid #b8cde0;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .workflow-hint.show {
+            display: flex;
+        }
+        .workflow-hint .icon {
+            font-size: 1.2rem;
+        }
+        .workflow-hint .info {
+            font-size: 0.8rem;
+            color: #1f3a5f;
+            flex: 1;
+        }
+        .workflow-hint .info strong {
+            color: #1a5d8c;
+        }
+        .workflow-hint .status {
+            font-size: 0.7rem;
+            color: #2a7f6e;
+            font-weight: 600;
+            background: rgba(42, 127, 110, 0.12);
+            padding: 2px 12px;
+            border-radius: 30px;
+        }
+
+        /* ★★★ 上游数据导入提示 ★★★ */
+        .upstream-hint {
+            background: #fef9e7;
+            border-radius: 0.8rem;
+            padding: 10px 16px;
+            border: 1px solid #f5dca8;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .upstream-hint.show {
+            display: flex;
+        }
+        .upstream-hint .icon {
+            font-size: 1.5rem;
+        }
+        .upstream-hint .info {
+            font-size: 0.8rem;
+            color: #4a3a2a;
+            flex: 1;
+        }
+        .upstream-hint .info strong {
+            color: #a1552a;
+        }
+        .upstream-hint .actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* ★★★ 数据传递状态栏 ★★★ */
+        .data-pass-bar {
+            background: #e8f5ee;
+            border-radius: 0.6rem;
+            padding: 6px 12px;
+            border: 1px solid #b8ddd0;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .data-pass-bar.show {
+            display: flex;
+        }
+        .data-pass-bar .info {
+            font-size: 0.7rem;
+            color: #1e6657;
+        }
+        .data-pass-bar .info strong {
+            color: #0f3a2f;
+        }
+        .data-pass-bar .actions {
+            display: flex;
+            gap: 6px;
+        }
+        .data-pass-bar .actions .btn {
+            font-size: 0.65rem;
+            padding: 3px 12px;
         }
 
         .log-card {
@@ -606,7 +708,7 @@
 <body>
 <div class="main-container">
     <div class="hero-card">
-        <h1>🧭 智能线路排序 · 限流优化版 + BI图表</h1>
+        <h1>🧭 智能线路排序 · 限流优化版 + BI图表 + 工作流联动</h1>
         <p>上传站点数据 → 由远及近排序 → 计算距离和预计时间 → 地图可视化 + 数据分析</p>
         <div class="badge-group">
             <span class="badge">📌 7个标准字段</span>
@@ -616,6 +718,33 @@
             <span class="badge">🔄 自动重试</span>
             <span class="badge">🗺️ Leaflet地图</span>
             <span class="badge bi">📊 5个BI图表</span>
+            <span class="badge link">🔗 工作流联动</span>
+        </div>
+    </div>
+
+    <!-- ★★★ 工作流状态提示栏 ★★★ -->
+    <div class="workflow-hint" id="workflowHint">
+        <span class="icon">⚡</span>
+        <span class="info">🔗 <strong>工作流模式</strong> · 计算完成后数据将自动保存，供下游工具使用</span>
+        <span class="status" id="workflowStatus">⏳ 等待计算</span>
+    </div>
+
+    <!-- ★★★ 上游数据导入提示 ★★★ -->
+    <div class="upstream-hint" id="upstreamHint">
+        <span class="icon">📥</span>
+        <span class="info">检测到来自 <strong id="upstreamToolName">K-Means聚类</strong> 的上游数据（<strong id="upstreamCount">0</strong> 条线路），是否导入作为站点数据？</span>
+        <div class="actions">
+            <button class="btn btn-success" id="importUpstreamBtn" style="font-size:0.75rem;padding:6px 16px;">✅ 导入</button>
+            <button class="btn btn-outline" id="skipUpstreamBtn" style="font-size:0.75rem;padding:6px 16px;">跳过</button>
+        </div>
+    </div>
+
+    <!-- ★★★ 数据传递状态栏 ★★★ -->
+    <div class="data-pass-bar" id="dataPassBar">
+        <span class="info">💾 距离计算结果已保存，可传递给下游工具：<strong id="passInfo">下游工具</strong></span>
+        <div class="actions">
+            <button class="btn btn-success" id="saveAndPassBtn" disabled>💾 保存并传递</button>
+            <button class="btn btn-outline" id="clearPassBtn">✕ 清除</button>
         </div>
     </div>
 
@@ -685,7 +814,7 @@
     </div>
 
     <div class="log-card">
-        <div class="log-content" id="logArea">⚙️ 等待上传Excel，文件需包含「线路代码, 站点类型, 站点代码, 站点名称, 站点地址, 经度, 纬度」列。</div>
+        <div class="log-content" id="logArea">⚙️ 等待上传Excel，文件需包含「线路代码, 站点类型, 站点代码, 站点名称, 站点地址, 经度, 纬度」列。支持工作流联动！</div>
     </div>
 
     <!-- ===== 视图切换 Tabs ===== -->
@@ -789,7 +918,7 @@
         </div>
     </div>
 
-    <footer>🔒 所有计算由浏览器发起，数据安全；并发限制：≤ 3 req/s，自动重试 2 次 | 📊 内置5个BI分析图表</footer>
+    <footer>🔒 所有计算由浏览器发起，数据安全；并发限制：≤ 3 req/s，自动重试 2 次 | 📊 内置5个BI分析图表 | 🔗 工作流联动</footer>
 </div>
 
 <!-- ========== 底部固定下载栏 ========== -->
@@ -800,6 +929,14 @@
 </div>
 
 <script>
+    // ============================================================
+    //  ★★★ 工具联动配置 ★★★
+    // ============================================================
+    const PASS_KEY = 'toolbox_data_pass';
+    const TOOL_ID = 'route-distance';
+    let isInWorkflow = false;
+    let upstreamData = null;
+
     // ============================================================
     //  ★★★ Leaflet地图图层配置 ★★★
     // ============================================================
@@ -893,6 +1030,239 @@
     const viewTabs = document.getElementById('viewTabs');
     const chartSection = document.getElementById('chartSection');
 
+    // 工作流DOM
+    const workflowHint = document.getElementById('workflowHint');
+    const workflowStatus = document.getElementById('workflowStatus');
+    const upstreamHint = document.getElementById('upstreamHint');
+    const upstreamToolName = document.getElementById('upstreamToolName');
+    const upstreamCount = document.getElementById('upstreamCount');
+    const importUpstreamBtn = document.getElementById('importUpstreamBtn');
+    const skipUpstreamBtn = document.getElementById('skipUpstreamBtn');
+    const dataPassBar = document.getElementById('dataPassBar');
+    const passInfo = document.getElementById('passInfo');
+    const saveAndPassBtn = document.getElementById('saveAndPassBtn');
+    const clearPassBtn = document.getElementById('clearPassBtn');
+
+    // ============================================================
+    //  ★★★ 工作流联动功能 ★★★
+    // ============================================================
+
+    // 检测是否在工作流中
+    function detectWorkflowMode() {
+        try {
+            if (window.parent && window.parent !== window) {
+                isInWorkflow = true;
+                workflowHint.classList.add('show');
+                workflowStatus.textContent = '⚡ 工作流模式';
+                addLog('🔗 检测到工作流模式，计算完成后将自动通知父页面', false);
+                return true;
+            }
+        } catch (e) {}
+        workflowHint.classList.remove('show');
+        return false;
+    }
+
+    // 获取上游数据（来自 kmeans-cluster）
+    function getUpstreamData() {
+        try {
+            const raw = localStorage.getItem(PASS_KEY);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (data && data.tool === 'kmeans-cluster' && data.data && data.data.length > 0) {
+                    return data;
+                }
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    // 检查并提示上游数据
+    function checkUpstreamData() {
+        const data = getUpstreamData();
+        if (data && data.data && data.data.length > 0 && allSiteRecords.length === 0) {
+            upstreamData = data;
+            upstreamToolName.textContent = 'K-Means聚类';
+            upstreamCount.textContent = data.data.length;
+            upstreamHint.classList.add('show');
+            addLog(`📥 检测到上游数据: ${data.data.length} 条线路来自 ${data.tool}`, false);
+            return true;
+        } else {
+            upstreamHint.classList.remove('show');
+            upstreamData = null;
+            return false;
+        }
+    }
+
+    // ★★★ 导入上游数据 ★★★
+    function importUpstreamData() {
+        if (!upstreamData || !upstreamData.data) {
+            addLog('⚠️ 没有可导入的上游数据', true);
+            return;
+        }
+
+        let records = [];
+
+        for (const cluster of upstreamData.data) {
+            const routeCode = cluster['线路代码'] || `Route${String(records.length + 1).padStart(3, '0')}`;
+            const sites = cluster['站点列表'] || [];
+
+            for (const site of sites) {
+                let detectedType = '中转点';
+                const name = site['站点名称'] || '';
+                if (name.includes('仓库') || name.includes('物流中心') || name.includes('分拨')) {
+                    detectedType = '发货点';
+                } else if (name.includes('工厂') || name.includes('门店') || name.includes('配送')) {
+                    detectedType = '卸货点';
+                }
+
+                records.push({
+                    routeCode: routeCode,
+                    siteType: detectedType,
+                    siteCode: site['站点代码'] || `S${String(records.length + 1).padStart(3, '0')}`,
+                    siteName: site['站点名称'] || '未命名站点',
+                    siteAddr: site['站点地址'] || '',
+                    lng: parseFloat(site['经度']) || 0,
+                    lat: parseFloat(site['纬度']) || 0,
+                    fromFile: '上游(K-Means聚类)'
+                });
+            }
+        }
+
+        if (records.length === 0) {
+            addLog('⚠️ 上游数据解析后无有效站点', true);
+            return;
+        }
+
+        // 清空当前数据，导入上游数据
+        allSiteRecords = [];
+        uploadedFiles = [];
+        allDistanceResults = [];
+        routeGroupedResults = {};
+
+        allSiteRecords.push(...records);
+        addLog(`✅ 成功导入上游数据：${records.length} 个站点，${[...new Set(records.map(r => r.routeCode))].length} 条线路`, false);
+
+        renderPreview(allSiteRecords);
+        updateFileUI();
+
+        const routes = [...new Set(allSiteRecords.map(r => r.routeCode))];
+        summaryText.innerHTML = `📥 已导入上游数据：<strong>${records.length}</strong> 个站点，<strong>${routes.length}</strong> 条线路<br>📋 线路：${routes.join('、')}`;
+        resultSummary.style.display = 'block';
+
+        upstreamHint.classList.remove('show');
+
+        // 自动开始计算
+        if (records.length >= 2) {
+            addLog('🚀 数据已就绪，自动开始计算线路距离...', false);
+            if (isInWorkflow) {
+                workflowStatus.textContent = '⏳ 自动计算中...';
+            }
+            setTimeout(() => {
+                calculateAllRoutes();
+            }, 500);
+        }
+    }
+
+    // ★★★ 保存计算结果并通知父页面 ★★★
+    function saveAndPassResults() {
+        if (!allDistanceResults || allDistanceResults.length === 0) {
+            showToast('⚠️ 没有计算结果可以传递', 'error');
+            return;
+        }
+
+        const passData = {
+            tool: TOOL_ID,
+            timestamp: new Date().toISOString(),
+            count: allDistanceResults.length,
+            routeCount: Object.keys(routeGroupedResults).length,
+            data: allDistanceResults.map(r => ({
+                '线路代码': r.routeCode,
+                '顺序': r.order,
+                '起始站点类型': r.fromSiteType,
+                '起始站点代码': r.fromSiteCode,
+                '起始站点名称': r.fromSiteName,
+                '起始站点地址': r.fromSiteAddr,
+                '起始经度': r.fromLng,
+                '起始纬度': r.fromLat,
+                '终点站点类型': r.toSiteType,
+                '终点站点代码': r.toSiteCode,
+                '终点站点名称': r.toSiteName,
+                '终点站点地址': r.toSiteAddr,
+                '终点经度': r.toLng,
+                '终点纬度': r.toLat,
+                '运输距离(km)': r.distance,
+                '预计时间(小时)': r.estimatedTime,
+                '计算方式': r.method
+            }))
+        };
+
+        localStorage.setItem(PASS_KEY, JSON.stringify(passData));
+
+        dataPassBar.classList.add('show');
+        passInfo.textContent = `下游工具 (${allDistanceResults.length} 条距离)`;
+        saveAndPassBtn.disabled = true;
+
+        showToast(`✅ 已保存 ${allDistanceResults.length} 条距离结果`, 'success');
+        addLog(`💾 已保存 ${allDistanceResults.length} 条距离结果，供下游工具使用`, 'success');
+
+        if (isInWorkflow) {
+            workflowStatus.textContent = '✅ 已保存，通知父页面...';
+        }
+
+        // ★★★ 通知父页面（工作流引擎） ★★★
+        try {
+            window.parent.postMessage({
+                type: 'toolbox_data_saved',
+                tool: TOOL_ID,
+                count: allDistanceResults.length,
+                data: passData
+            }, '*');
+            addLog(`📤 已通知父页面: 距离计算结果已保存 (${allDistanceResults.length} 条)`, 'success');
+            if (isInWorkflow) {
+                workflowStatus.textContent = '✅ 已通知工作流';
+            }
+        } catch (e) {
+            addLog(`⚠️ 通知父页面失败: ${e.message}`, true);
+            if (isInWorkflow) {
+                workflowStatus.textContent = '⚠️ 通知失败，请手动继续';
+            }
+        }
+    }
+
+    function clearPassData() {
+        localStorage.removeItem(PASS_KEY);
+        dataPassBar.classList.remove('show');
+        saveAndPassBtn.disabled = true;
+        addLog('🗑️ 已清除传递数据', 'info');
+        if (isInWorkflow) {
+            workflowStatus.textContent = '⏳ 等待计算';
+        }
+    }
+
+    function checkPassStatus() {
+        const passData = localStorage.getItem(PASS_KEY);
+        if (passData) {
+            try {
+                const data = JSON.parse(passData);
+                if (data && data.tool === TOOL_ID && data.data && data.data.length > 0) {
+                    dataPassBar.classList.add('show');
+                    passInfo.textContent = `下游工具 (${data.data.length} 条距离)`;
+                    saveAndPassBtn.disabled = true;
+                    return true;
+                }
+            } catch (e) {}
+        }
+        if (allDistanceResults && allDistanceResults.length > 0) {
+            dataPassBar.classList.add('show');
+            passInfo.textContent = `下游工具 (${allDistanceResults.length} 条距离)`;
+            saveAndPassBtn.disabled = false;
+            return true;
+        }
+        dataPassBar.classList.remove('show');
+        saveAndPassBtn.disabled = true;
+        return false;
+    }
+
     // ============================================================
     //  日志
     // ============================================================
@@ -907,6 +1277,20 @@
             logArea.innerHTML = lines.slice(-100).join('<br>');
         }
         updateConcurrencyDisplay();
+    }
+
+    function showToast(msg, type = 'info') {
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:' + 
+            (type === 'error' ? '#b13b3b' : '#2a7f6e') + 
+            ';color:white;padding:12px 28px;border-radius:60px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,0.2);z-index:2000;animation:fadeInDown 0.3s ease;font-size:14px;';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            setTimeout(() => toast.remove(), 400);
+        }, 3000);
     }
 
     function updateConcurrencyDisplay() {
@@ -1268,6 +1652,9 @@
             document.getElementById('resultDisplay').style.display = 'none';
             mapSection.style.display = 'none';
             copyResultBtn.style.display = 'none';
+            if (isInWorkflow) {
+                workflowStatus.textContent = '⛔ 已终止';
+            }
             return;
         }
 
@@ -1294,6 +1681,13 @@
         displayResults(allResults, routeGrouped);
         renderCharts(allResults);
         addLog(`✅ 所有线路计算完成！共 ${allResults.length} 条距离记录`, false);
+
+        // ★★★ 自动保存并通知父页面 ★★★
+        if (allResults.length > 0) {
+            setTimeout(() => {
+                saveAndPassResults();
+            }, 300);
+        }
     }
 
     // ============================================================
@@ -1308,7 +1702,6 @@
         chartSection.style.display = 'block';
         viewTabs.style.display = 'flex';
 
-        // 准备数据：按线路分组
         const routeMap = new Map();
         results.forEach(r => {
             if (!routeMap.has(r.routeCode)) routeMap.set(r.routeCode, []);
@@ -1316,7 +1709,6 @@
         });
         const routeCodes = Array.from(routeMap.keys());
 
-        // ---- 计算各线路汇总数据 ----
         const routeSummary = routeCodes.map(code => {
             const segs = routeMap.get(code);
             const totalDist = segs.reduce((sum, s) => sum + (s.distance || 0), 0);
@@ -1333,7 +1725,6 @@
             };
         }).sort((a, b) => b.totalDist - a.totalDist);
 
-        // ---- 图表1: 各线路总里程对比（柱状图） ----
         if (!chartTotalDistanceInstance) {
             chartTotalDistanceInstance = echarts.init(document.getElementById('chartTotalDistance'));
         } else {
@@ -1378,7 +1769,6 @@
         }, true);
         chartTotalDistanceInstance.resize();
 
-        // ---- 图表2: 各线路站点数 vs 平均段距（组合图） ----
         if (!chartSitesAvgDistInstance) {
             chartSitesAvgDistInstance = echarts.init(document.getElementById('chartSitesAvgDist'));
         } else {
@@ -1440,7 +1830,6 @@
         }, true);
         chartSitesAvgDistInstance.resize();
 
-        // ---- 图表3: 距离分布直方图 ----
         if (!chartDistDistributionInstance) {
             chartDistDistributionInstance = echarts.init(document.getElementById('chartDistDistribution'));
         } else {
@@ -1489,7 +1878,6 @@
         }, true);
         chartDistDistributionInstance.resize();
 
-        // ---- 图表4: 计算方式占比（饼图） ----
         if (!chartMethodPieInstance) {
             chartMethodPieInstance = echarts.init(document.getElementById('chartMethodPie'));
         } else {
@@ -1545,7 +1933,6 @@
         }, true);
         chartMethodPieInstance.resize();
 
-        // ---- 图表5: 各线路预计总耗时（横向条形图） ----
         if (!chartTotalTimeInstance) {
             chartTotalTimeInstance = echarts.init(document.getElementById('chartTotalTime'));
         } else {
@@ -1907,7 +2294,7 @@
         });
         navigator.clipboard.writeText(csv).then(() => {
             addLog('✅ 结果已复制到剪贴板（制表符分隔）', false);
-            showCopyToast('✅ 已复制 ' + allDistanceResults.length + ' 条数据到剪贴板！');
+            showToast('✅ 已复制 ' + allDistanceResults.length + ' 条数据到剪贴板！');
         }).catch(() => {
             const textarea = document.createElement('textarea');
             textarea.value = csv;
@@ -1916,22 +2303,8 @@
             document.execCommand('copy');
             document.body.removeChild(textarea);
             addLog('✅ 结果已复制到剪贴板', false);
-            showCopyToast('✅ 已复制 ' + allDistanceResults.length + ' 条数据到剪贴板！');
+            showToast('✅ 已复制 ' + allDistanceResults.length + ' 条数据到剪贴板！');
         });
-    }
-
-    let toastTimer = null;
-    function showCopyToast(msg) {
-        const toast = document.createElement('div');
-        toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#2a7f6e;color:white;padding:12px 28px;border-radius:60px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,0.2);z-index:2000;animation:fadeInDown 0.3s ease;font-size:14px;';
-        toast.textContent = msg;
-        document.body.appendChild(toast);
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.3s';
-            setTimeout(() => toast.remove(), 400);
-        }, 2500);
     }
 
     // ============================================================
@@ -2061,7 +2434,6 @@
         updateConcurrencyDisplay();
         addLog("已清空所有文件和数据", false);
         document.getElementById('mapContainer').innerHTML = `<div class="map-loading"><div class="spinner"></div><span>地图加载中...</span></div>`;
-        // 清空图表
         if (chartTotalDistanceInstance) chartTotalDistanceInstance.clear();
         if (chartSitesAvgDistInstance) chartSitesAvgDistInstance.clear();
         if (chartDistDistributionInstance) chartDistDistributionInstance.clear();
@@ -2070,6 +2442,14 @@
         document.querySelectorAll('.chart-container').forEach(el => {
             el.innerHTML = `<div class="chart-no-data">计算完成后自动生成</div>`;
         });
+        clearPassData();
+        if (isInWorkflow) {
+            workflowStatus.textContent = '⏳ 等待计算';
+        }
+        // 重新检查上游数据
+        setTimeout(() => {
+            checkUpstreamData();
+        }, 300);
     }
 
     function terminateCalc() {
@@ -2096,7 +2476,6 @@
             const viewId = this.dataset.view;
             document.querySelectorAll('.view-content').forEach(vc => vc.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
-            // 切换到图表tab时resize图表
             if (viewId === 'viewChart') {
                 setTimeout(() => {
                     if (chartTotalDistanceInstance) chartTotalDistanceInstance.resize();
@@ -2192,6 +2571,42 @@
     downloadTemplateBtn.addEventListener('click', (e) => { e.preventDefault(); downloadTemplate(); });
     copyResultBtn.addEventListener('click', copyResultsToClipboard);
 
+    // ★★★ 工作流联动事件 ★★★
+    importUpstreamBtn.addEventListener('click', importUpstreamData);
+    skipUpstreamBtn.addEventListener('click', () => {
+        upstreamHint.classList.remove('show');
+        addLog('⏭️ 已跳过上游数据导入', false);
+    });
+
+    // ★★★ 数据传递事件 ★★★
+    saveAndPassBtn.addEventListener('click', saveAndPassResults);
+    clearPassBtn.addEventListener('click', clearPassData);
+
+    // ★★★ 监听来自父页面的消息 ★★★
+    window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'toolbox_request_data') {
+            const passData = localStorage.getItem(PASS_KEY);
+            if (passData) {
+                try {
+                    const data = JSON.parse(passData);
+                    if (data && data.tool === TOOL_ID) {
+                        event.source.postMessage({
+                            type: 'toolbox_data_response',
+                            tool: TOOL_ID,
+                            data: data
+                        }, '*');
+                    }
+                } catch (e) {}
+            }
+        }
+        if (event.data && event.data.type === 'workflow_started') {
+            isInWorkflow = true;
+            workflowHint.classList.add('show');
+            workflowStatus.textContent = '⚡ 工作流模式';
+            addLog('🔗 工作流已启动，计算完成后自动通知', false);
+        }
+    });
+
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#1f6392'; });
     dropZone.addEventListener('dragleave', () => dropZone.style.borderColor = '#bdd2ec');
     dropZone.addEventListener('drop', async (e) => {
@@ -2212,14 +2627,37 @@
         else addLog("未获取到文件", true);
     });
 
-    // 初始化
+    // ============================================================
+    //  初始化
+    // ============================================================
     hideDownloadBar();
     updateFileUI();
     addLog(`📌 排序规则：从距离卸货点最远的站点开始，由远及近排列，卸货点/目的地自动放在最后`, false);
     addLog(`⏱️ 预计时间按 ${AVG_SPEED} km/h 估算，单位：小时，保留一位小数`, false);
     addLog(`🛑 并发限制：≤ ${CONFIG.QPS_LIMIT} req/s，自动重试 ${CONFIG.MAX_RETRIES} 次`, false);
     addLog("📊 计算完成后自动生成5个BI分析图表", false);
-    addLog("提示：请填写高德地图Web服务API Key，上传包含7个字段的站点数据后点击「计算所有线路」", false);
+    addLog("🔗 支持工作流联动：检测到上游数据自动导入，计算完成后自动传递", false);
+
+    // ★★★ 检测工作流模式和上游数据 ★★★
+    detectWorkflowMode();
+    setTimeout(() => {
+        checkUpstreamData();
+        checkPassStatus();
+    }, 500);
+
+    // 暴露全局函数供父页面调用
+    window.getPassData = function() {
+        try {
+            const raw = localStorage.getItem(PASS_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return null;
+    };
+    window.saveAndPassResults = saveAndPassResults;
+    window.checkPassStatus = checkPassStatus;
+    window.clearPassData = clearPassData;
+    window.importUpstreamData = importUpstreamData;
+    window.calculateAllRoutes = calculateAllRoutes;
 </script>
 </body>
 </html>
