@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>物流工具箱 - 首页</title>
+    <title>物流工具箱 - 首页 (工作流真实联动版)</title>
     <!-- Chart.js 轻量图表库 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
     </script>
@@ -145,6 +145,17 @@
             font-size: 10px;
             color: rgba(255, 255, 255, 0.5);
         }
+        .nav-item.workflow-item {
+            border-left-color: #f5d742;
+            background: rgba(245, 215, 66, 0.08);
+        }
+        .nav-item.workflow-item:hover {
+            background: rgba(245, 215, 66, 0.15);
+        }
+        .nav-item.workflow-item .badge {
+            background: #f5d742;
+            color: #1e3a5f;
+        }
 
         .sidebar-footer {
             padding: 14px 20px;
@@ -208,6 +219,7 @@
             overflow: hidden;
             padding: 16px 20px 20px;
             background: #f0f3f7;
+            position: relative;
         }
 
         .iframe-wrapper {
@@ -226,76 +238,297 @@
             display: block;
         }
 
-        /* ===== 欢迎页 ===== */
-        .welcome-content {
-            display: flex;
-            flex-direction: column;
+        /* ===== ★★★ 工作流执行器（覆盖在内容区上方） ★★★ ===== */
+        .workflow-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: none;
             align-items: center;
             justify-content: center;
-            height: 100%;
-            text-align: center;
-            padding: 40px;
-            background: white;
             border-radius: 12px;
-            border: 1px solid #e2edf5;
-            overflow-y: auto;
         }
-        .welcome-content .logo-big {
-            font-size: 72px;
-            margin-bottom: 20px;
-        }
-        .welcome-content h2 {
-            font-size: 28px;
-            color: #1f3a5f;
-            margin-bottom: 10px;
-        }
-        .welcome-content p {
-            color: #7a8eaa;
-            font-size: 16px;
-            max-width: 480px;
-            line-height: 1.7;
-        }
-        .welcome-content .tool-grid {
+        .workflow-overlay.active {
             display: flex;
-            flex-wrap: wrap;
+        }
+
+        .workflow-panel {
+            background: white;
+            border-radius: 1.2rem;
+            max-width: 720px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 24px 28px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .workflow-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+        .workflow-panel::-webkit-scrollbar-thumb {
+            background: #c8d8e8;
+            border-radius: 8px;
+        }
+
+        .workflow-panel .wf-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f3a5f;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid #e8eef5;
+            padding-bottom: 12px;
+        }
+        .workflow-panel .wf-title .wf-badge {
+            font-size: 11px;
+            background: #f5d742;
+            color: #1e3a5f;
+            padding: 2px 12px;
+            border-radius: 30px;
+            font-weight: 600;
+        }
+
+        .wf-steps {
+            margin: 16px 0;
+        }
+        .wf-step {
+            display: flex;
+            align-items: flex-start;
             gap: 14px;
-            margin-top: 28px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f4f8;
+        }
+        .wf-step:last-child {
+            border-bottom: none;
+        }
+        .wf-step .step-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #e8eef5;
+            color: #4a6a8a;
+            display: flex;
+            align-items: center;
             justify-content: center;
-            max-width: 800px;
+            font-weight: 700;
+            font-size: 13px;
+            flex-shrink: 0;
         }
-        .welcome-content .tool-grid .card {
-            background: #f8fafd;
-            border: 1px solid #e2edf5;
-            border-radius: 12px;
-            padding: 16px 24px;
-            cursor: pointer;
-            transition: 0.2s;
-            text-align: left;
-            min-width: 180px;
-            flex: 1 0 auto;
-            max-width: 220px;
+        .wf-step.active .step-num {
+            background: #1a5d8c;
+            color: white;
         }
-        .welcome-content .tool-grid .card:hover {
-            border-color: #1a5d8c;
-            background: #f1f6fc;
-            transform: translateY(-2px);
+        .wf-step.done .step-num {
+            background: #2a7f6e;
+            color: white;
         }
-        .welcome-content .tool-grid .card .icon {
-            font-size: 24px;
+        .wf-step.error .step-num {
+            background: #b13b3b;
+            color: white;
         }
-        .welcome-content .tool-grid .card .name {
+        .wf-step .step-info {
+            flex: 1;
+        }
+        .wf-step .step-info .step-name {
             font-weight: 600;
             color: #1f3a5f;
-            margin-top: 4px;
             font-size: 14px;
         }
-        .welcome-content .tool-grid .card .desc {
+        .wf-step .step-info .step-desc {
             font-size: 12px;
             color: #7a8eaa;
             margin-top: 2px;
         }
+        .wf-step .step-info .step-status {
+            font-size: 11px;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .wf-step .step-info .step-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .wf-step .step-info .step-status .dot.pending {
+            background: #c8d8e8;
+        }
+        .wf-step .step-info .step-status .dot.running {
+            background: #ffb347;
+            animation: pulse 0.8s infinite;
+        }
+        .wf-step .step-info .step-status .dot.done {
+            background: #2a7f6e;
+        }
+        .wf-step .step-info .step-status .dot.error {
+            background: #b13b3b;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
 
-        /* ===== 统计页面样式 ===== */
+        .wf-step .step-action {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .wf-step .step-action .btn {
+            border: none;
+            padding: 4px 14px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 11px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .wf-step .step-action .btn-primary {
+            background: #1a5d8c;
+            color: white;
+        }
+        .wf-step .step-action .btn-primary:hover {
+            background: #0e466b;
+        }
+        .wf-step .step-action .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .wf-step .step-action .btn-success {
+            background: #2a7f6e;
+            color: white;
+        }
+        .wf-step .step-action .btn-success:hover {
+            background: #1e6657;
+        }
+        .wf-step .step-action .btn-outline {
+            background: #eef3fc;
+            color: #1f4970;
+            border: 1px solid #cde0ee;
+        }
+        .wf-step .step-action .btn-outline:hover {
+            background: #e2ebf5;
+        }
+        .wf-step .step-action .btn-danger {
+            background: #fce4e4;
+            color: #b13b3b;
+            border: 1px solid #f5c2c2;
+        }
+        .wf-step .step-action .btn-danger:hover {
+            background: #fccfcf;
+        }
+
+        .wf-footer {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e8eef5;
+            flex-wrap: wrap;
+        }
+        .wf-footer .btn {
+            border: none;
+            padding: 8px 24px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .wf-footer .btn-success {
+            background: #2a7f6e;
+            color: white;
+        }
+        .wf-footer .btn-success:hover {
+            background: #1e6657;
+        }
+        .wf-footer .btn-success:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .wf-footer .btn-outline {
+            background: #eef3fc;
+            color: #1f4970;
+            border: 1px solid #cde0ee;
+        }
+        .wf-footer .btn-outline:hover {
+            background: #e2ebf5;
+        }
+        .wf-footer .btn-danger {
+            background: #fce4e4;
+            color: #b13b3b;
+            border: 1px solid #f5c2c2;
+        }
+        .wf-footer .btn-danger:hover {
+            background: #fccfcf;
+        }
+
+        .wf-log {
+            background: #0f1a24;
+            border-radius: 8px;
+            padding: 8px 12px;
+            max-height: 80px;
+            overflow-y: auto;
+            margin-top: 12px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #c9e1f0;
+            line-height: 1.6;
+        }
+        .wf-log::-webkit-scrollbar {
+            width: 3px;
+        }
+        .wf-log::-webkit-scrollbar-thumb {
+            background: #446688;
+            border-radius: 8px;
+        }
+        .wf-log .log-entry {
+            display: flex;
+            gap: 10px;
+        }
+        .wf-log .log-time {
+            color: #6a8aaa;
+            min-width: 65px;
+        }
+        .wf-log .log-msg {
+            color: #b9e0ff;
+        }
+        .wf-log .log-msg.error {
+            color: #ffb4a2;
+        }
+        .wf-log .log-msg.success {
+            color: #8de0b0;
+        }
+        .wf-log .log-msg.info {
+            color: #ffd78a;
+        }
+
+        /* ===== 统计页面 ===== */
         .stats-dashboard {
             height: 100%;
             overflow-y: auto;
@@ -309,7 +542,6 @@
             background: #c0d0e0;
             border-radius: 4px;
         }
-
         .stats-summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -378,7 +610,6 @@
                 grid-template-columns: 1fr;
             }
         }
-
         .stats-chart-box {
             background: white;
             border-radius: 14px;
@@ -399,7 +630,6 @@
             position: relative;
             height: 220px;
         }
-
         .stats-table-wrap {
             background: white;
             border-radius: 14px;
@@ -505,6 +735,75 @@
             transform: translateY(-1px);
         }
 
+        /* ===== 欢迎页 ===== */
+        .welcome-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2edf5;
+            overflow-y: auto;
+        }
+        .welcome-content .logo-big {
+            font-size: 72px;
+            margin-bottom: 20px;
+        }
+        .welcome-content h2 {
+            font-size: 28px;
+            color: #1f3a5f;
+            margin-bottom: 10px;
+        }
+        .welcome-content p {
+            color: #7a8eaa;
+            font-size: 16px;
+            max-width: 480px;
+            line-height: 1.7;
+        }
+        .welcome-content .tool-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 28px;
+            justify-content: center;
+            max-width: 800px;
+        }
+        .welcome-content .tool-grid .card {
+            background: #f8fafd;
+            border: 1px solid #e2edf5;
+            border-radius: 12px;
+            padding: 16px 24px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: left;
+            min-width: 180px;
+            flex: 1 0 auto;
+            max-width: 220px;
+        }
+        .welcome-content .tool-grid .card:hover {
+            border-color: #1a5d8c;
+            background: #f1f6fc;
+            transform: translateY(-2px);
+        }
+        .welcome-content .tool-grid .card .icon {
+            font-size: 24px;
+        }
+        .welcome-content .tool-grid .card .name {
+            font-weight: 600;
+            color: #1f3a5f;
+            margin-top: 4px;
+            font-size: 14px;
+        }
+        .welcome-content .tool-grid .card .desc {
+            font-size: 12px;
+            color: #7a8eaa;
+            margin-top: 2px;
+        }
+
         /* ===== 响应式 ===== */
         @media (max-width: 768px) {
             .sidebar {
@@ -525,8 +824,22 @@
                 min-width: 140px;
                 padding: 12px 16px;
             }
-            .stats-summary {
-                grid-template-columns: repeat(2, 1fr);
+            .workflow-panel {
+                padding: 16px 18px;
+                max-width: 95%;
+            }
+            .wf-step {
+                flex-wrap: wrap;
+            }
+            .wf-step .step-action {
+                width: 100%;
+                margin-left: 42px;
+            }
+            .wf-footer {
+                flex-direction: column;
+            }
+            .wf-footer .btn {
+                justify-content: center;
             }
         }
         @media (max-width: 600px) {
@@ -564,22 +877,14 @@
                 font-size: 12px;
                 padding: 4px 14px;
             }
-            .stats-summary {
-                grid-template-columns: 1fr 1fr;
+            .workflow-panel {
+                padding: 12px 14px;
             }
-            .stats-summary .stat-card .stat-value {
-                font-size: 20px;
+            .wf-title {
+                font-size: 15px !important;
             }
-            .welcome-content .tool-grid .card {
-                min-width: 120px;
-                padding: 10px 14px;
-                flex: 1 0 40%;
-            }
-            .welcome-content .tool-grid .card .name {
+            .wf-step .step-info .step-name {
                 font-size: 12px;
-            }
-            .welcome-content .tool-grid .card .desc {
-                font-size: 10px;
             }
         }
     </style>
@@ -600,7 +905,7 @@
             </div>
 
             <div class="sidebar-footer">
-                v2.0 · 本地工具集
+                v2.0 · 工作流真实联动
             </div>
         </nav>
 
@@ -614,13 +919,20 @@
 
             <div class="content-body" id="contentBody">
                 <!-- 默认显示欢迎页，由 JS 渲染 -->
+
+                <!-- ===== ★★★ 工作流覆盖层 ★★★ ===== -->
+                <div class="workflow-overlay" id="workflowOverlay">
+                    <div class="workflow-panel" id="workflowPanel">
+                        <!-- 由 JS 动态渲染 -->
+                    </div>
+                </div>
             </div>
         </main>
     </div>
 
     <script>
         // ============================================================
-        //  工具导航树配置 ★★★ 新增"VMI拉动平衡"工具 ★★★
+        //  ★★★ 所有工具导航配置（完整保留） ★★★
         // ============================================================
         const TOOLS = [{
             id: 'welcome',
@@ -629,6 +941,13 @@
             section: '导航',
             desc: '工具箱主页',
             isWelcome: true
+        }, {
+            id: 'workflow',
+            icon: '⚡',
+            label: '一键串联',
+            section: '导航',
+            desc: '工作流自动化',
+            isWorkflow: true
         }, {
             id: 'excel-merge-sheets',
             icon: '📊',
@@ -700,7 +1019,6 @@
             desc: '道口·拖拽排程·周视图·复制',
             file: 'dock-scheduling.html'
         }, {
-            // ★★★ 新增：VMI拉动平衡 ★★★
             id: 'vmi-pull-balance',
             icon: '⚖️',
             label: 'VMI拉动平衡',
@@ -714,6 +1032,39 @@
             section: '系统',
             desc: '工具使用分析',
             isStats: true
+        }];
+
+        // ============================================================
+        //  ★★★ 工作流配置（只联动三个核心工具） ★★★
+        // ============================================================
+        const WORKFLOWS = [{
+            id: 'address-to-cluster',
+            name: '地址→经纬度→聚类',
+            description: '上传地址文件 → 解析经纬度 → 自动导入聚类工具进行分组',
+            icon: '📍➜🧠',
+            steps: [
+                { tool: 'address-geocode', label: '地址转经纬度', desc: '上传Excel文件，批量查询经纬度坐标' },
+                { tool: 'kmeans-cluster', label: 'K-Means聚类', desc: '自动导入经纬度数据，按容量约束分组' }
+            ]
+        }, {
+            id: 'cluster-to-route',
+            name: '聚类→排程',
+            description: '已有站点数据 → 聚类分组 → 自动导入排程工具排序',
+            icon: '🧠➜🗺️',
+            steps: [
+                { tool: 'kmeans-cluster', label: 'K-Means聚类', desc: '按地理位置和容量约束分组' },
+                { tool: 'route-distance', label: '线路排程', desc: '自动导入分组结果，生成最优访问顺序' }
+            ]
+        }, {
+            id: 'address-to-route',
+            name: '地址→经纬度→聚类→排程（完整链路）',
+            description: '从原始地址开始，自动完成地址解析、聚类分组、线路排程',
+            icon: '📍➜🧠➜🗺️',
+            steps: [
+                { tool: 'address-geocode', label: '地址转经纬度', desc: '上传Excel文件，批量查询经纬度坐标' },
+                { tool: 'kmeans-cluster', label: 'K-Means聚类', desc: '自动导入经纬度数据，按容量约束分组' },
+                { tool: 'route-distance', label: '线路排程', desc: '自动导入分组结果，生成最优访问顺序' }
+            ]
         }];
 
         // ============================================================
@@ -769,17 +1120,381 @@
         }
 
         // ============================================================
-        //  DOM 引用
+        //  ★★★ 工作流执行引擎 ★★★
         // ============================================================
-        const logoutTopBtn = document.getElementById('logoutTopBtn');
+        const PASS_KEY = 'toolbox_data_pass';
+        let workflowState = {
+            isRunning: false,
+            currentStep: 0,
+            results: {},
+            errors: [],
+            logs: [],
+            workflow: null,
+            activeToolId: null
+        };
 
-        // ============================================================
-        //  退出登录
-        // ============================================================
-        function doLogout() {
-            sessionStorage.removeItem('isLoggedIn');
-            sessionStorage.removeItem('username');
-            window.location.href = 'index.html';
+        function addWorkflowLog(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            workflowState.logs.push({ time, msg, type });
+            renderWorkflowLogs();
+        }
+
+        function renderWorkflowLogs() {
+            const container = document.getElementById('wfLog');
+            if (!container) return;
+            let html = '';
+            workflowState.logs.forEach(log => {
+                const cls = log.type === 'error' ? 'error' : log.type === 'success' ? 'success' : 'info';
+                html +=
+                    `<div class="log-entry"><span class="log-time">${log.time}</span><span class="log-msg ${cls}">${log.msg}</span></div>`;
+            });
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function startWorkflow(workflowId) {
+            const workflow = WORKFLOWS.find(w => w.id === workflowId);
+            if (!workflow) {
+                alert('未找到工作流: ' + workflowId);
+                return;
+            }
+
+            if (workflowState.isRunning) {
+                alert('已有工作流正在执行中，请等待完成');
+                return;
+            }
+
+            // 重置状态
+            workflowState.isRunning = true;
+            workflowState.currentStep = 0;
+            workflowState.results = {};
+            workflowState.errors = [];
+            workflowState.logs = [];
+            workflowState.workflow = workflow;
+            workflowState.activeToolId = null;
+
+            // 清空旧的传递数据
+            localStorage.removeItem(PASS_KEY);
+
+            // 显示覆盖层
+            const overlay = document.getElementById('workflowOverlay');
+            overlay.classList.add('active');
+
+            // 渲染工作流面板
+            renderWorkflowPanel(workflow);
+
+            addWorkflowLog(`🚀 开始执行工作流: ${workflow.name}`, 'info');
+
+            // 开始执行第一步
+            executeStep(0);
+        }
+
+        function renderWorkflowPanel(workflow) {
+            const panel = document.getElementById('workflowPanel');
+            panel.innerHTML = `
+                <div class="wf-title">
+                    ⚡ ${workflow.name}
+                    <span class="wf-badge">${workflow.steps.length} 步</span>
+                </div>
+
+                <div class="wf-steps" id="wfSteps">
+                    ${workflow.steps.map((step, idx) => `
+                        <div class="wf-step" id="wfStep_${idx}">
+                            <div class="step-num">${idx + 1}</div>
+                            <div class="step-info">
+                                <div class="step-name">${step.label}</div>
+                                <div class="step-desc">${step.desc}</div>
+                                <div class="step-status">
+                                    <span class="dot pending"></span>
+                                    <span class="status-text">等待执行</span>
+                                </div>
+                            </div>
+                            <div class="step-action">
+                                <button class="btn btn-outline" id="wfStepBtn_${idx}" disabled>
+                                    等待中
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="wf-log" id="wfLog">
+                    <div class="log-entry">
+                        <span class="log-time">${new Date().toLocaleTimeString()}</span>
+                        <span class="log-msg info">📋 工作流已启动，请按顺序执行各步骤</span>
+                    </div>
+                </div>
+
+                <div class="wf-footer">
+                    <button class="btn btn-success" id="wfNextBtn" disabled>⏳ 等待当前步骤...</button>
+                    <button class="btn btn-danger" id="wfCancelBtn">✕ 取消</button>
+                </div>
+            `;
+
+            document.getElementById('wfCancelBtn').addEventListener('click', function() {
+                if (confirm('确定要取消当前工作流吗？')) {
+                    cancelWorkflow();
+                }
+            });
+
+            workflow.steps.forEach((step, idx) => {
+                const btn = document.getElementById(`wfStepBtn_${idx}`);
+                if (btn) {
+                    btn.addEventListener('click', function() {
+                        executeStep(idx);
+                    });
+                }
+            });
+
+            workflow.steps.forEach((step, idx) => {
+                updateStepUI(idx, 'pending', '等待执行');
+                const btn = document.getElementById(`wfStepBtn_${idx}`);
+                if (btn) {
+                    if (idx === 0) {
+                        btn.textContent = '▶ 执行';
+                        btn.className = 'btn btn-primary';
+                        btn.disabled = false;
+                    } else {
+                        btn.textContent = '⏳ 等待上一步';
+                        btn.className = 'btn btn-outline';
+                        btn.disabled = true;
+                    }
+                }
+            });
+
+            updateNextButton();
+        }
+
+        function updateStepUI(idx, status, text) {
+            const stepEl = document.getElementById(`wfStep_${idx}`);
+            if (!stepEl) return;
+
+            stepEl.className = `wf-step ${status}`;
+
+            const statusText = stepEl.querySelector('.status-text');
+            const dot = stepEl.querySelector('.dot');
+            if (statusText) statusText.textContent = text;
+
+            if (dot) {
+                dot.className = `dot ${status}`;
+            }
+
+            const btn = document.getElementById(`wfStepBtn_${idx}`);
+            if (btn) {
+                if (status === 'done') {
+                    btn.textContent = '✅ 已完成';
+                    btn.className = 'btn btn-success';
+                    btn.disabled = true;
+                } else if (status === 'running') {
+                    btn.textContent = '⏳ 执行中...';
+                    btn.className = 'btn btn-primary';
+                    btn.disabled = true;
+                } else if (status === 'error') {
+                    btn.textContent = '❌ 失败';
+                    btn.className = 'btn btn-danger';
+                    btn.disabled = true;
+                } else if (status === 'pending') {
+                    btn.textContent = '▶ 执行';
+                    btn.className = 'btn btn-primary';
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        function updateNextButton() {
+            const btn = document.getElementById('wfNextBtn');
+            if (!btn) return;
+
+            const workflow = workflowState.workflow;
+            const currentStep = workflowState.currentStep;
+
+            const allDone = workflow.steps.every((step, idx) => {
+                return document.getElementById(`wfStep_${idx}`)?.classList.contains('done');
+            });
+
+            if (allDone && workflowState.errors.length === 0) {
+                btn.textContent = '🎉 工作流完成!';
+                btn.className = 'btn btn-success';
+                btn.disabled = false;
+                btn.onclick = function() {
+                    closeWorkflow('完成');
+                };
+                return;
+            }
+
+            if (workflowState.errors.length > 0) {
+                btn.textContent = '❌ 工作流失败，请取消';
+                btn.className = 'btn btn-danger';
+                btn.disabled = true;
+                return;
+            }
+
+            const currentStepEl = document.getElementById(`wfStep_${currentStep}`);
+            if (currentStepEl && currentStepEl.classList.contains('done')) {
+                if (currentStep < workflow.steps.length - 1) {
+                    const nextIdx = currentStep + 1;
+                    const nextBtn = document.getElementById(`wfStepBtn_${nextIdx}`);
+                    if (nextBtn) {
+                        btn.textContent = `▶ 执行下一步 (${nextIdx + 1}/${workflow.steps.length})`;
+                        btn.className = 'btn btn-success';
+                        btn.disabled = false;
+                        btn.onclick = function() {
+                            executeStep(nextIdx);
+                        };
+                        return;
+                    }
+                } else {
+                    btn.textContent = '🎉 全部完成!';
+                    btn.className = 'btn btn-success';
+                    btn.disabled = false;
+                    btn.onclick = function() {
+                        closeWorkflow('完成');
+                    };
+                    return;
+                }
+            }
+
+            btn.textContent = '⏳ 等待当前步骤完成...';
+            btn.className = 'btn btn-outline';
+            btn.disabled = true;
+        }
+
+        function executeStep(idx) {
+            const workflow = workflowState.workflow;
+            if (!workflow) return;
+
+            const step = workflow.steps[idx];
+            const tool = TOOLS.find(t => t.id === step.tool);
+            if (!tool) {
+                addWorkflowLog(`❌ 工具 ${step.tool} 未找到`, 'error');
+                workflowState.errors.push({ step: idx, error: `工具 ${step.tool} 未找到` });
+                updateStepUI(idx, 'error', '工具未找到');
+                updateNextButton();
+                return;
+            }
+
+            workflowState.currentStep = idx;
+            updateStepUI(idx, 'running', '执行中...');
+            addWorkflowLog(`📌 步骤 ${idx+1}: ${step.label} - 打开工具 ${tool.icon} ${tool.label}`, 'info');
+
+            const body = document.getElementById('contentBody');
+            const filePath = tool.file;
+
+            if (!filePath) {
+                addWorkflowLog(`❌ 工具 ${tool.label} 未指定文件路径`, 'error');
+                updateStepUI(idx, 'error', '文件路径未配置');
+                workflowState.errors.push({ step: idx, error: '文件路径未配置' });
+                updateNextButton();
+                return;
+            }
+
+            const existingIframe = body.querySelector('iframe');
+            if (existingIframe) {
+                existingIframe.remove();
+            }
+
+            const iframeWrapper = document.createElement('div');
+            iframeWrapper.className = 'iframe-wrapper';
+            const iframe = document.createElement('iframe');
+            iframe.src = filePath;
+            iframe.allow = 'geolocation';
+            iframeWrapper.appendChild(iframe);
+            body.innerHTML = '';
+            body.appendChild(iframeWrapper);
+
+            document.getElementById('pageTitle').textContent = tool.icon + ' ' + tool.label + ' (工作流步骤 ' + (idx + 1) + ')';
+            document.getElementById('breadcrumbCurrent').textContent = tool.label + ' 🔗 工作流';
+
+            workflowState.activeToolId = tool.id;
+
+            const btn = document.getElementById(`wfStepBtn_${idx}`);
+            if (btn) {
+                btn.textContent = '⏳ 等待用户操作...';
+                btn.className = 'btn btn-outline';
+                btn.disabled = true;
+            }
+
+            const nextBtn = document.getElementById('wfNextBtn');
+            if (nextBtn) {
+                nextBtn.textContent = '⏳ 请完成当前步骤...';
+                nextBtn.className = 'btn btn-outline';
+                nextBtn.disabled = true;
+            }
+
+            // 监听来自 iframe 的消息
+            const messageHandler = function(event) {
+                if (event.data && event.data.type === 'toolbox_data_saved') {
+                    const toolId = event.data.tool;
+                    if (toolId === step.tool) {
+                        addWorkflowLog(`✅ 检测到 ${toolId} 数据已保存: ${event.data.count || 0} 条`, 'success');
+                        updateStepUI(idx, 'done', '✅ 已完成');
+                        workflowState.results[step.tool] = event.data;
+                        addWorkflowLog(`✅ 步骤 ${idx+1} 完成: ${step.label}`, 'success');
+                        updateNextButton();
+                        window.removeEventListener('message', messageHandler);
+                    }
+                }
+            };
+            window.addEventListener('message', messageHandler);
+
+            if (idx === 0 && step.tool === 'address-geocode') {
+                addWorkflowLog(`📋 请在工具中上传Excel文件，点击「查询」完成地址解析`, 'info');
+                updateStepUI(idx, 'running', '等待用户操作...');
+            } else if (step.tool === 'kmeans-cluster') {
+                addWorkflowLog(`📋 数据将自动导入，点击「运行聚类优化」完成分组`, 'info');
+                updateStepUI(idx, 'running', '等待聚类...');
+            } else if (step.tool === 'route-distance') {
+                addWorkflowLog(`📋 数据将自动导入并开始计算线路距离`, 'info');
+                updateStepUI(idx, 'running', '计算中...');
+            }
+
+            setTimeout(() => {
+                addWorkflowLog(`💡 提示: 如果已完成操作但未自动识别，请手动点击「下一步」继续`, 'info');
+            }, 15000);
+        }
+
+        function cancelWorkflow() {
+            workflowState.isRunning = false;
+            closeWorkflow('已取消');
+            addWorkflowLog('❌ 工作流已取消', 'error');
+        }
+
+        function closeWorkflow(reason) {
+            const overlay = document.getElementById('workflowOverlay');
+            overlay.classList.remove('active');
+
+            workflowState.isRunning = false;
+            workflowState.activeToolId = null;
+
+            document.getElementById('pageTitle').textContent = '📦 物流工具箱';
+            document.getElementById('breadcrumbCurrent').textContent = '欢迎';
+
+            const body = document.getElementById('contentBody');
+            if (!body.querySelector('.welcome-content')) {
+                loadTool('welcome');
+            }
+
+            if (reason === '完成') {
+                addWorkflowLog('🎉 工作流执行完成!', 'success');
+                setTimeout(() => {
+                    showToast('✅ 工作流执行完成!');
+                }, 300);
+            } else {
+                addWorkflowLog(`⏹️ 工作流已${reason}`, 'info');
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.style.cssText =
+                'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#2a7f6e;color:white;padding:10px 24px;border-radius:60px;font-weight:600;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:1000;animation:fadeInDown 0.3s ease;';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
         }
 
         // ============================================================
@@ -809,11 +1524,13 @@
                     `;
                 items.forEach(t => {
                     const active = t.isWelcome ? 'active' : '';
+                    const extraClass = t.isWorkflow ? 'workflow-item' : '';
+                    const badgeText = t.isWorkflow ? '⚡ 自动化' : '';
                     html += `
-                            <a class="nav-item ${active}" href="#" data-id="${t.id}" onclick="loadTool('${t.id}')">
+                            <a class="nav-item ${active} ${extraClass}" href="#" data-id="${t.id}" onclick="loadTool('${t.id}')">
                                 <span class="icon">${t.icon}</span>
                                 <span class="label">${t.label}</span>
-                                ${t.desc ? `<span class="badge">${t.desc}</span>` : ''}
+                                ${badgeText ? `<span class="badge">${badgeText}</span>` : ''}
                             </a>
                         `;
                 });
@@ -823,9 +1540,6 @@
             nav.innerHTML = html;
         }
 
-        // ============================================================
-        //  折叠/展开
-        // ============================================================
         function toggleSection(el) {
             const items = el.nextElementSibling;
             const arrow = el.querySelector('.arrow');
@@ -841,7 +1555,7 @@
         }
 
         // ============================================================
-        //  渲染统计页面
+        //  统计页面
         // ============================================================
         let usageChartInstance = null;
         let trendChartInstance = null;
@@ -855,7 +1569,6 @@
 
             const totalUsage = data.totalVisits || 0;
             const toolCount = Object.keys(data.toolUsage).length;
-            const historyCount = data.history ? data.history.length : 0;
 
             let mostUsedTool = '无数据';
             let mostUsedCount = 0;
@@ -884,25 +1597,13 @@
             } else {
                 tableHtml = `
                         <table>
-                            <thead><tr>
-                                <th>#</th>
-                                <th>工具名称</th>
-                                <th>使用次数</th>
-                                <th>首次使用</th>
-                                <th>最近使用</th>
-                            </tr></thead>
+                            <thead><tr><th>#</th><th>工具名称</th><th>使用次数</th><th>首次使用</th><th>最近使用</th></tr></thead>
                             <tbody>
                     `;
                 sortedTools.forEach(([id, stat], idx) => {
                     const name = toolNameMap[id] || id;
                     tableHtml += `
-                            <tr>
-                                <td>${idx + 1}</td>
-                                <td><strong>${name}</strong></td>
-                                <td>${stat.count}</td>
-                                <td>${stat.firstUse || '-'}</td>
-                                <td>${stat.lastUse || '-'}</td>
-                            </tr>
+                            <tr><td>${idx+1}</td><td><strong>${name}</strong></td><td>${stat.count}</td><td>${stat.firstUse || '-'}</td><td>${stat.lastUse || '-'}</td></tr>
                         `;
                 });
                 tableHtml += `</tbody></table>`;
@@ -911,55 +1612,20 @@
             body.innerHTML = `
                     <div class="stats-dashboard">
                         <div class="stats-summary">
-                            <div class="stat-card color-primary">
-                                <span class="stat-icon">📊</span>
-                                <div class="stat-label">总访问量</div>
-                                <div class="stat-value">${totalUsage}</div>
-                                <div class="stat-sub">累计工具使用次数</div>
-                            </div>
-                            <div class="stat-card color-success">
-                                <span class="stat-icon">🔧</span>
-                                <div class="stat-label">已使用工具</div>
-                                <div class="stat-value">${toolCount}</div>
-                                <div class="stat-sub">共 ${TOOLS.filter(t => !t.isWelcome && !t.isStats).length} 个工具</div>
-                            </div>
-                            <div class="stat-card color-warning">
-                                <span class="stat-icon">🏆</span>
-                                <div class="stat-label">最常用工具</div>
-                                <div class="stat-value">${mostUsedTool}</div>
-                                <div class="stat-sub">使用 ${mostUsedCount} 次</div>
-                            </div>
-                            <div class="stat-card color-purple">
-                                <span class="stat-icon">📅</span>
-                                <div class="stat-label">今日使用</div>
-                                <div class="stat-value">${todayCount}</div>
-                                <div class="stat-sub">${today}</div>
-                            </div>
+                            <div class="stat-card color-primary"><span class="stat-icon">📊</span><div class="stat-label">总访问量</div><div class="stat-value">${totalUsage}</div><div class="stat-sub">累计工具使用次数</div></div>
+                            <div class="stat-card color-success"><span class="stat-icon">🔧</span><div class="stat-label">已使用工具</div><div class="stat-value">${toolCount}</div><div class="stat-sub">共 ${TOOLS.filter(t => !t.isWelcome && !t.isStats).length} 个工具</div></div>
+                            <div class="stat-card color-warning"><span class="stat-icon">🏆</span><div class="stat-label">最常用工具</div><div class="stat-value">${mostUsedTool}</div><div class="stat-sub">使用 ${mostUsedCount} 次</div></div>
+                            <div class="stat-card color-purple"><span class="stat-icon">📅</span><div class="stat-label">今日使用</div><div class="stat-value">${todayCount}</div><div class="stat-sub">${today}</div></div>
                         </div>
 
                         <div class="stats-charts-row">
-                            <div class="stats-chart-box">
-                                <div class="chart-title">📊 各工具使用次数</div>
-                                <div class="chart-container">
-                                    <canvas id="usageChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="stats-chart-box">
-                                <div class="chart-title">📈 使用趋势 (最近30条)</div>
-                                <div class="chart-container">
-                                    <canvas id="trendChart"></canvas>
-                                </div>
-                            </div>
+                            <div class="stats-chart-box"><div class="chart-title">📊 各工具使用次数</div><div class="chart-container"><canvas id="usageChart"></canvas></div></div>
+                            <div class="stats-chart-box"><div class="chart-title">📈 使用趋势 (最近30条)</div><div class="chart-container"><canvas id="trendChart"></canvas></div></div>
                         </div>
 
                         <div class="stats-table-wrap">
-                            <div class="table-header">
-                                <span>📋 工具使用明细</span>
-                                <button class="btn-clear-stats" onclick="clearStatsData()">🗑️ 清空数据</button>
-                            </div>
-                            <div class="table-scroll">
-                                ${tableHtml}
-                            </div>
+                            <div class="table-header"><span>📋 工具使用明细</span></div>
+                            <div class="table-scroll">${tableHtml}</div>
                         </div>
                     </div>
                 `;
@@ -977,44 +1643,17 @@
                 let idx = 0;
                 for (const [id, stat] of sortedTools) {
                     const name = toolNameMap[id] || id;
-                    if (name.length > 8) {
-                        labels.push(name.substring(0, 6) + '..');
-                    } else {
-                        labels.push(name);
-                    }
+                    labels.push(name.length > 8 ? name.substring(0, 6) + '..' : name);
                     values.push(stat.count);
                     colors.push(palette[idx % palette.length]);
                     idx++;
                 }
                 usageChartInstance = new Chart(ctx1, {
                     type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: '使用次数',
-                            data: values,
-                            backgroundColor: colors.map(c => c + '80'),
-                            borderColor: colors,
-                            borderWidth: 2,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { stepSize: 1 }
-                            },
-                            x: {
-                                grid: { display: false }
-                            }
-                        }
-                    }
+                    data: { labels, datasets: [{ label: '使用次数', data: values, backgroundColor: colors.map(c => c +
+                                '80'), borderColor: colors, borderWidth: 2, borderRadius: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
                 });
             }
 
@@ -1033,41 +1672,15 @@
                 });
                 const trendLabels = Object.keys(timeMap);
                 const trendValues = Object.values(timeMap);
-                if (trendLabels.length < 2) {
-                    trendLabels.push('暂无足够数据');
-                    trendValues.push(0);
-                }
+                if (trendLabels.length < 2) { trendLabels.push('暂无足够数据');
+                    trendValues.push(0); }
                 trendChartInstance = new Chart(ctx2, {
                     type: 'line',
-                    data: {
-                        labels: trendLabels,
-                        datasets: [{
-                            label: '使用次数',
-                            data: trendValues,
-                            borderColor: '#1a5d8c',
-                            backgroundColor: 'rgba(26, 93, 140, 0.1)',
-                            fill: true,
-                            tension: 0.3,
-                            pointBackgroundColor: '#1a5d8c',
-                            pointRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { stepSize: 1 }
-                            },
-                            x: {
-                                grid: { display: false }
-                            }
-                        }
-                    }
+                    data: { labels: trendLabels, datasets: [{ label: '使用次数', data: trendValues, borderColor: '#1a5d8c',
+                            backgroundColor: 'rgba(26,93,140,0.1)', fill: true, tension: 0.3,
+                            pointBackgroundColor: '#1a5d8c', pointRadius: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
                 });
             }
         }
@@ -1078,6 +1691,11 @@
         function loadTool(toolId) {
             const tool = TOOLS.find(t => t.id === toolId);
             if (!tool) return;
+
+            if (workflowState.isRunning) {
+                alert('工作流正在执行中，请先完成或取消工作流');
+                return;
+            }
 
             if (!tool.isWelcome && !tool.isStats) {
                 recordToolUsage(toolId);
@@ -1093,32 +1711,17 @@
             const body = document.getElementById('contentBody');
 
             if (tool.isWelcome) {
-                body.innerHTML = `
-                        <div class="welcome-content">
-                            <div class="logo-big">📦</div>
-                            <h2>物流工具箱</h2>
-                            <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析、3D装载可视化、仓库规划、VMI拉动平衡等核心工具</p>
-                            <div class="tool-grid">
-                                ${TOOLS.filter(t => !t.isWelcome && !t.isStats).map(t => `
-                                    <div class="card" onclick="loadTool('${t.id}')">
-                                        <div class="icon">${t.icon}</div>
-                                        <div class="name">${t.label}</div>
-                                        <div class="desc">${t.desc || ''}</div>
-                                    </div>
-                                `).join('')}
-                                <div class="card" onclick="loadTool('stats')" style="border-color:#6c5b7b;background:#f5f0f8;">
-                                    <div class="icon">📈</div>
-                                    <div class="name">使用统计</div>
-                                    <div class="desc">查看工具使用分析</div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                renderWelcome(body);
+                return;
+            }
+
+            if (tool.isWorkflow) {
+                renderWorkflowPage(body);
                 return;
             }
 
             if (tool.isStats) {
-                renderStatsPage();
+                renderStatsPage(body);
                 return;
             }
 
@@ -1142,13 +1745,91 @@
         }
 
         // ============================================================
-        //  事件绑定
+        //  工作流页面
         // ============================================================
-        logoutTopBtn.addEventListener('click', doLogout);
+        function renderWorkflowPage(body) {
+            body.innerHTML = `
+                    <div style="height:100%;overflow-y:auto;padding:4px 0 12px;">
+                        <div style="margin-bottom:16px;">
+                            <h2 style="font-size:22px;color:#1f3a5f;">⚡ 一键串联 · 工作流自动化</h2>
+                            <p style="color:#7a8eaa;font-size:14px;margin-top:4px;">选择预置的工作流，系统将自动按顺序打开工具并传递数据</p>
+                            <p style="color:#7a8eaa;font-size:13px;margin-top:2px;">📍 支持联动的工具：地址转经纬度 → K-Means聚类 → 线路排程</p>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;">
+                            ${WORKFLOWS.map(wf => `
+                                <div style="background:white;border-radius:14px;border:1px solid #e2edf5;padding:20px 24px;box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:0.2s;cursor:pointer;" 
+                                     onmouseover="this.style.borderColor='#b0c8e0';this.style.transform='translateY(-2px)'" 
+                                     onmouseout="this.style.borderColor='#e2edf5';this.style.transform='none'"
+                                     onclick="startWorkflow('${wf.id}')">
+                                    <div style="font-size:28px;margin-bottom:8px;">${wf.icon}</div>
+                                    <div style="font-size:16px;font-weight:700;color:#1f3a5f;">${wf.name}</div>
+                                    <div style="font-size:13px;color:#7a8eaa;margin-top:4px;">${wf.description}</div>
+                                    <div style="display:flex;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid #e8eef5;font-size:12px;color:#4a6a8a;flex-wrap:wrap;">
+                                        ${wf.steps.map((s, i) => `
+                                            <span style="background:#f0f4f8;padding:2px 10px;border-radius:30px;font-size:10px;font-weight:600;color:#1a5d8c;">${i+1}. ${s.label}</span>
+                                            ${i < wf.steps.length - 1 ? '<span style="color:#c0d0e0;">→</span>' : ''}
+                                        `).join('')}
+                                    </div>
+                                    <div style="margin-top:8px;display:inline-block;background:#f5d742;color:#1e3a5f;font-size:9px;font-weight:700;padding:1px 12px;border-radius:30px;text-transform:uppercase;letter-spacing:0.5px;">🚀 点击执行</div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div style="margin-top:20px;background:#fff8e1;border-radius:12px;padding:14px 18px;border:1px solid #f5dca8;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                            <span style="font-size:20px;">💡</span>
+                            <div style="font-size:13px;color:#4a3a2a;">
+                                <strong>工作流说明：</strong>点击工作流卡片后，系统会按顺序打开每个工具。
+                                您需要在每个工具中完成操作（如上传文件、点击查询），完成后点击「下一步」继续。
+                                数据会在工具间自动传递！
+                            </div>
+                        </div>
+                    </div>
+                `;
+        }
 
         // ============================================================
-        //  初始化
+        //  欢迎页
         // ============================================================
+        function renderWelcome(body) {
+            body.innerHTML = `
+                    <div class="welcome-content">
+                        <div class="logo-big">📦</div>
+                        <h2>物流工具箱</h2>
+                        <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析、3D装载可视化、仓库规划等核心工具</p>
+                        <div class="tool-grid">
+                            ${TOOLS.filter(t => !t.isWelcome && !t.isStats).map(t => `
+                                <div class="card" onclick="loadTool('${t.id}')">
+                                    <div class="icon">${t.icon}</div>
+                                    <div class="name">${t.label}</div>
+                                    <div class="desc">${t.desc || ''}</div>
+                                    ${t.isWorkflow ? '<span style="font-size:8px;color:#f5d742;font-weight:700;">⚡ 自动化</span>' : ''}
+                                </div>
+                            `).join('')}
+                            <div class="card" onclick="loadTool('stats')" style="border-color:#6c5b7b;background:#f5f0f8;">
+                                <div class="icon">📈</div>
+                                <div class="name">使用统计</div>
+                                <div class="desc">查看工具使用分析</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        }
+
+        // ============================================================
+        //  事件绑定 & 初始化
+        // ============================================================
+        document.getElementById('logoutTopBtn').addEventListener('click', function() {
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('username');
+            window.location.href = 'index.html';
+        });
+
+        window.loadTool = loadTool;
+        window.toggleSection = toggleSection;
+        window.startWorkflow = startWorkflow;
+        window.clearStatsData = clearStatsData;
+
         renderNav();
         loadTool('welcome');
 
@@ -1160,9 +1841,10 @@
             });
         });
 
-        window.loadTool = loadTool;
-        window.toggleSection = toggleSection;
-        window.clearStatsData = clearStatsData;
+        console.log('📦 物流工具箱 (工作流真实联动版) 已加载');
+        console.log('📋 所有工具已保留，共 ' + TOOLS.length + ' 个');
+        console.log('⚡ 支持联动的工具: address-geocode → kmeans-cluster → route-distance');
+        console.log('💡 点击「一键串联」菜单，选择工作流开始自动化');
     </script>
 </body>
 </html>
