@@ -1024,7 +1024,7 @@
         }
     }
 
-    // ★★★ 导入上游数据 ★★★
+    // ★★★ 导入上游数据（严格验证“单次提货量”） ★★★
     function importUpstreamData() {
         if (!upstreamData || !upstreamData.data) {
             addLog('⚠️ 没有可导入的上游数据', true);
@@ -1039,7 +1039,13 @@
             const lat = parseFloat(item['纬度']) || 0;
             const province = item['省'] || '';
             const city = item['市'] || '';
-            const volume = parseFloat(item['单次提货量']) || parseFloat(item['货量']) || 5;
+            
+            // ★★★ 严格验证：若上游未传（或传了空值），统一赋默认值 5m³ ★★★
+            let volume = 5;
+            if (item['单次提货量'] !== undefined && item['单次提货量'] !== null && item['单次提货量'] !== '') {
+                volume = parseFloat(item['单次提货量']);
+                if (isNaN(volume) || volume <= 0) volume = 5; // 无效则回退默认
+            }
 
             return {
                 code: String(code),
@@ -1061,11 +1067,11 @@
 
         siteData = validData;
         siteFileLoaded = true;
-        siteFileTags.innerHTML = `<span class="file-tag">📥 从上游导入 (${siteData.length}条)</span>`;
+        siteFileTags.innerHTML = `<span class="file-tag">📥 从上游导入 (${siteData.length}条，货量已验证)</span>`;
         upstreamHint.classList.remove('show');
         updateUI();
         renderTable();
-        addLog(`✅ 成功导入 ${siteData.length} 条上游数据`, false);
+        addLog(`✅ 成功导入 ${siteData.length} 条上游数据（默认货量补充为 5m³）`, false);
         showToast(`✅ 已导入 ${siteData.length} 条站点数据`);
     }
 
@@ -1076,7 +1082,7 @@
             return;
         }
 
-        // 构建传递给下游的数据（标准化格式）
+        // 构建传递给下游的数据（标准化格式，包含单次提货量）
         const passData = {
             tool: TOOL_ID,
             timestamp: new Date().toISOString(),
@@ -2144,7 +2150,7 @@
             <span class="divider">|</span>
             <span class="stat-item">
                 <span class="label">📊 平均装载率</span>
-                <span class="value ${avgUtilization > 90 ? 'warning' : 'success'}">${(totalUtilization / clusterResults.length).toFixed(1)}%</span>
+                <span class="value ${(totalUtilization / clusterResults.length) > 90 ? 'warning' : 'success'}">${(totalUtilization / clusterResults.length).toFixed(1)}%</span>
             </span>
             ${invalidClusters > 0 ? `
                 <span class="divider">|</span>
