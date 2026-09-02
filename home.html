@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
     </script>
     <style>
-        /* ===== 所有样式 ===== */
+        /* ===== 所有样式保持不变 ===== */
         * {
             margin: 0;
             padding: 0;
@@ -213,7 +213,6 @@
             border-color: #1a5d8c;
         }
 
-        /* ===== 内容区 ===== */
         .content-body {
             flex: 1;
             overflow: hidden;
@@ -238,7 +237,6 @@
             display: block;
         }
 
-        /* ===== ★★★ 工作流覆盖层（放在 content-body 内部，但不会被清空） ★★★ ===== */
         .workflow-overlay {
             position: absolute;
             top: 0;
@@ -531,7 +529,6 @@
             color: #ffd78a;
         }
 
-        /* ===== 统计页面 ===== */
         .stats-dashboard {
             height: 100%;
             overflow-y: auto;
@@ -911,11 +908,8 @@
                 <button class="logout-top" id="logoutTopBtn">🚪 退出登录</button>
             </header>
 
-            <!-- ★★★ content-body：包含内容区和 overlay ★★★ -->
             <div class="content-body" id="contentBody">
                 <!-- 内容区由 JS 动态渲染 -->
-                
-                <!-- ★★★ 工作流覆盖层 ★★★ -->
                 <div class="workflow-overlay" id="workflowOverlay">
                     <div class="workflow-panel" id="workflowPanel"></div>
                 </div>
@@ -1126,7 +1120,8 @@
             activeToolId: null
         };
 
-        function addWorkflowLog(msg, type = 'info') {
+        function addWorkflowLog(msg, type) {
+            if (!type) type = 'info';
             const time = new Date().toLocaleTimeString();
             workflowState.logs.push({ time, msg, type });
             renderWorkflowLogs();
@@ -1136,10 +1131,11 @@
             const container = document.getElementById('wfLog');
             if (!container) return;
             let html = '';
-            workflowState.logs.forEach(log => {
-                const cls = log.type === 'error' ? 'error' : log.type === 'success' ? 'success' : 'info';
+            workflowState.logs.forEach(function(log) {
+                var cls = log.type === 'error' ? 'error' : log.type === 'success' ? 'success' : 'info';
                 html +=
-                    `<div class="log-entry"><span class="log-time">${log.time}</span><span class="log-msg ${cls}">${log.msg}</span></div>`;
+                    '<div class="log-entry"><span class="log-time">' + log.time + '</span><span class="log-msg ' + cls +
+                    '">' + log.msg + '</span></div>';
             });
             container.innerHTML = html;
             container.scrollTop = container.scrollHeight;
@@ -1149,7 +1145,7 @@
         //  ★★★ 核心：启动工作流 ★★★
         // ============================================================
         function startWorkflow(workflowId) {
-            const workflow = WORKFLOWS.find(w => w.id === workflowId);
+            var workflow = WORKFLOWS.find(function(w) { return w.id === workflowId; });
             if (!workflow) {
                 alert('未找到工作流: ' + workflowId);
                 return;
@@ -1157,7 +1153,7 @@
 
             // 检查是否已有工作流在运行
             if (workflowState.isRunning) {
-                const overlay = document.getElementById('workflowOverlay');
+                var overlay = document.getElementById('workflowOverlay');
                 if (overlay.classList.contains('active')) {
                     alert('已有工作流正在执行中，请等待完成');
                     return;
@@ -1187,13 +1183,13 @@
             localStorage.removeItem(PASS_KEY);
 
             // ★★★ 显示覆盖层 ★★★
-            const overlay = document.getElementById('workflowOverlay');
+            var overlay = document.getElementById('workflowOverlay');
             overlay.classList.add('active');
 
             // ★★★ 渲染工作流面板 ★★★
             renderWorkflowPanel(workflow);
 
-            addWorkflowLog(`🚀 开始执行工作流: ${workflow.name}`, 'info');
+            addWorkflowLog('🚀 开始执行工作流: ' + workflow.name, 'info');
 
             // ★★★ 延迟执行第一步，确保面板渲染完成 ★★★
             setTimeout(function() {
@@ -1205,15 +1201,11 @@
         //  渲染工作流面板
         // ============================================================
         function renderWorkflowPanel(workflow) {
-            const panel = document.getElementById('workflowPanel');
-            panel.innerHTML = `
-                <div class="wf-title">
-                    ⚡ ${workflow.name}
-                    <span class="wf-badge">${workflow.steps.length} 步</span>
-                </div>
+            var panel = document.getElementById('workflowPanel');
 
-                <div class="wf-steps" id="wfSteps">
-                    ${workflow.steps.map((step, idx) => `
+            var stepsHtml = '';
+            workflow.steps.forEach(function(step, idx) {
+                stepsHtml += `
                         <div class="wf-step" id="wfStep_${idx}">
                             <div class="step-num">${idx + 1}</div>
                             <div class="step-info">
@@ -1230,21 +1222,31 @@
                                 </button>
                             </div>
                         </div>
-                    `).join('')}
-                </div>
+                    `;
+            });
 
-                <div class="wf-log" id="wfLog">
-                    <div class="log-entry">
-                        <span class="log-time">${new Date().toLocaleTimeString()}</span>
-                        <span class="log-msg info">📋 工作流已启动，请按顺序执行各步骤</span>
+            panel.innerHTML = `
+                    <div class="wf-title">
+                        ⚡ ${workflow.name}
+                        <span class="wf-badge">${workflow.steps.length} 步</span>
                     </div>
-                </div>
 
-                <div class="wf-footer">
-                    <button class="btn btn-success" id="wfNextBtn" disabled>⏳ 等待当前步骤...</button>
-                    <button class="btn btn-danger" id="wfCancelBtn">✕ 取消</button>
-                </div>
-            `;
+                    <div class="wf-steps" id="wfSteps">
+                        ${stepsHtml}
+                    </div>
+
+                    <div class="wf-log" id="wfLog">
+                        <div class="log-entry">
+                            <span class="log-time">${new Date().toLocaleTimeString()}</span>
+                            <span class="log-msg info">📋 工作流已启动，请按顺序执行各步骤</span>
+                        </div>
+                    </div>
+
+                    <div class="wf-footer">
+                        <button class="btn btn-success" id="wfNextBtn" disabled>⏳ 等待当前步骤...</button>
+                        <button class="btn btn-danger" id="wfCancelBtn">✕ 取消</button>
+                    </div>
+                `;
 
             // 取消按钮
             document.getElementById('wfCancelBtn').addEventListener('click', function() {
@@ -1254,8 +1256,8 @@
             });
 
             // 各步骤按钮
-            workflow.steps.forEach((step, idx) => {
-                const btn = document.getElementById(`wfStepBtn_${idx}`);
+            workflow.steps.forEach(function(step, idx) {
+                var btn = document.getElementById('wfStepBtn_' + idx);
                 if (btn) {
                     btn.addEventListener('click', function() {
                         executeStep(idx);
@@ -1264,9 +1266,9 @@
             });
 
             // 初始化步骤状态
-            workflow.steps.forEach((step, idx) => {
+            workflow.steps.forEach(function(step, idx) {
                 updateStepUI(idx, 'pending', '等待执行');
-                const btn = document.getElementById(`wfStepBtn_${idx}`);
+                var btn = document.getElementById('wfStepBtn_' + idx);
                 if (btn) {
                     if (idx === 0) {
                         btn.textContent = '▶ 执行';
@@ -1287,20 +1289,20 @@
         //  更新步骤UI
         // ============================================================
         function updateStepUI(idx, status, text) {
-            const stepEl = document.getElementById(`wfStep_${idx}`);
+            var stepEl = document.getElementById('wfStep_' + idx);
             if (!stepEl) return;
 
-            stepEl.className = `wf-step ${status}`;
+            stepEl.className = 'wf-step ' + status;
 
-            const statusText = stepEl.querySelector('.status-text');
-            const dot = stepEl.querySelector('.dot');
+            var statusText = stepEl.querySelector('.status-text');
+            var dot = stepEl.querySelector('.dot');
             if (statusText) statusText.textContent = text;
 
             if (dot) {
-                dot.className = `dot ${status}`;
+                dot.className = 'dot ' + status;
             }
 
-            const btn = document.getElementById(`wfStepBtn_${idx}`);
+            var btn = document.getElementById('wfStepBtn_' + idx);
             if (btn) {
                 if (status === 'done') {
                     btn.textContent = '✅ 已完成';
@@ -1326,14 +1328,19 @@
         //  更新下一步按钮
         // ============================================================
         function updateNextButton() {
-            const btn = document.getElementById('wfNextBtn');
+            var btn = document.getElementById('wfNextBtn');
             if (!btn) return;
 
-            const workflow = workflowState.workflow;
-            const currentStep = workflowState.currentStep;
+            var workflow = workflowState.workflow;
+            var currentStep = workflowState.currentStep;
 
-            const allDone = workflow.steps.every((step, idx) => {
-                return document.getElementById(`wfStep_${idx}`)?.classList.contains('done');
+            // 检查是否所有步骤都已完成
+            var allDone = true;
+            workflow.steps.forEach(function(step, idx) {
+                var el = document.getElementById('wfStep_' + idx);
+                if (el && !el.classList.contains('done')) {
+                    allDone = false;
+                }
             });
 
             if (allDone && workflowState.errors.length === 0) {
@@ -1353,10 +1360,10 @@
                 return;
             }
 
-            const currentStepEl = document.getElementById(`wfStep_${currentStep}`);
+            var currentStepEl = document.getElementById('wfStep_' + currentStep);
             if (currentStepEl && currentStepEl.classList.contains('done')) {
                 if (currentStep < workflow.steps.length - 1) {
-                    btn.textContent = `▶ 执行下一步 (${currentStep + 1}/${workflow.steps.length})`;
+                    btn.textContent = '▶ 执行下一步 (' + (currentStep + 1) + '/' + workflow.steps.length + ')';
                     btn.className = 'btn btn-success';
                     btn.disabled = false;
                     btn.onclick = function() {
@@ -1383,17 +1390,17 @@
         //  ★★★ 核心：执行步骤 ★★★
         // ============================================================
         function executeStep(idx) {
-            const workflow = workflowState.workflow;
+            var workflow = workflowState.workflow;
             if (!workflow) {
                 console.error('❌ 工作流对象为空');
                 return;
             }
 
-            const step = workflow.steps[idx];
-            const tool = TOOLS.find(t => t.id === step.tool);
+            var step = workflow.steps[idx];
+            var tool = TOOLS.find(function(t) { return t.id === step.tool; });
             if (!tool) {
-                addWorkflowLog(`❌ 工具 ${step.tool} 未找到`, 'error');
-                workflowState.errors.push({ step: idx, error: `工具 ${step.tool} 未找到` });
+                addWorkflowLog('❌ 工具 ' + step.tool + ' 未找到', 'error');
+                workflowState.errors.push({ step: idx, error: '工具 ' + step.tool + ' 未找到' });
                 updateStepUI(idx, 'error', '工具未找到');
                 updateNextButton();
                 return;
@@ -1401,43 +1408,37 @@
 
             workflowState.currentStep = idx;
             updateStepUI(idx, 'running', '执行中...');
-            addWorkflowLog(`📌 步骤 ${idx+1}: ${step.label} - 打开工具 ${tool.icon} ${tool.label}`, 'info');
+            addWorkflowLog('📌 步骤 ' + (idx + 1) + ': ' + step.label + ' - 打开工具 ' + tool.icon + ' ' + tool.label, 'info');
 
-            const body = document.getElementById('contentBody');
-            const filePath = tool.file;
+            var body = document.getElementById('contentBody');
+            var filePath = tool.file;
 
             if (!filePath) {
-                addWorkflowLog(`❌ 工具 ${tool.label} 未指定文件路径`, 'error');
+                addWorkflowLog('❌ 工具 ' + tool.label + ' 未指定文件路径', 'error');
                 updateStepUI(idx, 'error', '文件路径未配置');
                 workflowState.errors.push({ step: idx, error: '文件路径未配置' });
                 updateNextButton();
                 return;
             }
 
-            // ★★★ 重要：保留 overlay，只更新内容区域 ★★★
-            // 移除旧的 iframe（如果有）
-            const oldIframe = body.querySelector('.iframe-wrapper');
-            if (oldIframe) {
-                oldIframe.remove();
-            }
+            // ★★★ 移除旧内容（保留 overlay） ★★★
+            var oldIframe = body.querySelector('.iframe-wrapper');
+            if (oldIframe) oldIframe.remove();
 
-            // 移除旧的欢迎页或内容
-            const oldContent = body.querySelector('.welcome-content, .stats-dashboard, .tool-error');
-            if (oldContent) {
-                oldContent.remove();
-            }
+            var oldContent = body.querySelector('.welcome-content, .stats-dashboard, .tool-error');
+            if (oldContent) oldContent.remove();
 
-            // 创建新的 iframe
-            const iframeWrapper = document.createElement('div');
+            // ★★★ 创建新的 iframe ★★★
+            var iframeWrapper = document.createElement('div');
             iframeWrapper.className = 'iframe-wrapper';
-            const iframe = document.createElement('iframe');
+            var iframe = document.createElement('iframe');
             iframe.src = filePath;
             iframe.allow = 'geolocation';
             iframe.style.width = '100%';
             iframe.style.height = '100%';
             iframe.style.border = 'none';
             iframeWrapper.appendChild(iframe);
-            
+
             // ★★★ 将 iframe 插入到 overlay 之前 ★★★
             body.insertBefore(iframeWrapper, document.getElementById('workflowOverlay'));
 
@@ -1448,7 +1449,7 @@
             workflowState.activeToolId = tool.id;
 
             // 更新步骤按钮
-            const btn = document.getElementById(`wfStepBtn_${idx}`);
+            var btn = document.getElementById('wfStepBtn_' + idx);
             if (btn) {
                 btn.textContent = '⏳ 等待用户操作...';
                 btn.className = 'btn btn-outline';
@@ -1456,7 +1457,7 @@
             }
 
             // 更新下一步按钮
-            const nextBtn = document.getElementById('wfNextBtn');
+            var nextBtn = document.getElementById('wfNextBtn');
             if (nextBtn) {
                 nextBtn.textContent = '⏳ 请完成当前步骤...';
                 nextBtn.className = 'btn btn-outline';
@@ -1464,14 +1465,14 @@
             }
 
             // ★★★ 监听来自 iframe 的消息 ★★★
-            const messageHandler = function(event) {
+            var messageHandler = function(event) {
                 if (event.data && event.data.type === 'toolbox_data_saved') {
-                    const toolId = event.data.tool;
+                    var toolId = event.data.tool;
                     if (toolId === step.tool) {
-                        addWorkflowLog(`✅ 检测到 ${toolId} 数据已保存: ${event.data.count || 0} 条`, 'success');
+                        addWorkflowLog('✅ 检测到 ' + toolId + ' 数据已保存: ' + (event.data.count || 0) + ' 条', 'success');
                         updateStepUI(idx, 'done', '✅ 已完成');
                         workflowState.results[step.tool] = event.data;
-                        addWorkflowLog(`✅ 步骤 ${idx+1} 完成: ${step.label}`, 'success');
+                        addWorkflowLog('✅ 步骤 ' + (idx + 1) + ' 完成: ' + step.label, 'success');
                         updateNextButton();
                         window.removeEventListener('message', messageHandler);
                     }
@@ -1481,22 +1482,36 @@
 
             // 步骤提示
             if (idx === 0 && step.tool === 'address-geocode') {
-                addWorkflowLog(`📋 请在工具中上传Excel文件，点击「查询」完成地址解析`, 'info');
+                addWorkflowLog('📋 请在工具中上传Excel文件，点击「查询」完成地址解析', 'info');
                 updateStepUI(idx, 'running', '等待用户操作...');
             } else if (step.tool === 'kmeans-cluster') {
-                addWorkflowLog(`📋 数据将自动导入，点击「运行聚类优化」完成分组`, 'info');
+                addWorkflowLog('📋 数据将自动导入，点击「运行聚类优化」完成分组', 'info');
                 updateStepUI(idx, 'running', '等待聚类...');
             } else if (step.tool === 'route-distance') {
-                addWorkflowLog(`📋 数据将自动导入并开始计算线路距离`, 'info');
+                addWorkflowLog('📋 数据将自动导入并开始计算线路距离', 'info');
                 updateStepUI(idx, 'running', '计算中...');
             }
 
-            // 超时提示
-            setTimeout(function() {
-                addWorkflowLog(`💡 提示: 如果已完成操作但未自动识别，请手动点击「下一步」继续`, 'info');
-            }, 15000);
+            // 超时提示（每10秒提醒一次，最多3次）
+            var hintCount = 0;
+            var hintInterval = setInterval(function() {
+                if (workflowState.isRunning === false) {
+                    clearInterval(hintInterval);
+                    return;
+                }
+                var currentEl = document.getElementById('wfStep_' + idx);
+                if (currentEl && currentEl.classList.contains('done')) {
+                    clearInterval(hintInterval);
+                    return;
+                }
+                hintCount++;
+                addWorkflowLog('💡 提示: 如果已完成操作但未自动识别，请点击「下一步」继续', 'info');
+                if (hintCount >= 5) {
+                    clearInterval(hintInterval);
+                }
+            }, 10000);
 
-            console.log(`✅ 步骤 ${idx+1} iframe 已加载: ${filePath}`);
+            console.log('✅ 步骤 ' + (idx + 1) + ' iframe 已加载: ' + filePath);
         }
 
         // ============================================================
@@ -1512,7 +1527,7 @@
         //  关闭工作流
         // ============================================================
         function closeWorkflow(reason) {
-            const overlay = document.getElementById('workflowOverlay');
+            var overlay = document.getElementById('workflowOverlay');
             overlay.classList.remove('active');
 
             workflowState.isRunning = false;
@@ -1526,8 +1541,8 @@
             document.getElementById('breadcrumbCurrent').textContent = '欢迎';
 
             // 移除 iframe
-            const body = document.getElementById('contentBody');
-            const iframeWrapper = body.querySelector('.iframe-wrapper');
+            var body = document.getElementById('contentBody');
+            var iframeWrapper = body.querySelector('.iframe-wrapper');
             if (iframeWrapper) {
                 iframeWrapper.remove();
             }
@@ -1541,7 +1556,7 @@
                     showToast('✅ 工作流执行完成!');
                 }, 300);
             } else {
-                addWorkflowLog(`⏹️ 工作流已${reason}`, 'info');
+                addWorkflowLog('⏹️ 工作流已' + reason, 'info');
             }
         }
 
@@ -1549,7 +1564,7 @@
         //  Toast 提示
         // ============================================================
         function showToast(msg) {
-            const toast = document.createElement('div');
+            var toast = document.createElement('div');
             toast.style.cssText =
                 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#2a7f6e;color:white;padding:10px 24px;border-radius:60px;font-weight:600;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:1000;animation:fadeInDown 0.3s ease;';
             toast.textContent = msg;
@@ -1565,19 +1580,20 @@
         //  渲染导航树
         // ============================================================
         function renderNav() {
-            const nav = document.getElementById('sidebarNav');
-            const sections = {};
+            var nav = document.getElementById('sidebarNav');
+            var sections = {};
 
-            TOOLS.forEach(t => {
+            TOOLS.forEach(function(t) {
                 if (!sections[t.section]) sections[t.section] = [];
                 sections[t.section].push(t);
             });
 
-            let html = '';
-            let isFirst = true;
-            for (const [section, items] of Object.entries(sections)) {
-                const collapsedClass = isFirst ? '' : 'collapsed';
-                const arrowClass = isFirst ? '' : 'collapsed';
+            var html = '';
+            var isFirst = true;
+            for (var section in sections) {
+                var items = sections[section];
+                var collapsedClass = isFirst ? '' : 'collapsed';
+                var arrowClass = isFirst ? '' : 'collapsed';
                 html += `
                         <div class="nav-section">
                             <div class="nav-section-title" onclick="toggleSection(this)">
@@ -1586,10 +1602,10 @@
                             </div>
                             <div class="nav-items ${collapsedClass}" style="max-height:${isFirst ? '999px' : '0'}">
                     `;
-                items.forEach(t => {
-                    const active = t.isWelcome ? 'active' : '';
-                    const extraClass = t.isWorkflow ? 'workflow-item' : '';
-                    const badgeText = t.isWorkflow ? '⚡ 自动化' : '';
+                items.forEach(function(t) {
+                    var active = t.isWelcome ? 'active' : '';
+                    var extraClass = t.isWorkflow ? 'workflow-item' : '';
+                    var badgeText = t.isWorkflow ? '⚡ 自动化' : '';
                     html += `
                             <a class="nav-item ${active} ${extraClass}" href="#" data-id="${t.id}" onclick="loadTool('${t.id}')">
                                 <span class="icon">${t.icon}</span>
@@ -1605,8 +1621,8 @@
         }
 
         function toggleSection(el) {
-            const items = el.nextElementSibling;
-            const arrow = el.querySelector('.arrow');
+            var items = el.nextElementSibling;
+            var arrow = el.querySelector('.arrow');
             if (items.classList.contains('collapsed')) {
                 items.classList.remove('collapsed');
                 items.style.maxHeight = items.scrollHeight + 'px';
@@ -1621,63 +1637,61 @@
         // ============================================================
         //  统计页面
         // ============================================================
-        let usageChartInstance = null;
-        let trendChartInstance = null;
+        var usageChartInstance = null;
+        var trendChartInstance = null;
 
         function renderStatsPage() {
-            const data = getStatsData();
-            const body = document.getElementById('contentBody');
+            var data = getStatsData();
+            var body = document.getElementById('contentBody');
 
-            // 移除旧内容，保留 overlay
-            const oldContent = body.querySelector('.welcome-content, .iframe-wrapper, .stats-dashboard, .tool-error');
+            var oldContent = body.querySelector('.welcome-content, .iframe-wrapper, .stats-dashboard, .tool-error');
             if (oldContent) oldContent.remove();
 
-            const toolNameMap = {};
-            TOOLS.forEach(t => { toolNameMap[t.id] = t.label; });
+            var toolNameMap = {};
+            TOOLS.forEach(function(t) { toolNameMap[t.id] = t.label; });
 
-            const totalUsage = data.totalVisits || 0;
-            const toolCount = Object.keys(data.toolUsage).length;
+            var totalUsage = data.totalVisits || 0;
+            var toolCount = Object.keys(data.toolUsage).length;
 
-            let mostUsedTool = '无数据';
-            let mostUsedCount = 0;
-            for (const [id, stat] of Object.entries(data.toolUsage)) {
+            var mostUsedTool = '无数据';
+            var mostUsedCount = 0;
+            for (var id in data.toolUsage) {
+                var stat = data.toolUsage[id];
                 if (stat.count > mostUsedCount) {
                     mostUsedCount = stat.count;
                     mostUsedTool = toolNameMap[id] || id;
                 }
             }
 
-            const today = new Date().toDateString();
-            let todayCount = 0;
+            var today = new Date().toDateString();
+            var todayCount = 0;
             if (data.history) {
-                data.history.forEach(h => {
-                    const hDate = new Date(h.timestamp).toDateString();
+                data.history.forEach(function(h) {
+                    var hDate = new Date(h.timestamp).toDateString();
                     if (hDate === today) todayCount++;
                 });
             }
 
-            let tableHtml = '';
-            const sortedTools = Object.entries(data.toolUsage)
-                .sort((a, b) => b[1].count - a[1].count);
+            var sortedTools = Object.entries(data.toolUsage).sort(function(a, b) { return b[1].count - a[1].count; });
 
+            var tableHtml = '';
             if (sortedTools.length === 0) {
-                tableHtml = `<div class="empty-stats">📭 暂无使用记录，开始使用工具吧！</div>`;
+                tableHtml = '<div class="empty-stats">📭 暂无使用记录，开始使用工具吧！</div>';
             } else {
-                tableHtml = `
-                        <table>
-                            <thead><tr><th>#</th><th>工具名称</th><th>使用次数</th><th>首次使用</th><th>最近使用</th></tr></thead>
-                            <tbody>
-                    `;
-                sortedTools.forEach(([id, stat], idx) => {
-                    const name = toolNameMap[id] || id;
-                    tableHtml += `
-                            <tr><td>${idx+1}</td><td><strong>${name}</strong></td><td>${stat.count}</td><td>${stat.firstUse || '-'}</td><td>${stat.lastUse || '-'}</td></tr>
-                        `;
+                tableHtml =
+                    '<table><thead><tr><th>#</th><th>工具名称</th><th>使用次数</th><th>首次使用</th><th>最近使用</th></tr></thead><tbody>';
+                sortedTools.forEach(function(item, idx) {
+                    var id = item[0],
+                        stat = item[1];
+                    var name = toolNameMap[id] || id;
+                    tableHtml +=
+                        '<tr><td>' + (idx + 1) + '</td><td><strong>' + name + '</strong></td><td>' + stat.count +
+                        '</td><td>' + (stat.firstUse || '-') + '</td><td>' + (stat.lastUse || '-') + '</td></tr>';
                 });
-                tableHtml += `</tbody></table>`;
+                tableHtml += '</tbody></table>';
             }
 
-            const dashboard = document.createElement('div');
+            var dashboard = document.createElement('div');
             dashboard.className = 'stats-dashboard';
             dashboard.innerHTML = `
                         <div class="stats-summary">
@@ -1698,52 +1712,52 @@
                         </div>
                     `;
 
-            // 插入到 overlay 之前
             body.insertBefore(dashboard, document.getElementById('workflowOverlay'));
 
-            // 渲染图表
-            const ctx1 = document.getElementById('usageChart');
+            var ctx1 = document.getElementById('usageChart');
             if (ctx1) {
                 if (usageChartInstance) { usageChartInstance.destroy();
                     usageChartInstance = null; }
-                const labels = [];
-                const values = [];
-                const colors = [];
-                const palette = ['#4A9EFF', '#2ED573', '#FF9F43', '#A29BFE', '#FF6B6B', '#48DBFB', '#FECA57', '#6C5CE7', '#00B894',
+                var labels = [],
+                    values = [],
+                    colors = [];
+                var palette = ['#4A9EFF', '#2ED573', '#FF9F43', '#A29BFE', '#FF6B6B', '#48DBFB', '#FECA57', '#6C5CE7', '#00B894',
                     '#FD79A8'
                 ];
-                let idx = 0;
-                for (const [id, stat] of sortedTools) {
-                    const name = toolNameMap[id] || id;
+                var idx = 0;
+                sortedTools.forEach(function(item) {
+                    var id = item[0],
+                        stat = item[1];
+                    var name = toolNameMap[id] || id;
                     labels.push(name.length > 8 ? name.substring(0, 6) + '..' : name);
                     values.push(stat.count);
                     colors.push(palette[idx % palette.length]);
                     idx++;
-                }
+                });
                 usageChartInstance = new Chart(ctx1, {
                     type: 'bar',
-                    data: { labels, datasets: [{ label: '使用次数', data: values, backgroundColor: colors.map(c => c +
-                                '80'), borderColor: colors, borderWidth: 2, borderRadius: 4 }] },
+                    data: { labels: labels, datasets: [{ label: '使用次数', data: values, backgroundColor: colors.map(function(
+                                c) { return c + '80'; }), borderColor: colors, borderWidth: 2, borderRadius: 4 }] },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
                         scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
                 });
             }
 
-            const ctx2 = document.getElementById('trendChart');
+            var ctx2 = document.getElementById('trendChart');
             if (ctx2) {
                 if (trendChartInstance) { trendChartInstance.destroy();
                     trendChartInstance = null; }
-                const history = data.history || [];
-                const recent = history.slice(-30);
-                const timeMap = {};
-                recent.forEach(h => {
-                    const date = new Date(h.timestamp);
-                    const key = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+                var history = data.history || [];
+                var recent = history.slice(-30);
+                var timeMap = {};
+                recent.forEach(function(h) {
+                    var date = new Date(h.timestamp);
+                    var key = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
                     if (!timeMap[key]) timeMap[key] = 0;
                     timeMap[key]++;
                 });
-                const trendLabels = Object.keys(timeMap);
-                const trendValues = Object.values(timeMap);
+                var trendLabels = Object.keys(timeMap);
+                var trendValues = Object.values(timeMap);
                 if (trendLabels.length < 2) { trendLabels.push('暂无足够数据');
                     trendValues.push(0); }
                 trendChartInstance = new Chart(ctx2, {
@@ -1761,11 +1775,32 @@
         //  ★★★ 加载工具 ★★★
         // ============================================================
         function loadTool(toolId) {
-            const tool = TOOLS.find(t => t.id === toolId);
+            var tool = TOOLS.find(function(t) { return t.id === toolId; });
             if (!tool) return;
 
-            // 检查工作流状态
-            const overlay = document.getElementById('workflowOverlay');
+            // ★★★ 关键修复：如果工作流正在运行，允许加载工作流步骤中的工具 ★★★
+            // 检查当前是否在工作流中，如果是，不拦截
+            var overlay = document.getElementById('workflowOverlay');
+            if (workflowState.isRunning && overlay.classList.contains('active')) {
+                // 工作流正在运行，检查是否要加载的是当前步骤的工具
+                var currentStep = workflowState.currentStep;
+                var workflow = workflowState.workflow;
+                if (workflow && workflow.steps && workflow.steps[currentStep]) {
+                    var currentToolId = workflow.steps[currentStep].tool;
+                    // 如果点击的是当前步骤的工具，允许加载
+                    if (toolId === currentToolId) {
+                        // 允许加载，不拦截
+                    } else {
+                        alert('工作流正在执行中，请先完成当前步骤（' + workflow.steps[currentStep].label + '）');
+                        return;
+                    }
+                } else {
+                    alert('工作流正在执行中，请先完成或取消工作流');
+                    return;
+                }
+            }
+
+            // 检查是否状态异常
             if (workflowState.isRunning && !overlay.classList.contains('active')) {
                 workflowState.isRunning = false;
                 workflowState.currentStep = 0;
@@ -1776,26 +1811,20 @@
                 console.log('🔧 自动重置异常的工作流状态');
             }
 
-            if (workflowState.isRunning) {
-                alert('工作流正在执行中，请先完成或取消工作流');
-                return;
-            }
-
             if (!tool.isWelcome && !tool.isStats) {
                 recordToolUsage(toolId);
             }
 
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            const navItem = document.querySelector(`.nav-item[data-id="${toolId}"]`);
+            document.querySelectorAll('.nav-item').forEach(function(el) { el.classList.remove('active'); });
+            var navItem = document.querySelector('.nav-item[data-id="' + toolId + '"]');
             if (navItem) navItem.classList.add('active');
 
             document.getElementById('pageTitle').textContent = tool.icon + ' ' + tool.label;
             document.getElementById('breadcrumbCurrent').textContent = tool.label;
 
-            const body = document.getElementById('contentBody');
+            var body = document.getElementById('contentBody');
 
-            // 移除旧内容（保留 overlay）
-            const oldContent = body.querySelector('.welcome-content, .iframe-wrapper, .stats-dashboard, .tool-error');
+            var oldContent = body.querySelector('.welcome-content, .iframe-wrapper, .stats-dashboard, .tool-error');
             if (oldContent) oldContent.remove();
 
             if (tool.isWelcome) {
@@ -1813,22 +1842,19 @@
                 return;
             }
 
-            const filePath = tool.file;
+            var filePath = tool.file;
             if (!filePath) {
-                const errorDiv = document.createElement('div');
+                var errorDiv = document.createElement('div');
                 errorDiv.className = 'tool-error';
-                errorDiv.innerHTML = `
-                        <div class="icon-big">🔧</div>
-                        <h3>${tool.label}</h3>
-                        <p>此工具配置错误，未指定文件路径。</p>
-                    `;
+                errorDiv.innerHTML =
+                    '<div class="icon-big">🔧</div><h3>' + tool.label + '</h3><p>此工具配置错误，未指定文件路径。</p>';
                 body.insertBefore(errorDiv, document.getElementById('workflowOverlay'));
                 return;
             }
 
-            const iframeWrapper = document.createElement('div');
+            var iframeWrapper = document.createElement('div');
             iframeWrapper.className = 'iframe-wrapper';
-            const iframe = document.createElement('iframe');
+            var iframe = document.createElement('iframe');
             iframe.src = filePath;
             iframe.allow = 'geolocation';
             iframe.style.width = '100%';
@@ -1842,33 +1868,47 @@
         //  工作流页面
         // ============================================================
         function renderWorkflowPage(body) {
-            const container = document.createElement('div');
+            var container = document.createElement('div');
             container.style.cssText = 'height:100%;overflow-y:auto;padding:4px 0 12px;';
+
+            var cardsHtml = '';
+            WORKFLOWS.forEach(function(wf) {
+                var stepsHtml = '';
+                wf.steps.forEach(function(s, i) {
+                    stepsHtml +=
+                        '<span style="background:#f0f4f8;padding:2px 10px;border-radius:30px;font-size:10px;font-weight:600;color:#1a5d8c;">' +
+                        (i + 1) + '. ' + s.label + '</span>';
+                    if (i < wf.steps.length - 1) {
+                        stepsHtml += '<span style="color:#c0d0e0;">→</span>';
+                    }
+                });
+
+                cardsHtml += `
+                        <div style="background:white;border-radius:14px;border:1px solid #e2edf5;padding:20px 24px;box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:0.2s;cursor:pointer;" 
+                             onmouseover="this.style.borderColor='#b0c8e0';this.style.transform='translateY(-2px)'" 
+                             onmouseout="this.style.borderColor='#e2edf5';this.style.transform='none'"
+                             onclick="startWorkflow('${wf.id}')">
+                            <div style="font-size:28px;margin-bottom:8px;">${wf.icon}</div>
+                            <div style="font-size:16px;font-weight:700;color:#1f3a5f;">${wf.name}</div>
+                            <div style="font-size:13px;color:#7a8eaa;margin-top:4px;">${wf.description}</div>
+                            <div style="display:flex;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid #e8eef5;font-size:12px;color:#4a6a8a;flex-wrap:wrap;">
+                                ${stepsHtml}
+                            </div>
+                            <div style="margin-top:8px;display:inline-block;background:#f5d742;color:#1e3a5f;font-size:9px;font-weight:700;padding:1px 12px;border-radius:30px;text-transform:uppercase;letter-spacing:0.5px;">🚀 点击执行</div>
+                        </div>
+                    `;
+            });
+
             container.innerHTML = `
                         <div style="margin-bottom:16px;">
                             <h2 style="font-size:22px;color:#1f3a5f;">⚡ 一键串联 · 工作流自动化</h2>
                             <p style="color:#7a8eaa;font-size:14px;margin-top:4px;">选择预置的工作流，系统将自动按顺序打开工具并传递数据</p>
                             <p style="color:#7a8eaa;font-size:13px;margin-top:2px;">📍 支持联动的工具：地址转经纬度 → K-Means聚类 → 线路排程</p>
+                            <p style="color:#d48c2c;font-size:13px;margin-top:4px;background:#fff8e1;padding:6px 12px;border-radius:8px;">💡 工作流启动后，<strong>直接在内容区操作工具</strong>，完成后点击「下一步」继续</p>
                         </div>
 
                         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;">
-                            ${WORKFLOWS.map(wf => `
-                                <div style="background:white;border-radius:14px;border:1px solid #e2edf5;padding:20px 24px;box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:0.2s;cursor:pointer;" 
-                                     onmouseover="this.style.borderColor='#b0c8e0';this.style.transform='translateY(-2px)'" 
-                                     onmouseout="this.style.borderColor='#e2edf5';this.style.transform='none'"
-                                     onclick="startWorkflow('${wf.id}')">
-                                    <div style="font-size:28px;margin-bottom:8px;">${wf.icon}</div>
-                                    <div style="font-size:16px;font-weight:700;color:#1f3a5f;">${wf.name}</div>
-                                    <div style="font-size:13px;color:#7a8eaa;margin-top:4px;">${wf.description}</div>
-                                    <div style="display:flex;align-items:center;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid #e8eef5;font-size:12px;color:#4a6a8a;flex-wrap:wrap;">
-                                        ${wf.steps.map((s, i) => `
-                                            <span style="background:#f0f4f8;padding:2px 10px;border-radius:30px;font-size:10px;font-weight:600;color:#1a5d8c;">${i+1}. ${s.label}</span>
-                                            ${i < wf.steps.length - 1 ? '<span style="color:#c0d0e0;">→</span>' : ''}
-                                        `).join('')}
-                                    </div>
-                                    <div style="margin-top:8px;display:inline-block;background:#f5d742;color:#1e3a5f;font-size:9px;font-weight:700;padding:1px 12px;border-radius:30px;text-transform:uppercase;letter-spacing:0.5px;">🚀 点击执行</div>
-                                </div>
-                            `).join('')}
+                            ${cardsHtml}
                         </div>
 
                         <div style="margin-top:20px;background:#fff8e1;border-radius:12px;padding:14px 18px;border:1px solid #f5dca8;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -1876,10 +1916,12 @@
                             <div style="font-size:13px;color:#4a3a2a;">
                                 <strong>工作流说明：</strong>点击工作流卡片后，系统会按顺序打开每个工具。
                                 您需要在每个工具中完成操作（如上传文件、点击查询），完成后点击「下一步」继续。
-                                数据会在工具间自动传递！
+                                数据会在工具间自动传递！<br>
+                                <span style="color:#d48c2c;">⚠️ 请直接在内容区操作，不要点击导航栏菜单切换工具。</span>
                             </div>
                         </div>
                     `;
+
             body.insertBefore(container, document.getElementById('workflowOverlay'));
         }
 
@@ -1887,21 +1929,29 @@
         //  欢迎页
         // ============================================================
         function renderWelcome(body) {
-            const container = document.createElement('div');
+            var container = document.createElement('div');
             container.className = 'welcome-content';
+
+            var cardsHtml = '';
+            TOOLS.filter(function(t) { return !t.isWelcome && !t.isStats; }).forEach(function(t) {
+                var badge = t.isWorkflow ? '<span style="font-size:8px;color:#f5d742;font-weight:700;">⚡ 自动化</span>' :
+                    '';
+                cardsHtml += `
+                        <div class="card" onclick="loadTool('${t.id}')">
+                            <div class="icon">${t.icon}</div>
+                            <div class="name">${t.label}</div>
+                            <div class="desc">${t.desc || ''}</div>
+                            ${badge}
+                        </div>
+                    `;
+            });
+
             container.innerHTML = `
                         <div class="logo-big">📦</div>
                         <h2>物流工具箱</h2>
                         <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析、3D装载可视化、仓库规划等核心工具</p>
                         <div class="tool-grid">
-                            ${TOOLS.filter(t => !t.isWelcome && !t.isStats).map(t => `
-                                <div class="card" onclick="loadTool('${t.id}')">
-                                    <div class="icon">${t.icon}</div>
-                                    <div class="name">${t.label}</div>
-                                    <div class="desc">${t.desc || ''}</div>
-                                    ${t.isWorkflow ? '<span style="font-size:8px;color:#f5d742;font-weight:700;">⚡ 自动化</span>' : ''}
-                                </div>
-                            `).join('')}
+                            ${cardsHtml}
                             <div class="card" onclick="loadTool('stats')" style="border-color:#6c5b7b;background:#f5f0f8;">
                                 <div class="icon">📈</div>
                                 <div class="name">使用统计</div>
@@ -1909,6 +1959,7 @@
                             </div>
                         </div>
                     `;
+
             body.insertBefore(container, document.getElementById('workflowOverlay'));
         }
 
@@ -1932,7 +1983,7 @@
 
         // 页面加载时重置工作流状态
         window.addEventListener('load', function() {
-            const overlay = document.getElementById('workflowOverlay');
+            var overlay = document.getElementById('workflowOverlay');
             if (overlay) {
                 overlay.classList.remove('active');
             }
@@ -1957,6 +2008,7 @@
         console.log('📋 所有工具已保留，共 ' + TOOLS.length + ' 个');
         console.log('⚡ 支持联动的工具: address-geocode → kmeans-cluster → route-distance');
         console.log('💡 点击「一键串联」菜单，选择工作流开始自动化');
+        console.log('⚠️ 工作流启动后，直接在内容区操作工具，不要点击导航栏菜单切换');
     </script>
 </body>
 </html>
