@@ -11,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js">
     </script>
     <style>
+        /* ===== 强制重置，确保在 iframe 中也能正常显示 ===== */
         * {
             margin: 0;
             padding: 0;
@@ -18,20 +19,22 @@
             font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
         }
 
-        body {
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
             background: linear-gradient(145deg, #eef2f9 0%, #e0e8f2 100%);
-            min-height: 100vh;
-            padding: 10px;
         }
 
         .container {
+            width: 100%;
+            height: 100%;
             max-width: 1400px;
             margin: 0 auto;
             background: #ffffff;
             border-radius: 1.5rem;
             box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.18);
             overflow: hidden;
-            height: calc(100vh - 20px);
             display: flex;
             flex-direction: column;
         }
@@ -47,6 +50,7 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 4px;
+            min-height: 44px;
         }
         .header h1 {
             font-size: 1.1rem;
@@ -159,9 +163,9 @@
             grid-template-columns: 300px 1fr;
             gap: 8px;
             flex-shrink: 0;
-            height: 240px;
-            min-height: 240px;
-            max-height: 240px;
+            height: 220px;
+            min-height: 220px;
+            max-height: 220px;
         }
         @media (max-width: 900px) {
             .top-section {
@@ -176,11 +180,11 @@
         .upload-card {
             background: #f8fafd;
             border-radius: 0.8rem;
-            padding: 8px 10px;
+            padding: 6px 10px;
             border: 1px solid #e2edf5;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
             overflow: hidden;
         }
         .upload-card .section-label {
@@ -195,7 +199,7 @@
             background: #fafcff;
             border: 2px dashed #bdd2ec;
             border-radius: 0.6rem;
-            padding: 6px 8px;
+            padding: 4px 6px;
             text-align: center;
             cursor: pointer;
             transition: 0.2s;
@@ -205,14 +209,14 @@
             border-color: #1f6392;
             background: #f2f8ff;
         }
-        .drop-zone .icon { font-size: 1rem; }
+        .drop-zone .icon { font-size: 0.9rem; }
         .drop-zone .title {
             font-weight: 600;
             color: #1f3a5f;
-            font-size: 0.65rem;
+            font-size: 0.6rem;
         }
         .drop-zone .sub {
-            font-size: 0.5rem;
+            font-size: 0.45rem;
             color: #7a8eaa;
         }
         .btn-group {
@@ -220,14 +224,14 @@
             gap: 3px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-top: 3px;
+            margin-top: 2px;
         }
         .btn {
             border: none;
-            padding: 2px 10px;
+            padding: 2px 8px;
             border-radius: 60px;
             font-weight: 600;
-            font-size: 0.55rem;
+            font-size: 0.5rem;
             cursor: pointer;
             transition: 0.2s;
             display: inline-flex;
@@ -260,19 +264,19 @@
         .key-input-row label {
             font-weight: 600;
             color: #1f3a5f;
-            font-size: 0.55rem;
+            font-size: 0.5rem;
             white-space: nowrap;
         }
         .key-input-row input {
             flex: 1;
-            min-width: 60px;
+            min-width: 50px;
             padding: 2px 6px;
             border-radius: 60px;
             border: 1px solid #cbdde9;
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             background: white;
         }
-        .key-input-row .hint { font-size: 0.45rem; color: #cc6600; }
+        .key-input-row .hint { font-size: 0.4rem; color: #cc6600; }
 
         .action-bar {
             display: flex;
@@ -280,23 +284,23 @@
             gap: 2px;
             flex-shrink: 0;
         }
-        .action-bar .btn { font-size: 0.55rem; padding: 2px 8px; }
+        .action-bar .btn { font-size: 0.5rem; padding: 2px 6px; }
 
         .file-stats {
             background: #eef2f7;
             border-radius: 60px;
-            padding: 1px 8px;
+            padding: 1px 6px;
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            font-size: 0.55rem;
+            font-size: 0.5rem;
             flex-shrink: 0;
         }
         .file-list-box {
             background: #f8fafd;
             border-radius: 0.5rem;
             padding: 2px 4px;
-            max-height: 32px;
+            max-height: 28px;
             overflow-y: auto;
             flex-shrink: 0;
         }
@@ -309,7 +313,7 @@
             margin: 1px 2px;
             display: inline-flex;
             align-items: center;
-            font-size: 0.5rem;
+            font-size: 0.45rem;
             border: 1px solid #d4e2f0;
         }
 
@@ -317,7 +321,7 @@
             background: #fff8e1;
             border-radius: 0.4rem;
             padding: 2px 6px;
-            font-size: 0.5rem;
+            font-size: 0.45rem;
             color: #8a6d3b;
             display: flex;
             align-items: center;
@@ -329,7 +333,7 @@
 
         .template-download {
             text-align: center;
-            font-size: 0.5rem;
+            font-size: 0.45rem;
             color: #7a8eaa;
             flex-shrink: 0;
         }
@@ -353,10 +357,10 @@
             flex-shrink: 0;
         }
         .stat-item {
-            font-size: 0.55rem;
+            font-size: 0.5rem;
             color: #2c3e66;
         }
-        .stat-item strong { color: #1a5d8c; font-size: 0.65rem; }
+        .stat-item strong { color: #1a5d8c; font-size: 0.6rem; }
         .stat-item .success-count { color: #2a7f6e; }
         .stat-item .fail-count { color: #b13b3b; }
 
@@ -379,7 +383,7 @@
             border-radius: 0.4rem;
             padding: 2px 6px;
             flex-shrink: 0;
-            max-height: 30px;
+            max-height: 26px;
             overflow-y: auto;
         }
         .log-card::-webkit-scrollbar { width: 3px; }
@@ -387,7 +391,7 @@
         .log-content {
             color: #c9e1f0;
             font-family: monospace;
-            font-size: 0.5rem;
+            font-size: 0.45rem;
             line-height: 1.3;
         }
 
@@ -395,7 +399,7 @@
         .table-card {
             background: #f8fafd;
             border-radius: 0.8rem;
-            padding: 6px 10px;
+            padding: 4px 10px;
             border: 1px solid #e2edf5;
             display: flex;
             flex-direction: column;
@@ -434,7 +438,7 @@
 
         .data-table {
             width: 100%;
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             border-collapse: collapse;
             min-width: 450px;
         }
@@ -454,7 +458,7 @@
             padding: 2px 4px;
             border-bottom: 1px solid #e6edf5;
             vertical-align: middle;
-            font-size: 0.55rem;
+            font-size: 0.5rem;
         }
         .data-table tr:hover td { background: #f8fafd; }
         .data-table .status-ok { color: #2a7f6e; font-weight: 600; }
@@ -552,23 +556,23 @@
             right: 0;
             background: linear-gradient(135deg, #0f2f46, #1a405e);
             border-top: 3px solid #ffb347;
-            padding: 5px 14px;
+            padding: 4px 12px;
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             z-index: 999;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
         }
-        .fixed-bar .info { color: #ffde9c; font-size: 10px; font-weight: 500; }
+        .fixed-bar .info { color: #ffde9c; font-size: 9px; font-weight: 500; }
         .fixed-bar .dl-btn {
             background: #ffc107;
             border: none;
-            padding: 4px 14px;
+            padding: 3px 12px;
             border-radius: 60px;
             font-weight: 700;
-            font-size: 11px;
+            font-size: 10px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
@@ -582,10 +586,10 @@
             background: rgba(255, 255, 255, 0.15);
             color: #ffdfb3;
             border: none;
-            padding: 3px 10px;
+            padding: 2px 8px;
             border-radius: 40px;
             cursor: pointer;
-            font-size: 10px;
+            font-size: 9px;
         }
         .fixed-bar .reset-btn:hover { background: rgba(255, 255, 255, 0.25); }
         .hidden-bar { display: none !important; }
@@ -815,7 +819,7 @@
     // ============================================================
     //  限流配置
     // ============================================================
-    const CONFIG = {
+    var CONFIG = {
         QPS_LIMIT: 3,
         REQUEST_INTERVAL: 350,
         MAX_RETRIES: 3,
@@ -826,13 +830,13 @@
     // ============================================================
     //  ★★★ 工具联动配置 ★★★
     // ============================================================
-    const PASS_KEY = 'toolbox_data_pass';
-    const TOOL_ID = 'address-geocode';
+    var PASS_KEY = 'toolbox_data_pass';
+    var TOOL_ID = 'address-geocode';
 
     // ============================================================
     //  地图图层配置
     // ============================================================
-    const TILE_LAYERS = [{
+    var TILE_LAYERS = [{
         name: '高德地图',
         url: 'https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
         options: { maxZoom: 18, attribution: '© 高德地图' }
@@ -845,60 +849,60 @@
     // ============================================================
     //  数据模型
     // ============================================================
-    let dataRows = [];
-    let uploadedFiles = [];
-    let isQuerying = false;
-    let abortFlag = false;
-    let resultBlob = null;
-    let nextId = 1;
+    var dataRows = [];
+    var uploadedFiles = [];
+    var isQuerying = false;
+    var abortFlag = false;
+    var resultBlob = null;
+    var nextId = 1;
 
-    let mapInstance = null;
-    let mapLayers = [];
-    let isMapInitialized = false;
-    let passDataCache = null;
+    var mapInstance = null;
+    var mapLayers = [];
+    var isMapInitialized = false;
+    var passDataCache = null;
 
     // 工作流检测
-    let isInWorkflow = false;
+    var isInWorkflow = false;
 
     // DOM
-    const tableBody = document.getElementById('tableBody');
-    const rowCount = document.getElementById('rowCount');
-    const totalCount = document.getElementById('totalCount');
-    const successCount = document.getElementById('successCount');
-    const failCount = document.getElementById('failCount');
-    const progressText = document.getElementById('progressText');
-    const progressFill = document.getElementById('progressFill');
-    const logArea = document.getElementById('logArea');
-    const fixedBar = document.getElementById('fixedBar');
-    const dlStatus = document.getElementById('dlStatus');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const resetBottomBtn = document.getElementById('resetBottomBtn');
-    const exportResultBtn = document.getElementById('exportResultBtn');
-    const copyResultBtn = document.getElementById('copyResultBtn');
-    const queryBtn = document.getElementById('queryBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const amapKeyInput = document.getElementById('amapKey');
-    const fileInput = document.getElementById('fileInput');
-    const folderInput = document.getElementById('folderInput');
-    const dropZone = document.getElementById('dropZone');
-    const fileStatsArea = document.getElementById('fileStatsArea');
-    const fileListBox = document.getElementById('fileListBox');
-    const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
-    const copyToast = document.getElementById('copyToast');
-    const mapContainer = document.getElementById('mapContainer');
-    const mapStatus = document.getElementById('mapStatus');
-    const mapCount = document.getElementById('mapCount');
+    var tableBody = document.getElementById('tableBody');
+    var rowCount = document.getElementById('rowCount');
+    var totalCount = document.getElementById('totalCount');
+    var successCount = document.getElementById('successCount');
+    var failCount = document.getElementById('failCount');
+    var progressText = document.getElementById('progressText');
+    var progressFill = document.getElementById('progressFill');
+    var logArea = document.getElementById('logArea');
+    var fixedBar = document.getElementById('fixedBar');
+    var dlStatus = document.getElementById('dlStatus');
+    var downloadBtn = document.getElementById('downloadBtn');
+    var resetBottomBtn = document.getElementById('resetBottomBtn');
+    var exportResultBtn = document.getElementById('exportResultBtn');
+    var copyResultBtn = document.getElementById('copyResultBtn');
+    var queryBtn = document.getElementById('queryBtn');
+    var stopBtn = document.getElementById('stopBtn');
+    var clearBtn = document.getElementById('clearBtn');
+    var amapKeyInput = document.getElementById('amapKey');
+    var fileInput = document.getElementById('fileInput');
+    var folderInput = document.getElementById('folderInput');
+    var dropZone = document.getElementById('dropZone');
+    var fileStatsArea = document.getElementById('fileStatsArea');
+    var fileListBox = document.getElementById('fileListBox');
+    var downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+    var copyToast = document.getElementById('copyToast');
+    var mapContainer = document.getElementById('mapContainer');
+    var mapStatus = document.getElementById('mapStatus');
+    var mapCount = document.getElementById('mapCount');
 
     // 工作流DOM
-    const workflowHint = document.getElementById('workflowHint');
-    const workflowStatus = document.getElementById('workflowStatus');
+    var workflowHint = document.getElementById('workflowHint');
+    var workflowStatus = document.getElementById('workflowStatus');
 
     // 数据传递DOM
-    const dataPassBar = document.getElementById('dataPassBar');
-    const passInfo = document.getElementById('passInfo');
-    const saveAndPassBtn = document.getElementById('saveAndPassBtn');
-    const clearPassBtn = document.getElementById('clearPassBtn');
+    var dataPassBar = document.getElementById('dataPassBar');
+    var passInfo = document.getElementById('passInfo');
+    var saveAndPassBtn = document.getElementById('saveAndPassBtn');
+    var clearPassBtn = document.getElementById('clearPassBtn');
 
     // ========== 检测是否在工作流中 ==========
     function detectWorkflowMode() {
@@ -918,9 +922,9 @@
     // ========== 日志 ==========
     function addLog(msg, isError) {
         if (isError === undefined) isError = false;
-        const time = new Date().toLocaleTimeString();
-        const prefix = isError ? '❌' : '📌';
-        const color = isError ? '#ffb4a2' : '#b9e0ff';
+        var time = new Date().toLocaleTimeString();
+        var prefix = isError ? '❌' : '📌';
+        var color = isError ? '#ffb4a2' : '#b9e0ff';
         logArea.innerHTML += '<span style="color:' + color + '">' + prefix + ' [' + time + '] ' + msg + '</span><br>';
         logArea.scrollTop = logArea.scrollHeight;
         if (logArea.innerHTML.split('<br>').length > 60) {
@@ -1024,7 +1028,6 @@
             workflowStatus.textContent = '✅ 已保存，通知父页面...';
         }
 
-        // ★★★ 关键：通知父页面（工作流引擎） ★★★
         try {
             window.parent.postMessage({
                 type: 'toolbox_data_saved',
@@ -1050,7 +1053,8 @@
         if (dataRows.length === 0) {
             html = '<tr class="empty-row"><td colspan="7">📭 请上传Excel文件</td></tr>';
         } else {
-            dataRows.forEach(function(row, idx) {
+            for (var i = 0; i < dataRows.length; i++) {
+                var row = dataRows[i];
                 var statusClass = 'status-pending';
                 var statusText = row.status || '待查询';
                 if (row.status === '成功') { statusClass = 'status-ok'; } else if (row.status === '失败' || (row
@@ -1060,24 +1064,33 @@
                 var lngDisplay = (row.lng !== null && row.lng !== undefined && row.lng !== '') ? row.lng : '-';
                 var latDisplay = (row.lat !== null && row.lat !== undefined && row.lat !== '') ? row.lat : '-';
 
-                html += '<tr><td>' + (idx + 1) + '</td><td>' + escHtml(row.code) + '</td><td>' + escHtml(row.name) +
+                html += '<tr><td>' + (i + 1) + '</td><td>' + escHtml(row.code) + '</td><td>' + escHtml(row.name) +
                     '</td><td style="font-size:0.5rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' +
                     escHtml(row.addr) + '">' + escHtml(row.addr) + '</td><td>' + lngDisplay + '</td><td>' +
                     latDisplay + '</td><td class="' + statusClass + '">' + statusText + '</td></tr>';
-            });
+            }
         }
         tableBody.innerHTML = html;
         rowCount.textContent = '共 ' + dataRows.length + ' 条';
         totalCount.textContent = dataRows.length;
-        var succ = dataRows.filter(function(r) { return r.status === '成功'; }).length;
-        var fail = dataRows.filter(function(r) { return r.status === '失败' || (r.status && r.status.includes(
-            '最终失败')); }).length;
+        var succ = 0,
+            fail = 0;
+        for (var j = 0; j < dataRows.length; j++) {
+            if (dataRows[j].status === '成功') succ++;
+            if (dataRows[j].status === '失败' || (dataRows[j].status && dataRows[j].status.includes('最终失败'))) fail++;
+        }
         successCount.textContent = succ;
         failCount.textContent = fail;
 
-        var hasResult = dataRows.some(function(r) { return r.status === '成功' || r.status === '失败' || (r.status && r
-                .status.includes('最终失败')); });
+        var hasResult = false;
         var hasData = dataRows.length > 0;
+        for (var k = 0; k < dataRows.length; k++) {
+            if (dataRows[k].status === '成功' || dataRows[k].status === '失败' || (dataRows[k].status && dataRows[k]
+                    .status.includes('最终失败'))) {
+                hasResult = true;
+                break;
+            }
+        }
         exportResultBtn.disabled = !hasResult || isQuerying;
         copyResultBtn.disabled = !hasResult || isQuerying;
         queryBtn.disabled = !hasData || isQuerying;
@@ -1108,9 +1121,14 @@
                     var rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
                     if (!rows || rows.length === 0) { resolve([]); return; }
                     var headers = Object.keys(rows[0]);
-                    var codeCol = headers.find(function(h) { return /站点代码|站点编号|code|代码/i.test(h); });
-                    var nameCol = headers.find(function(h) { return /站点名称|站点名|名称|name/i.test(h); });
-                    var addrCol = headers.find(function(h) { return /站点地址|地址|addr|详细地址/i.test(h); });
+                    var codeCol = null,
+                        nameCol = null,
+                        addrCol = null;
+                    for (var h = 0; h < headers.length; h++) {
+                        if (/站点代码|站点编号|code|代码/i.test(headers[h])) codeCol = headers[h];
+                        if (/站点名称|站点名|名称|name/i.test(headers[h])) nameCol = headers[h];
+                        if (/站点地址|地址|addr|详细地址/i.test(headers[h])) addrCol = headers[h];
+                    }
 
                     if (!codeCol || !nameCol || !addrCol) {
                         addLog('文件 ' + file.name + ' 缺少必要列！需要: 站点代码, 站点名称, 站点地址', true);
@@ -1121,9 +1139,9 @@
                     var result = [];
                     for (var i = 0; i < rows.length; i++) {
                         var row = rows[i];
-                        var code = row[codeCol]?.toString().trim();
-                        var name = row[nameCol]?.toString().trim();
-                        var addr = row[addrCol]?.toString().trim();
+                        var code = row[codeCol] ? row[codeCol].toString().trim() : '';
+                        var name = row[nameCol] ? row[nameCol].toString().trim() : '';
+                        var addr = row[addrCol] ? row[addrCol].toString().trim() : '';
                         if (code && name && addr) {
                             result.push({ code: code, name: name, addr: addr });
                         }
@@ -1143,20 +1161,42 @@
         for (var fi = 0; fi < filesList.length; fi++) {
             var f = filesList[fi];
             var ext = f.name.split('.').pop().toLowerCase();
-            if (['xlsx', 'xls', 'csv'].includes(ext)) excelFiles.push(f);
+            if (['xlsx', 'xls', 'csv'].indexOf(ext) !== -1) excelFiles.push(f);
             else addLog('跳过非Excel: ' + f.name, false);
         }
         if (!excelFiles.length) { addLog('未找到有效Excel文件', true); return; }
 
-        uploadedFiles.push.apply(uploadedFiles, excelFiles);
+        for (var ei = 0; ei < excelFiles.length; ei++) {
+            uploadedFiles.push(excelFiles[ei]);
+        }
         updateFileUI();
 
         var totalAdded = 0;
-        excelFiles.forEach(function(f) {
+        var processFile = function(index) {
+            if (index >= excelFiles.length) {
+                renderTable();
+                updateDownloadBarVisibility();
+                addLog('✅ 共加载 ' + totalAdded + ' 条站点数据', false);
+                if (isMapInitialized) {
+                    renderMapMarkers();
+                }
+                mapStatus.textContent = '📌 ' + dataRows.length + ' 条，点击「查询」获取坐标';
+                checkPassStatus();
+                return;
+            }
+            var f = excelFiles[index];
             addLog('解析文件: ' + f.name);
             parseExcelToRows(f).then(function(rows) {
-                rows.forEach(function(r) {
-                    if (!dataRows.some(function(d) { return d.code === r.code && d.addr === r.addr; })) {
+                for (var ri = 0; ri < rows.length; ri++) {
+                    var r = rows[ri];
+                    var exists = false;
+                    for (var di = 0; di < dataRows.length; di++) {
+                        if (dataRows[di].code === r.code && dataRows[di].addr === r.addr) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
                         dataRows.push({
                             id: nextId++,
                             code: r.code,
@@ -1171,18 +1211,13 @@
                         });
                         totalAdded++;
                     }
-                });
+                }
                 addLog('从 ' + f.name + ' 解析到 ' + rows.length + ' 条记录');
                 renderTable();
-                updateDownloadBarVisibility();
-                addLog('✅ 共加载 ' + totalAdded + ' 条站点数据', false);
-                if (isMapInitialized) {
-                    renderMapMarkers();
-                }
-                mapStatus.textContent = '📌 ' + dataRows.length + ' 条，点击「查询」获取坐标';
-                checkPassStatus();
+                processFile(index + 1);
             });
-        });
+        };
+        processFile(0);
     }
 
     // ========== 文件UI ==========
@@ -1196,8 +1231,11 @@
         fileStatsArea.style.display = 'inline-flex';
         fileStatsArea.innerHTML = '📁 ' + cnt + ' 个文件';
         fileListBox.style.display = 'block';
-        fileListBox.innerHTML = uploadedFiles.map(function(f) { return '<span class="file-tag">📄 ' + f.name +
-            '</span>'; }).join('');
+        var html = '';
+        for (var i = 0; i < uploadedFiles.length; i++) {
+            html += '<span class="file-tag">📄 ' + uploadedFiles[i].name + '</span>';
+        }
+        fileListBox.innerHTML = html;
     }
 
     // ========== 清空 ==========
@@ -1296,9 +1334,9 @@
 
     function clearMapMarkers() {
         if (mapLayers.length > 0) {
-            mapLayers.forEach(function(layer) {
-                if (mapInstance) mapInstance.removeLayer(layer);
-            });
+            for (var i = 0; i < mapLayers.length; i++) {
+                if (mapInstance) mapInstance.removeLayer(mapLayers[i]);
+            }
             mapLayers = [];
         }
         mapCount.textContent = '📍 0 个';
@@ -1308,7 +1346,12 @@
         if (!isMapInitialized || !mapInstance) return;
         clearMapMarkers();
 
-        var successRows = dataRows.filter(function(r) { return r.status === '成功' && r.lng !== null && r.lat !== null; });
+        var successRows = [];
+        for (var i = 0; i < dataRows.length; i++) {
+            if (dataRows[i].status === '成功' && dataRows[i].lng !== null && dataRows[i].lat !== null) {
+                successRows.push(dataRows[i]);
+            }
+        }
 
         if (successRows.length === 0) {
             mapStatus.textContent = '📌 ' + dataRows.length + ' 条，暂无坐标';
@@ -1317,7 +1360,8 @@
         }
 
         var bounds = [];
-        successRows.forEach(function(row) {
+        for (var j = 0; j < successRows.length; j++) {
+            var row = successRows[j];
             var icon = L.divIcon({
                 html: '<div style="background:#4A9EFF;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
                 className: '',
@@ -1330,7 +1374,7 @@
             mapInstance.addLayer(marker);
             mapLayers.push(marker);
             bounds.push([row.lat, row.lng]);
-        });
+        }
 
         mapCount.textContent = '📍 ' + successRows.length + ' 个';
 
@@ -1338,8 +1382,14 @@
             try {
                 mapInstance.fitBounds(bounds, { padding: [40, 40] });
             } catch (e) {
-                var centerLat = successRows.reduce(function(s, r) { return s + r.lat; }, 0) / successRows.length;
-                var centerLng = successRows.reduce(function(s, r) { return s + r.lng; }, 0) / successRows.length;
+                var centerLat = 0,
+                    centerLng = 0;
+                for (var k = 0; k < successRows.length; k++) {
+                    centerLat += successRows[k].lat;
+                    centerLng += successRows[k].lng;
+                }
+                centerLat = centerLat / successRows.length;
+                centerLng = centerLng / successRows.length;
                 mapInstance.setView([centerLat, centerLng], 8);
             }
             mapStatus.textContent = '✅ ' + successRows.length + ' 个已标记';
@@ -1360,7 +1410,8 @@
                 var url = 'https://restapi.amap.com/v3/geocode/geo?address=' + encodeURIComponent(address) +
                     '&output=json&key=' + key;
                 fetch(url).then(function(response) { return response.json(); }).then(function(data) {
-                    if (data.status === '0' && data.info && data.info.includes(CONFIG.RATE_LIMIT_ERROR)) {
+                    if (data.status === '0' && data.info && data.info.indexOf(CONFIG.RATE_LIMIT_ERROR) !==
+                        -1) {
                         if (attempt <= CONFIG.MAX_RETRIES) {
                             attempt++;
                             setTimeout(doRequest, CONFIG.RETRY_DELAY);
@@ -1411,14 +1462,14 @@
         var key = amapKeyInput.value.trim();
         if (!key || key.length < 10) { addLog('请填写有效的高德地图Web服务API Key', true); return; }
 
-        dataRows.forEach(function(r) {
-            r.lng = null;
-            r.lat = null;
-            r.status = '待查询';
-            r.province = '';
-            r.city = '';
-            r.district = '';
-        });
+        for (var ri = 0; ri < dataRows.length; ri++) {
+            dataRows[ri].lng = null;
+            dataRows[ri].lat = null;
+            dataRows[ri].status = '待查询';
+            dataRows[ri].province = '';
+            dataRows[ri].city = '';
+            dataRows[ri].district = '';
+        }
         renderTable();
 
         isQuerying = true;
@@ -1518,7 +1569,6 @@
             }
             mapStatus.textContent = '✅ 查询完成 · 成功 ' + success + ' · 失败 ' + failed;
 
-            // ★★★ 查询完成后自动保存并通知父页面 ★★★
             if (success > 0) {
                 setTimeout(function() {
                     saveAndPass();
@@ -1545,8 +1595,10 @@
 
     // ========== 生成结果Blob ==========
     function generateResultBlob() {
-        var exportData = dataRows.map(function(r) {
-            return {
+        var exportData = [];
+        for (var i = 0; i < dataRows.length; i++) {
+            var r = dataRows[i];
+            exportData.push({
                 '站点代码': r.code,
                 '站点名称': r.name,
                 '站点地址': r.addr,
@@ -1556,8 +1608,8 @@
                 '市': r.city || '',
                 '区': r.district || '',
                 '查询状态': r.status || '待查询'
-            };
-        });
+            });
+        }
         var ws = XLSX.utils.json_to_sheet(exportData);
         var wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, '经纬度结果');
@@ -1578,10 +1630,20 @@
     }
 
     function updateDownloadBarVisibility() {
-        var hasData = dataRows.some(function(r) { return r.status === '成功' || r.status === '失败'; });
+        var hasData = false;
+        for (var i = 0; i < dataRows.length; i++) {
+            if (dataRows[i].status === '成功' || dataRows[i].status === '失败') {
+                hasData = true;
+                break;
+            }
+        }
         if (hasData && !isQuerying) {
-            var succ = dataRows.filter(function(r) { return r.status === '成功'; }).length;
-            var fail = dataRows.filter(function(r) { return r.status === '失败'; }).length;
+            var succ = 0,
+                fail = 0;
+            for (var j = 0; j < dataRows.length; j++) {
+                if (dataRows[j].status === '成功') succ++;
+                if (dataRows[j].status === '失败') fail++;
+            }
             generateResultBlob();
             showDownloadBar(succ, fail);
         } else if (!hasData) {
@@ -1609,19 +1671,27 @@
     }
 
     function copyResultsToClipboard() {
-        if (!dataRows.length || !dataRows.some(function(r) { return r.status === '成功' || r.status === '失败'; })) {
+        var hasResult = false;
+        for (var i = 0; i < dataRows.length; i++) {
+            if (dataRows[i].status === '成功' || dataRows[i].status === '失败') {
+                hasResult = true;
+                break;
+            }
+        }
+        if (!dataRows.length || !hasResult) {
             addLog('没有可复制的结果，请先查询', true);
             return;
         }
         var headers = ['站点代码', '站点名称', '站点地址', '经度', '纬度', '省', '市', '区', '查询状态'];
         var csv = headers.join('\t') + '\n';
-        dataRows.forEach(function(r) {
+        for (var j = 0; j < dataRows.length; j++) {
+            var r = dataRows[j];
             var lng = r.lng !== null && r.lng !== undefined ? r.lng : '';
             var lat = r.lat !== null && r.lat !== undefined ? r.lat : '';
             csv += [r.code, r.name, r.addr, lng, lat, r.province || '', r.city || '', r.district || '', r.status ||
                 '待查询'
             ].join('\t') + '\n';
-        });
+        }
 
         navigator.clipboard.writeText(csv).then(function() {
             showToast('✅ 已复制 ' + dataRows.length + ' 条数据到剪贴板！');
@@ -1706,13 +1776,24 @@
                     reader.readEntries(function(entries) {
                         if (entries.length === 0) {
                             Promise.all(results).then(function(allFiles) {
-                                resolve(allFiles.flat());
+                                var flat = [];
+                                for (var i = 0; i < allFiles.length; i++) {
+                                    for (var j = 0; j < allFiles[i].length; j++) {
+                                        flat.push(allFiles[i][j]);
+                                    }
+                                }
+                                resolve(flat);
                             });
                             return;
                         }
-                        var promises = entries.map(function(e) { return getAllFilesFromEntry(e); });
+                        var promises = [];
+                        for (var ei = 0; ei < entries.length; ei++) {
+                            promises.push(getAllFilesFromEntry(entries[ei]));
+                        }
                         Promise.all(promises).then(function(batches) {
-                            results.push.apply(results, batches);
+                            for (var bi = 0; bi < batches.length; bi++) {
+                                results.push(batches[bi]);
+                            }
                             readBatch();
                         });
                     });
@@ -1727,12 +1808,22 @@
     // ========== 事件绑定 ==========
     folderInput.addEventListener('change', function(e) {
         if (e.target.files.length) {
-            handleFiles(Array.from(e.target.files));
+            var files = [];
+            for (var i = 0; i < e.target.files.length; i++) {
+                files.push(e.target.files[i]);
+            }
+            handleFiles(files);
         }
         folderInput.value = '';
     });
     fileInput.addEventListener('change', function(e) {
-        if (e.target.files.length) handleFiles(Array.from(e.target.files));
+        if (e.target.files.length) {
+            var files = [];
+            for (var i = 0; i < e.target.files.length; i++) {
+                files.push(e.target.files[i]);
+            }
+            handleFiles(files);
+        }
         fileInput.value = '';
     });
     clearBtn.addEventListener('click', clearAll);
@@ -1745,11 +1836,9 @@
     downloadTemplateBtn.addEventListener('click', function(e) { e.preventDefault();
         downloadTemplate(); });
 
-    // ★★★ 数据传递事件 ★★★
     saveAndPassBtn.addEventListener('click', saveAndPass);
     clearPassBtn.addEventListener('click', clearPassData);
 
-    // ★★★ 监听来自父页面的消息 ★★★
     window.addEventListener('message', function(event) {
         if (event.data && event.data.type === 'toolbox_request_data') {
             var passData = getPassData();
@@ -1782,25 +1871,26 @@
         dropZone.style.borderColor = '#bdd2ec';
         dropZone.style.backgroundColor = '#fafcff';
         var items = e.dataTransfer.items;
+        var allPromises = [];
         var allFiles = [];
-        var promises = [];
         for (var i = 0; i < items.length; i++) {
             var entry = items[i].webkitGetAsEntry();
             if (entry) {
-                promises.push(getAllFilesFromEntry(entry).then(function(files) {
-                    allFiles.push.apply(allFiles, files);
+                allPromises.push(getAllFilesFromEntry(entry).then(function(files) {
+                    for (var fi = 0; fi < files.length; fi++) {
+                        allFiles.push(files[fi]);
+                    }
                 }));
             } else if (items[i].kind === 'file') {
                 allFiles.push(items[i].getAsFile());
             }
         }
-        Promise.all(promises).then(function() {
+        Promise.all(allPromises).then(function() {
             if (allFiles.length) handleFiles(allFiles);
             else addLog('未获取到文件', true);
         });
     });
 
-    // ========== 窗口resize ==========
     window.addEventListener('resize', function() {
         if (mapInstance) {
             setTimeout(function() { mapInstance.invalidateSize(); }, 200);
@@ -1816,7 +1906,6 @@
     addLog('🗺️ 地图将自动展示查询成功的站点', false);
     addLog('🔗 工具联动：查询成功后自动保存数据，供K-Means聚类使用', false);
 
-    // ★★★ 检测是否在工作流中 ★★★
     detectWorkflowMode();
 
     setTimeout(function() {
@@ -1824,7 +1913,6 @@
         checkPassStatus();
     }, 400);
 
-    // 暴露全局函数供父页面调用
     window.getPassData = getPassData;
     window.savePassData = savePassData;
     window.checkPassStatus = checkPassStatus;
