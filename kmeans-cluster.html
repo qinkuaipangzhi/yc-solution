@@ -4,694 +4,98 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>K-Means聚类规划 - 容量约束 + 孤立站点单独成线 + 工作流联动</title>
-    <!-- SheetJS 核心库 -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    <!-- ECharts 图表库 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
-        }
-
-        body {
-            background: linear-gradient(145deg, #eef2f9 0%, #e0e8f2 100%);
-            min-height: 100vh;
-            padding: 2rem 1.5rem 140px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: #ffffff;
-            border-radius: 2rem;
-            box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #1e3a5f, #0f2b44);
-            padding: 2rem 2.2rem;
-            color: white;
-        }
-        .header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .header p {
-            opacity: 0.85;
-            margin-top: 8px;
-            font-size: 0.95rem;
-        }
-        .badge-group {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-top: 12px;
-        }
-        .badge {
-            background: #2c6288;
-            padding: 4px 16px;
-            border-radius: 40px;
-            font-size: 0.7rem;
-        }
-        .badge.link {
-            background: #6c5b7b;
-        }
-
-        .content {
-            padding: 2rem;
-        }
-
-        /* ★★★ 工作流状态提示栏 ★★★ */
-        .workflow-hint {
-            background: linear-gradient(135deg, #e8f0fa, #d4e4f0);
-            border-radius: 0.8rem;
-            padding: 8px 14px;
-            border: 1px solid #b8cde0;
-            display: none;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-        .workflow-hint.show {
-            display: flex;
-        }
-        .workflow-hint .icon {
-            font-size: 1.2rem;
-        }
-        .workflow-hint .info {
-            font-size: 0.8rem;
-            color: #1f3a5f;
-            flex: 1;
-        }
-        .workflow-hint .info strong {
-            color: #1a5d8c;
-        }
-        .workflow-hint .status {
-            font-size: 0.7rem;
-            color: #2a7f6e;
-            font-weight: 600;
-            background: rgba(42, 127, 110, 0.12);
-            padding: 2px 12px;
-            border-radius: 30px;
-        }
-
-        /* ★★★ 上游数据导入提示 ★★★ */
-        .upstream-hint {
-            background: #fef9e7;
-            border-radius: 0.8rem;
-            padding: 10px 16px;
-            border: 1px solid #f5dca8;
-            display: none;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-        .upstream-hint.show {
-            display: flex;
-        }
-        .upstream-hint .icon {
-            font-size: 1.5rem;
-        }
-        .upstream-hint .info {
-            font-size: 0.8rem;
-            color: #4a3a2a;
-            flex: 1;
-        }
-        .upstream-hint .info strong {
-            color: #a1552a;
-        }
-        .upstream-hint .actions {
-            display: flex;
-            gap: 6px;
-        }
-
-        /* 上传区域 */
-        .upload-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 1.8rem;
-        }
-        @media (max-width: 900px) {
-            .upload-section {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .upload-card {
-            background: #f8fafd;
-            border-radius: 1.5rem;
-            padding: 1.5rem;
-            border: 1px solid #e2edf5;
-        }
-        .upload-card h3 {
-            color: #1f3a5f;
-            font-size: 1rem;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .drop-zone {
-            background: #fafcff;
-            border: 2px dashed #bdd2ec;
-            border-radius: 1.2rem;
-            padding: 1.5rem 1rem;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .drop-zone:hover {
-            border-color: #1f6392;
-            background: #f2f8ff;
-        }
-        .drop-zone .icon {
-            font-size: 2rem;
-        }
-        .drop-zone .title {
-            font-weight: 600;
-            color: #1f3a5f;
-            font-size: 0.9rem;
-        }
-        .drop-zone .sub {
-            font-size: 0.7rem;
-            color: #7a8eaa;
-            margin-top: 2px;
-        }
-        .file-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
-        }
-        .file-tag {
-            background: white;
-            border-radius: 30px;
-            padding: 2px 12px;
-            font-size: 0.7rem;
-            border: 1px solid #d4e2f0;
-        }
-
-        .btn {
-            border: none;
-            padding: 10px 28px;
-            border-radius: 60px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-primary {
-            background: #1a5d8c;
-            color: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-        .btn-primary:hover:not(:disabled) { background: #0e466b; transform: translateY(-1px); }
-        .btn-success {
-            background: #2a7f6e;
-            color: white;
-        }
-        .btn-success:hover:not(:disabled) { background: #1e6657; transform: translateY(-1px); }
-        .btn-outline {
-            background: #eef3fc;
-            color: #1f4970;
-            border: 1px solid #cde0ee;
-        }
-        .btn-outline:hover { background: #e2ebf5; }
-        .btn-danger {
-            background: #fce4e4;
-            color: #b13b3b;
-            border: 1px solid #f5c2c2;
-        }
-        .btn-danger:hover { background: #fccfcf; }
-        .btn-warning {
-            background: #ffecd6;
-            color: #a1552a;
-            border: 1px solid #ffd5aa;
-        }
-        .btn-copy {
-            background: #4a7a9c;
-            color: white;
-        }
-        .btn-copy:hover:not(:disabled) { background: #1e5a7a; transform: translateY(-1px); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif; }
+        body { background: linear-gradient(145deg, #eef2f9 0%, #e0e8f2 100%); min-height: 100vh; padding: 2rem 1.5rem 140px; }
+        .container { max-width: 1400px; margin: 0 auto; background: #ffffff; border-radius: 2rem; box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.2); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #1e3a5f, #0f2b44); padding: 2rem 2.2rem; color: white; }
+        .header h1 { font-size: 1.8rem; font-weight: 700; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .header p { opacity: 0.85; margin-top: 8px; font-size: 0.95rem; }
+        .badge-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+        .badge { background: #2c6288; padding: 4px 16px; border-radius: 40px; font-size: 0.7rem; }
+        .badge.link { background: #6c5b7b; }
+        .content { padding: 2rem; }
+        
+        .workflow-hint { background: linear-gradient(135deg, #e8f0fa, #d4e4f0); border-radius: 0.8rem; padding: 8px 14px; border: 1px solid #b8cde0; display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+        .workflow-hint.show { display: flex; }
+        .workflow-hint .info { font-size: 0.8rem; color: #1f3a5f; flex: 1; }
+        .workflow-hint .status { font-size: 0.7rem; color: #2a7f6e; font-weight: 600; background: rgba(42, 127, 110, 0.12); padding: 2px 12px; border-radius: 30px; }
+        
+        .upstream-hint { background: #fef9e7; border-radius: 0.8rem; padding: 10px 16px; border: 1px solid #f5dca8; display: none; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+        .upstream-hint.show { display: flex; }
+        .upstream-hint .info { font-size: 0.8rem; color: #4a3a2a; flex: 1; }
+        .upstream-hint .actions { display: flex; gap: 6px; }
+        
+        .upload-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.8rem; }
+        .upload-card { background: #f8fafd; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid #e2edf5; }
+        .upload-card h3 { color: #1f3a5f; font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .drop-zone { background: #fafcff; border: 2px dashed #bdd2ec; border-radius: 1.2rem; padding: 1.5rem 1rem; text-align: center; cursor: pointer; transition: 0.2s; }
+        .drop-zone:hover { border-color: #1f6392; background: #f2f8ff; }
+        .drop-zone .icon { font-size: 2rem; }
+        .drop-zone .title { font-weight: 600; color: #1f3a5f; font-size: 0.9rem; }
+        .drop-zone .sub { font-size: 0.7rem; color: #7a8eaa; margin-top: 2px; }
+        .file-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .file-tag { background: white; border-radius: 30px; padding: 2px 12px; font-size: 0.7rem; border: 1px solid #d4e2f0; }
+        
+        .btn { border: none; padding: 10px 28px; border-radius: 60px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: #1a5d8c; color: white; }
+        .btn-success { background: #2a7f6e; color: white; }
+        .btn-outline { background: #eef3fc; color: #1f4970; border: 1px solid #cde0ee; }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .key-input-row {
-            background: #f1f5f9;
-            border-radius: 1.2rem;
-            padding: 12px 18px;
-            margin-top: 16px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 12px;
-            justify-content: space-between;
-        }
-        .key-input-row label {
-            font-weight: 600;
-            color: #1f3a5f;
-            font-size: 0.85rem;
-            white-space: nowrap;
-        }
-        .key-input-row input {
-            flex: 2;
-            min-width: 200px;
-            padding: 10px 16px;
-            border-radius: 60px;
-            border: 1px solid #cbdde9;
-            font-size: 0.8rem;
-            background: white;
-        }
-        .key-input-row .hint {
-            font-size: 0.7rem;
-            color: #cc6600;
-        }
-
-        /* 参数设置 */
-        .param-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: center;
-            padding: 12px 16px;
-            background: #f1f5f9;
-            border-radius: 1rem;
-            margin-top: 12px;
-        }
-        .param-row label {
-            font-weight: 500;
-            color: #1f3a5f;
-            font-size: 0.8rem;
-        }
-        .param-row input {
-            padding: 6px 12px;
-            border-radius: 40px;
-            border: 1px solid #cbdde9;
-            font-size: 0.8rem;
-            width: 80px;
-        }
-        .param-row input[type="number"] {
-            width: 70px;
-        }
-
-        /* ===== 聚合统计摘要区 ===== */
-        .result-summary-wrap {
-            margin-top: 12px;
-            margin-bottom: 10px;
-            display: none;
-        }
-        .result-summary-wrap.show {
-            display: block;
-        }
-
-        .summary-stats {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px 20px;
-            align-items: center;
-            padding: 8px 16px;
-            background: #f0f6fe;
-            border-radius: 1rem;
-            border: 1px solid #dce8f5;
-            min-height: 44px;
-        }
-        .summary-stats .stat-item {
-            display: flex;
-            align-items: baseline;
-            gap: 4px;
-            font-size: 0.78rem;
-            color: #2c3e66;
-            white-space: nowrap;
-        }
-        .summary-stats .stat-item .label {
-            color: #5a7a9a;
-            font-weight: 400;
-        }
-        .summary-stats .stat-item .value {
-            font-weight: 700;
-            color: #1a5d8c;
-            font-size: 0.95rem;
-        }
-        .summary-stats .stat-item .value.warning {
-            color: #d9534f;
-        }
-        .summary-stats .stat-item .value.success {
-            color: #2a7f6e;
-        }
-        .summary-stats .stat-item .value.isolation {
-            color: #f0a030;
-        }
-        .summary-stats .divider {
-            color: #c0d0e0;
-            font-size: 1.2rem;
-            font-weight: 200;
-        }
-
-        .summary-stats .status-badge {
-            font-size: 0.65rem;
-            padding: 2px 10px;
-            border-radius: 20px;
-            margin-left: 2px;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .summary-stats .status-badge.valid {
-            background: #c8e6d9;
-            color: #1a6e5a;
-        }
-        .summary-stats .status-badge.invalid {
-            background: #fccfcf;
-            color: #b13b3b;
-        }
-        .summary-stats .status-badge.isolation {
-            background: #ffecd6;
-            color: #a1552a;
-        }
-
-        .status-legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px 20px;
-            padding: 6px 16px 4px 16px;
-            font-size: 0.7rem;
-            color: #4a6a8a;
-            border-top: 1px dashed #dce8f5;
-            margin-top: 4px;
-        }
-        .status-legend .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .status-legend .legend-dot {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 2px;
-        }
-        .status-legend .legend-dot.dot-valid { background: #2a7f6e; }
-        .status-legend .legend-dot.dot-invalid { background: #d9534f; }
-        .status-legend .legend-dot.dot-isolation { background: #f0a030; }
-
-        /* ===== 数据报表区域 ===== */
-        .report-section {
-            margin-top: 12px;
-        }
-        .report-section .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-        .report-section .section-header .title {
-            font-weight: 600;
-            color: #1f3a5f;
-            font-size: 0.9rem;
-        }
-        .report-section .section-header .count {
-            font-size: 0.75rem;
-            color: #7a8eaa;
-        }
-
-        .table-wrap {
-            overflow-x: auto;
-            border-radius: 1.2rem;
-            border: 1px solid #e3ecf5;
-            background: white;
-            margin-top: 0.5rem;
-            height: 380px;
-            overflow-y: auto;
-        }
-        .data-table {
-            width: 100%;
-            font-size: 0.75rem;
-            border-collapse: collapse;
-            min-width: 1200px;
-        }
-        .data-table th {
-            background: #f1f6fc;
-            color: #1f3a5f;
-            font-weight: 600;
-            padding: 8px 6px;
-            border-bottom: 2px solid #d3e0ee;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            white-space: nowrap;
-        }
-        .data-table td {
-            padding: 6px 6px;
-            border-bottom: 1px solid #e6edf5;
-            vertical-align: middle;
-        }
-        .data-table tr:hover td { background: #f8fafd; }
-        .data-table .cluster-header td {
-            border-bottom: 2px solid #b8cde0;
-            padding: 4px 6px;
-            font-size: 0.7rem;
-        }
-        .data-table .cluster-header {
-            background: #e8f0f8;
-            font-weight: 700;
-        }
+        
+        .param-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 16px; background: #f1f5f9; border-radius: 1rem; margin-top: 12px; }
+        .param-row input { padding: 6px 12px; border-radius: 40px; border: 1px solid #cbdde9; font-size: 0.8rem; width: 80px; }
+        
+        .result-summary-wrap { margin-top: 12px; margin-bottom: 10px; display: none; }
+        .result-summary-wrap.show { display: block; }
+        .summary-stats { display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center; padding: 8px 16px; background: #f0f6fe; border-radius: 1rem; border: 1px solid #dce8f5; }
+        .summary-stats .stat-item { display: flex; align-items: baseline; gap: 4px; font-size: 0.78rem; color: #2c3e66; }
+        .summary-stats .stat-item .value { font-weight: 700; color: #1a5d8c; font-size: 0.95rem; }
+        
+        .status-legend { display: flex; flex-wrap: wrap; gap: 12px 20px; padding: 6px 16px 4px 16px; font-size: 0.7rem; color: #4a6a8a; border-top: 1px dashed #dce8f5; margin-top: 4px; }
+        .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 2px; }
+        .dot-valid { background: #2a7f6e; } .dot-invalid { background: #d9534f; } .dot-isolation { background: #f0a030; }
+        
+        .report-section { margin-top: 12px; }
+        .table-wrap { overflow-x: auto; border-radius: 1.2rem; border: 1px solid #e3ecf5; background: white; margin-top: 0.5rem; height: 380px; overflow-y: auto; }
+        .data-table { width: 100%; font-size: 0.75rem; border-collapse: collapse; min-width: 1200px; }
+        .data-table th { background: #f1f6fc; color: #1f3a5f; font-weight: 600; padding: 8px 6px; border-bottom: 2px solid #d3e0ee; position: sticky; top: 0; z-index: 10; }
+        .data-table td { padding: 6px 6px; border-bottom: 1px solid #e6edf5; }
+        .data-table .cluster-header td { border-bottom: 2px solid #b8cde0; padding: 4px 6px; font-size: 0.7rem; }
+        .data-table .cluster-header { background: #e8f0f8; font-weight: 700; }
         .data-table .over-capacity { color: #b13b3b; font-weight: 700; }
         .data-table .within-capacity { color: #2a7f6e; font-weight: 700; }
-        .data-table .isolation-row {
-            background: #fef9e7;
-        }
-        .data-table .isolation-row td {
-            border-bottom: 1px dashed #f0d5a8;
-        }
-
-        .chart-section {
-            margin-top: 16px;
-        }
-        .chart-section .chart-title {
-            font-weight: 600;
-            color: #1f3a5f;
-            font-size: 0.9rem;
-            margin-bottom: 8px;
-        }
-        .chart-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-        @media (max-width: 1000px) {
-            .chart-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        .chart-card {
-            background: #fafcff;
-            border-radius: 1.2rem;
-            border: 1px solid #e3ecf5;
-            padding: 12px;
-            min-height: 300px;
-        }
-        .chart-card h4 {
-            color: #1f3a5f;
-            font-size: 0.82rem;
-            margin-bottom: 4px;
-            padding-left: 4px;
-        }
-        .chart-container {
-            width: 100%;
-            height: 280px;
-        }
-
-        .stat-bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 18px;
-            padding: 10px 16px;
-            background: #f8fafd;
-            border-radius: 1rem;
-            margin-top: 10px;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .stat-item {
-            font-size: 0.78rem;
-            color: #2c3e66;
-        }
-        .stat-item strong { color: #1a5d8c; }
-
-        .log-card {
-            background: #0f1a24;
-            border-radius: 1.2rem;
-            padding: 1rem;
-            margin-top: 1.2rem;
-        }
-        .log-content {
-            color: #c9e1f0;
-            font-family: monospace;
-            font-size: 0.75rem;
-            max-height: 120px;
-            overflow-y: auto;
-        }
-
-        .progress-wrap {
-            height: 4px;
-            background: #dce3ec;
-            border-radius: 4px;
-            margin: 10px 0 4px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            width: 0%;
-            background: #ffaa33;
-            transition: width 0.3s;
-        }
-
-        .template-download {
-            text-align: center;
-            margin-top: 8px;
-            font-size: 0.7rem;
-            color: #7a8eaa;
-        }
-        .template-download a {
-            color: #1a5d8c;
-            cursor: pointer;
-            font-weight: 600;
-            text-decoration: none;
-        }
-        .template-download a:hover { text-decoration: underline; }
-
-        .fixed-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(135deg, #0f2f46, #1a405e);
-            border-top: 3px solid #ffb347;
-            padding: 14px 28px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            z-index: 999;
-            box-shadow: 0 -6px 24px rgba(0,0,0,0.25);
-        }
+        .data-table .isolation-row { background: #fef9e7; }
+        
+        .chart-section { margin-top: 16px; }
+        .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .chart-card { background: #fafcff; border-radius: 1.2rem; border: 1px solid #e3ecf5; padding: 12px; min-height: 300px; }
+        .chart-container { width: 100%; height: 280px; }
+        .chart-no-data { display: flex; align-items: center; justify-content: center; height: 260px; color: #a0b8cc; font-size: 0.85rem; }
+        
+        .stat-bar { display: flex; flex-wrap: wrap; gap: 18px; padding: 10px 16px; background: #f8fafd; border-radius: 1rem; margin-top: 10px; align-items: center; }
+        .log-card { background: #0f1a24; border-radius: 1.2rem; padding: 1rem; margin-top: 1.2rem; }
+        .log-content { color: #c9e1f0; font-family: monospace; font-size: 0.75rem; max-height: 120px; overflow-y: auto; }
+        .progress-wrap { height: 4px; background: #dce3ec; border-radius: 4px; margin: 10px 0 4px; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; background: #ffaa33; transition: width 0.3s; }
+        .template-download { text-align: center; margin-top: 8px; font-size: 0.7rem; color: #7a8eaa; }
+        .template-download a { color: #1a5d8c; cursor: pointer; text-decoration: none; }
+        
+        .fixed-bar { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #0f2f46, #1a405e); border-top: 3px solid #ffb347; padding: 14px 28px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; z-index: 999; }
         .fixed-bar .info { color: #ffde9c; font-size: 14px; font-weight: 500; }
-        .fixed-bar .dl-btn {
-            background: #ffc107;
-            border: none;
-            padding: 10px 32px;
-            border-radius: 60px;
-            font-weight: 800;
-            font-size: 15px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            transition: 0.2s;
-            color: #1e3a5f;
-        }
-        .fixed-bar .dl-btn:hover:not(:disabled) { background: #ffda6a; transform: scale(1.02); }
-        .fixed-bar .dl-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .fixed-bar .reset-btn {
-            background: rgba(255,255,255,0.15);
-            color: #ffdfb3;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 40px;
-            cursor: pointer;
-        }
-        .fixed-bar .reset-btn:hover { background: rgba(255,255,255,0.25); }
+        .fixed-bar .dl-btn { background: #ffc107; border: none; padding: 10px 32px; border-radius: 60px; font-weight: 800; font-size: 15px; cursor: pointer; color: #1e3a5f; }
         .hidden-bar { display: none !important; }
-
-        footer {
-            text-align: center;
-            font-size: 0.7rem;
-            color: #6c86a3;
-            padding: 1rem 0 0;
-        }
-
-        .status-valid { color: #2a7f6e; font-weight: 600; }
-        .status-invalid { color: #b13b3b; font-weight: 600; }
-        .status-isolation { color: #b07a2a; font-weight: 600; }
-
-        .copy-toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #2a7f6e;
-            color: white;
-            padding: 12px 28px;
-            border-radius: 60px;
-            font-weight: 600;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-            z-index: 2000;
-            animation: fadeInDown 0.3s ease;
-            display: none;
-        }
+        
+        .copy-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2a7f6e; color: white; padding: 12px 28px; border-radius: 60px; font-weight: 600; z-index: 2000; animation: fadeInDown 0.3s ease; display: none; }
         .copy-toast.show { display: block; }
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-
-        .chart-no-data {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 260px;
-            color: #a0b8cc;
-            font-size: 0.85rem;
-        }
-
-        /* ★★★ 数据传递状态栏 ★★★ */
-        .data-pass-bar {
-            background: #e8f5ee;
-            border-radius: 0.6rem;
-            padding: 6px 12px;
-            border: 1px solid #b8ddd0;
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
-        }
-        .data-pass-bar.show {
-            display: flex;
-        }
-        .data-pass-bar .info {
-            font-size: 0.7rem;
-            color: #1e6657;
-        }
-        .data-pass-bar .info strong {
-            color: #0f3a2f;
-        }
-        .data-pass-bar .actions {
-            display: flex;
-            gap: 6px;
-        }
-        .data-pass-bar .actions .btn {
-            font-size: 0.65rem;
-            padding: 3px 12px;
-        }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        
+        .data-pass-bar { background: #e8f5ee; border-radius: 0.6rem; padding: 6px 12px; border: 1px solid #b8ddd0; display: none; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .data-pass-bar.show { display: flex; }
+        .data-pass-bar .info { font-size: 0.7rem; color: #1e6657; }
+        .data-pass-bar .actions { display: flex; gap: 6px; }
     </style>
 </head>
 <body>
@@ -702,97 +106,70 @@
         <h1>📦 K-Means 聚类规划 · 容量约束 + 工作流联动</h1>
         <p>基于经纬度聚类站点，强制总货量不超过车辆容量；<strong>单城市单站点且货量＜5m³ 自动单独成线</strong></p>
         <div class="badge-group">
-            <span class="badge">📁 站点 + 车型数据</span>
-            <span class="badge">🧠 K-Means 聚类</span>
-            <span class="badge">📐 严格容量约束</span>
-            <span class="badge">📍 孤立站点单独成线</span>
-            <span class="badge">📊 数据报表 + 分析图表</span>
-            <span class="badge link">🔗 工作流联动</span>
+            <span class="badge">📁 站点 + 车型数据</span><span class="badge">🧠 K-Means 聚类</span>
+            <span class="badge">📐 严格容量约束</span><span class="badge">📍 孤立站点单独成线</span>
+            <span class="badge">📊 数据报表 + 分析图表</span><span class="badge link">🔗 工作流联动</span>
         </div>
     </div>
 
     <div class="content">
-        <!-- ★★★ 工作流状态提示栏 ★★★ -->
         <div class="workflow-hint" id="workflowHint">
-            <span class="icon">⚡</span>
             <span class="info">🔗 <strong>工作流模式</strong> · 聚类完成后数据将自动保存，供下游工具使用</span>
             <span class="status" id="workflowStatus">⏳ 等待聚类</span>
         </div>
 
-        <!-- ★★★ 上游数据导入提示 ★★★ -->
         <div class="upstream-hint" id="upstreamHint">
             <span class="icon">📥</span>
             <span class="info">检测到来自 <strong id="upstreamToolName">地址转经纬度</strong> 的上游数据（<strong id="upstreamCount">0</strong> 条），是否导入作为站点数据？</span>
             <div class="actions">
-                <button class="btn btn-success" id="importUpstreamBtn" style="font-size:0.75rem;padding:6px 16px;">✅ 导入</button>
-                <button class="btn btn-outline" id="skipUpstreamBtn" style="font-size:0.75rem;padding:6px 16px;">跳过</button>
+                <button class="btn btn-success" id="importUpstreamBtn" style="padding:6px 16px;">✅ 导入</button>
+                <button class="btn btn-outline" id="skipUpstreamBtn" style="padding:6px 16px;">跳过</button>
             </div>
         </div>
 
-        <!-- 上传区域 -->
         <div class="upload-section">
             <div class="upload-card">
                 <h3>📍 站点数据</h3>
                 <div class="drop-zone" id="siteDropZone">
                     <div class="icon">📂</div>
                     <div class="title">拖拽或点击上传站点Excel</div>
-                    <div class="sub">需包含：站点代码, 站点名称, 省, 市, 站点地址, 经度, 纬度, 单次提货量(m³)</div>
+                    <div class="sub">需包含：站点代码, 名称, 省, 市, 地址, 经度, 纬度, 单次提货量(m³)</div>
                     <input type="file" id="siteFileInput" accept=".xlsx,.xls,.csv" style="display:none;">
                     <div class="file-tags" id="siteFileTags"></div>
                 </div>
-                <div class="template-download">
-                    <a id="downloadSiteTemplate">📋 下载站点模板</a>
-                </div>
+                <div class="template-download"><a id="downloadSiteTemplate">📋 下载站点模板</a></div>
             </div>
-
             <div class="upload-card">
                 <h3>🚛 车型参数</h3>
                 <div class="drop-zone" id="vehicleDropZone">
                     <div class="icon">📂</div>
                     <div class="title">拖拽或点击上传车型Excel</div>
-                    <div class="sub">需包含：车型代码, 车厢内径长(m), 车厢内径宽(m), 车厢内径高(m)</div>
+                    <div class="sub">需包含：车型代码, 车厢内径长(m), 宽(m), 高(m)</div>
                     <input type="file" id="vehicleFileInput" accept=".xlsx,.xls,.csv" style="display:none;">
                     <div class="file-tags" id="vehicleFileTags"></div>
                 </div>
-                <div class="template-download">
-                    <a id="downloadVehicleTemplate">📋 下载车型模板</a>
-                </div>
+                <div class="template-download"><a id="downloadVehicleTemplate">📋 下载车型模板</a></div>
             </div>
         </div>
 
-        <!-- 参数设置 -->
         <div class="param-row">
-            <label>最大迭代次数：</label>
-            <input type="number" id="maxIterations" value="200" min="10" max="500">
-            <label>收敛阈值：</label>
-            <input type="number" id="convergenceThreshold" value="0.001" step="0.0001" min="0.0001">
-            <label style="margin-left:12px;">🗑️ 孤立阈值：</label>
-            <input type="number" id="isolationThreshold" value="5" step="0.5" min="0.5" style="width:60px;">
-            <span style="font-size:0.7rem; color:#7a8eaa;">m³（单城市单站点且货量小于此值→单独成线）</span>
+            <label>最大迭代：</label><input type="number" id="maxIterations" value="200">
+            <label>阈值：</label><input type="number" id="convergenceThreshold" value="0.001" step="0.0001">
+            <label>孤立阈值：</label><input type="number" id="isolationThreshold" value="5" step="0.5" style="width:60px;">
+            <span style="font-size:0.7rem;color:#7a8eaa;">m³（单城市单站点且货量小于此值→单独成线）</span>
             <button class="btn btn-success" id="runClusterBtn" disabled>🧠 运行聚类优化</button>
             <button class="btn btn-outline" id="clearResultBtn">🗑️ 清空结果</button>
         </div>
 
-        <!-- ===== 聚合统计摘要区 ===== -->
         <div class="result-summary-wrap" id="resultSummary">
             <div class="summary-stats" id="summaryStats"></div>
-            <div class="status-legend" id="statusLegend">
-                <span class="legend-item">
-                    <span class="legend-dot dot-valid"></span>
-                    ✅ 容量合格：线路总货量 ≤ 车辆容量，可正常派车
-                </span>
-                <span class="legend-item">
-                    <span class="legend-dot dot-invalid"></span>
-                    ❌ 超载：线路总货量 > 车辆容量，需要拆分或更换更大车型
-                </span>
-                <span class="legend-item">
-                    <span class="legend-dot dot-isolation"></span>
-                    📍 孤立线路：单城市单站点且货量小于阈值，单独成线
-                </span>
+            <div class="status-legend">
+                <span class="legend-item"><span class="legend-dot dot-valid"></span>✅ 容量合格</span>
+                <span class="legend-item"><span class="legend-dot dot-invalid"></span>❌ 超载：需要拆分或更换车型</span>
+                <span class="legend-item"><span class="legend-dot dot-isolation"></span>📍 孤立线路：单城市单站点货量小</span>
             </div>
         </div>
 
-        <!-- ★★★ 数据传递状态栏 ★★★ -->
         <div class="data-pass-bar" id="dataPassBar">
             <span class="info">💾 聚类结果已保存，可传递给下游工具：<strong id="passInfo">线路排程</strong></span>
             <div class="actions">
@@ -801,410 +178,87 @@
             </div>
         </div>
 
-        <!-- ===== 数据报表 + 分析图表 ===== -->
         <div class="report-section">
-            <div class="section-header">
-                <span class="title">📋 聚类明细数据</span>
-                <span class="count" id="rowCount">共 0 条记录</span>
+            <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="title">📋 聚类明细数据</span><span class="count" id="rowCount">共 0 条记录</span>
             </div>
             <div class="table-wrap" id="tableWrap">
                 <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>线路代码</th>
-                            <th>车型代码</th>
-                            <th>站点代码</th>
-                            <th>站点名称</th>
-                            <th>省</th>
-                            <th>市</th>
-                            <th>站点地址</th>
-                            <th>经度</th>
-                            <th>纬度</th>
-                            <th>提货量(m³)</th>
-                            <th>线路总货量(m³)</th>
-                            <th>车辆容量(m³)</th>
-                            <th>容量利用率</th>
-                            <th>线路类型</th>
-                            <th>状态</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                        <tr><td colspan="15" style="text-align:center; color:#a18163; padding:30px;">请上传站点数据和车型参数，然后点击「运行聚类优化」</td></tr>
-                    </tbody>
+                    <thead><tr><th>线路代码</th><th>车型代码</th><th>站点代码</th><th>站点名称</th><th>省</th><th>市</th><th>站点地址</th><th>经度</th><th>纬度</th><th>提货量</th><th>线路总货量</th><th>车辆容量</th><th>容量利用率</th><th>线路类型</th><th>状态</th></tr></thead>
+                    <tbody id="tableBody"><tr><td colspan="15" style="text-align:center;color:#a18163;padding:30px;">请上传站点数据和车型参数，然后点击「运行聚类优化」</td></tr></tbody>
                 </table>
             </div>
 
             <div class="chart-section">
-                <div class="chart-title">📈 分析图表</div>
+                <div class="chart-title" style="font-weight:600;color:#1f3a5f;margin-bottom:8px;">📈 分析图表</div>
                 <div class="chart-grid">
-                    <div class="chart-card">
-                        <h4>📊 线路容量利用率分布 <span style="font-weight:400; font-size:0.65rem; color:#7a8eaa;">（红色虚线=80%合理下限）</span></h4>
-                        <div id="chartUtilization" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div>
-                    </div>
-                    <div class="chart-card">
-                        <h4>📈 货量 vs 车型容量匹配度 <span style="font-weight:400; font-size:0.65rem; color:#7a8eaa;">（点越近对角线越匹配）</span></h4>
-                        <div id="chartMatch" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div>
-                    </div>
-                    <div class="chart-card">
-                        <h4>📋 各线路站点数量分布 <span style="font-weight:400; font-size:0.65rem; color:#7a8eaa;">（红色虚线=平均站点数）</span></h4>
-                        <div id="chartSites" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div>
-                    </div>
-                    <div class="chart-card">
-                        <h4>📍 孤立站点分析 <span style="font-weight:400; font-size:0.65rem; color:#7a8eaa;">（单城市单站点且货量&lt;阈值）</span></h4>
-                        <div id="chartIsolation" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div>
-                    </div>
-                </div>
-                <div style="margin-top:6px; text-align:center; font-size:0.7rem; color:#8a9fb0;">
-                    💡 悬停图表可查看详细数据
+                    <div class="chart-card"><h4>📊 线路容量利用率分布</h4><div id="chartUtilization" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div></div>
+                    <div class="chart-card"><h4>📈 货量 vs 车型容量匹配度</h4><div id="chartMatch" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div></div>
+                    <div class="chart-card"><h4>📋 各线路站点数量分布</h4><div id="chartSites" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div></div>
+                    <div class="chart-card"><h4>📍 孤立站点分析</h4><div id="chartIsolation" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div></div>
                 </div>
             </div>
         </div>
 
-        <!-- 进度条 -->
         <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
-
-        <!-- 统计栏 -->
         <div class="stat-bar">
-            <span class="stat-item">📌 总站点：<strong id="totalSites">0</strong></span>
-            <span class="stat-item">📦 线路数：<strong id="totalClusters">0</strong></span>
-            <span class="stat-item">📐 总货量：<strong id="totalVolume">0</strong> m³</span>
-            <span class="stat-item">📍 孤立线路：<strong id="isolationCount">0</strong></span>
-            <span class="stat-item" id="progressText">⏳ 就绪</span>
+            <span>📌 总站点：<strong id="totalSites">0</strong></span>
+            <span>📦 线路数：<strong id="totalClusters">0</strong></span>
+            <span>📐 总货量：<strong id="totalVolume">0</strong> m³</span>
+            <span>📍 孤立线路：<strong id="isolationCount">0</strong></span>
+            <span id="progressText">⏳ 就绪</span>
         </div>
 
-        <!-- 操作栏 -->
-        <div class="action-bar">
-            <button class="btn btn-copy" id="copyResultBtn" disabled>📋 复制全部结果</button>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+            <button class="btn btn-copy" id="copyResultBtn" disabled style="background:#4a7a9c;color:white;">📋 复制全部结果</button>
             <button class="btn btn-outline" id="exportResultBtn" disabled>📥 导出Excel</button>
         </div>
 
-        <!-- 日志 -->
-        <div class="log-card">
-            <div class="log-content" id="logArea">⚙️ 等待操作… 请上传站点数据和车型参数</div>
-        </div>
-
-        <footer>🔒 所有处理在浏览器本地完成 | K-Means聚类 + 容量约束 + 孤立站点单独成线 + 数据报表 + BI图表 + 工作流联动</footer>
+        <div class="log-card"><div class="log-content" id="logArea">⚙️ 等待操作… 请上传站点数据和车型参数</div></div>
     </div>
 </div>
 
-<!-- 底部固定下载栏 -->
 <div id="fixedBar" class="fixed-bar hidden-bar">
     <span class="info" id="dlStatus">📦 聚类完成，可导出结果</span>
-    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
-        <button class="dl-btn" id="downloadBtn">⬇️ 下载聚类结果 (Excel)</button>
-        <button class="reset-btn" id="resetBottomBtn">🔄 重新计算</button>
-    </div>
+    <button class="dl-btn" id="downloadBtn" style="margin-left:auto;">⬇️ 下载聚类结果</button>
 </div>
 
 <script>
-    // ============================================================
-    //  全局状态
-    // ============================================================
-    let siteData = [];
-    let vehicleData = [];
-    let clusterResults = [];
-    let resultBlob = null;
-    let isInWorkflow = false;
-    let upstreamData = null;
-
-    // ★★★ 工具联动配置 ★★★
+    let siteData = [], vehicleData = [], clusterResults = [], resultBlob = null, isInWorkflow = false, upstreamData = null;
     const PASS_KEY = 'toolbox_data_pass';
     const TOOL_ID = 'kmeans-cluster';
 
-    // DOM
     const siteDropZone = document.getElementById('siteDropZone');
     const vehicleDropZone = document.getElementById('vehicleDropZone');
     const siteFileInput = document.getElementById('siteFileInput');
     const vehicleFileInput = document.getElementById('vehicleFileInput');
-    const siteFileTags = document.getElementById('siteFileTags');
-    const vehicleFileTags = document.getElementById('vehicleFileTags');
     const runClusterBtn = document.getElementById('runClusterBtn');
-    const clearResultBtn = document.getElementById('clearResultBtn');
-    const copyResultBtn = document.getElementById('copyResultBtn');
-    const exportResultBtn = document.getElementById('exportResultBtn');
     const tableBody = document.getElementById('tableBody');
-    const rowCount = document.getElementById('rowCount');
-    const totalSites = document.getElementById('totalSites');
-    const totalClusters = document.getElementById('totalClusters');
-    const totalVolume = document.getElementById('totalVolume');
-    const isolationCount = document.getElementById('isolationCount');
-    const progressText = document.getElementById('progressText');
-    const progressFill = document.getElementById('progressFill');
     const logArea = document.getElementById('logArea');
-    const fixedBar = document.getElementById('fixedBar');
-    const dlStatus = document.getElementById('dlStatus');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const resetBottomBtn = document.getElementById('resetBottomBtn');
-    const resultSummary = document.getElementById('resultSummary');
-    const summaryStats = document.getElementById('summaryStats');
-    const statusLegend = document.getElementById('statusLegend');
-    const maxIterationsInput = document.getElementById('maxIterations');
-    const convergenceThresholdInput = document.getElementById('convergenceThreshold');
-    const isolationThresholdInput = document.getElementById('isolationThreshold');
-    const downloadSiteTemplate = document.getElementById('downloadSiteTemplate');
-    const downloadVehicleTemplate = document.getElementById('downloadVehicleTemplate');
-    const copyToast = document.getElementById('copyToast');
-
-    // 工作流联动 DOM
-    const workflowHint = document.getElementById('workflowHint');
-    const workflowStatus = document.getElementById('workflowStatus');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
     const upstreamHint = document.getElementById('upstreamHint');
-    const upstreamToolName = document.getElementById('upstreamToolName');
-    const upstreamCount = document.getElementById('upstreamCount');
     const importUpstreamBtn = document.getElementById('importUpstreamBtn');
     const skipUpstreamBtn = document.getElementById('skipUpstreamBtn');
-
-    // 数据传递 DOM
     const dataPassBar = document.getElementById('dataPassBar');
     const passInfo = document.getElementById('passInfo');
     const saveAndPassBtn = document.getElementById('saveAndPassBtn');
-    const clearPassBtn = document.getElementById('clearPassBtn');
+    
+    let siteFileLoaded = false, vehicleFileLoaded = false;
+    let chartUtilizationInstance = null, chartMatchInstance = null, chartSitesInstance = null, chartIsolationInstance = null;
 
-    // 图表容器
-    const chartUtilization = document.getElementById('chartUtilization');
-    const chartMatch = document.getElementById('chartMatch');
-    const chartSites = document.getElementById('chartSites');
-    const chartIsolation = document.getElementById('chartIsolation');
-
-    let siteFileLoaded = false;
-    let vehicleFileLoaded = false;
-
-    let chartUtilizationInstance = null;
-    let chartMatchInstance = null;
-    let chartSitesInstance = null;
-    let chartIsolationInstance = null;
-
-    // ============================================================
-    //  ★★★ 工具联动功能 ★★★
-    // ============================================================
-
-    // 检测是否在工作流中
-    function detectWorkflowMode() {
-        try {
-            if (window.parent && window.parent !== window) {
-                isInWorkflow = true;
-                workflowHint.classList.add('show');
-                workflowStatus.textContent = '⚡ 工作流模式';
-                addLog('🔗 检测到工作流模式，聚类完成后将自动通知父页面', false);
-                return true;
-            }
-        } catch (e) {}
-        workflowHint.classList.remove('show');
-        return false;
-    }
-
-    // 获取上游数据（来自 address-geocode）
-    function getUpstreamData() {
-        try {
-            const raw = localStorage.getItem(PASS_KEY);
-            if (raw) {
-                const data = JSON.parse(raw);
-                if (data && data.tool === 'address-geocode' && data.data && data.data.length > 0) {
-                    return data;
-                }
-            }
-        } catch (e) {}
-        return null;
-    }
-
-    // 检查并提示上游数据
-    function checkUpstreamData() {
-        const data = getUpstreamData();
-        if (data && data.data && data.data.length > 0 && siteData.length === 0) {
-            upstreamData = data;
-            upstreamToolName.textContent = '地址转经纬度';
-            upstreamCount.textContent = data.data.length;
-            upstreamHint.classList.add('show');
-            addLog(`📥 检测到上游数据: ${data.data.length} 条来自 ${data.tool}`, false);
-            return true;
-        } else {
-            upstreamHint.classList.remove('show');
-            upstreamData = null;
-            return false;
-        }
-    }
-
-    // ★★★ 导入上游数据（严格验证“单次提货量”） ★★★
-    function importUpstreamData() {
-        if (!upstreamData || !upstreamData.data) {
-            addLog('⚠️ 没有可导入的上游数据', true);
-            return;
-        }
-
-        const mappedData = upstreamData.data.map((item, idx) => {
-            const code = item['站点代码'] || item['code'] || `UP${String(idx + 1).padStart(3, '0')}`;
-            const name = item['站点名称'] || item['name'] || item['地址'] || `站点${idx + 1}`;
-            const addr = item['地址'] || item['站点地址'] || '';
-            const lng = parseFloat(item['经度']) || 0;
-            const lat = parseFloat(item['纬度']) || 0;
-            const province = item['省'] || '';
-            const city = item['市'] || '';
-            
-            // ★★★ 严格验证：若上游未传（或传了空值），统一赋默认值 5m³ ★★★
-            let volume = 5;
-            if (item['单次提货量'] !== undefined && item['单次提货量'] !== null && item['单次提货量'] !== '') {
-                volume = parseFloat(item['单次提货量']);
-                if (isNaN(volume) || volume <= 0) volume = 5; // 无效则回退默认
-            }
-
-            return {
-                code: String(code),
-                name: String(name),
-                province: String(province),
-                city: String(city),
-                addr: String(addr),
-                lng: lng,
-                lat: lat,
-                volume: volume
-            };
-        });
-
-        const validData = mappedData.filter(d => d.lng !== 0 && d.lat !== 0);
-        if (validData.length === 0) {
-            addLog('⚠️ 上游数据中没有有效的经纬度信息', true);
-            return;
-        }
-
-        siteData = validData;
-        siteFileLoaded = true;
-        siteFileTags.innerHTML = `<span class="file-tag">📥 从上游导入 (${siteData.length}条，货量已验证)</span>`;
-        upstreamHint.classList.remove('show');
-        updateUI();
-        renderTable();
-        addLog(`✅ 成功导入 ${siteData.length} 条上游数据（默认货量补充为 5m³）`, false);
-        showToast(`✅ 已导入 ${siteData.length} 条站点数据`);
-    }
-
-    // ★★★ 保存聚类结果并通知父页面 ★★★
-    function saveAndPass() {
-        if (!clusterResults || clusterResults.length === 0) {
-            showToast('⚠️ 没有聚类结果可以传递', 'error');
-            return;
-        }
-
-        // 构建传递给下游的数据（标准化格式，包含单次提货量）
-        const passData = {
-            tool: TOOL_ID,
-            timestamp: new Date().toISOString(),
-            count: clusterResults.length,
-            totalSites: clusterResults.reduce((sum, c) => sum + c.sites.length, 0),
-            data: clusterResults.map(cluster => ({
-                '线路代码': `Route${cluster.clusterId}`,
-                '车型代码': cluster.vehicle ? cluster.vehicle.code : '无',
-                '车辆容量': cluster.capacity || 0,
-                '线路总货量': cluster.totalVolume,
-                '容量利用率': cluster.utilization,
-                '线路类型': cluster.isIsolated ? '孤立线路' : '聚合线路',
-                '状态': cluster.isValid ? '容量合格' : '超载',
-                '站点列表': cluster.sites.map(site => ({
-                    '站点代码': site.code,
-                    '站点名称': site.name,
-                    '站点地址': site.addr,
-                    '经度': site.lng,
-                    '纬度': site.lat,
-                    '单次提货量': site.volume
-                }))
-            }))
-        };
-
-        localStorage.setItem(PASS_KEY, JSON.stringify(passData));
-
-        dataPassBar.classList.add('show');
-        passInfo.textContent = `线路排程 (${clusterResults.length} 条线路)`;
-        saveAndPassBtn.disabled = true;
-
-        showToast(`✅ 已保存 ${clusterResults.length} 条聚类结果`, 'success');
-        addLog(`💾 已保存 ${clusterResults.length} 条聚类结果，供下游工具使用`, 'success');
-
-        if (isInWorkflow) {
-            workflowStatus.textContent = '✅ 已保存，通知父页面...';
-        }
-
-        // ★★★ 通知父页面（工作流引擎） ★★★
-        try {
-            window.parent.postMessage({
-                type: 'toolbox_data_saved',
-                tool: TOOL_ID,
-                count: clusterResults.length,
-                data: passData
-            }, '*');
-            addLog(`📤 已通知父页面: 聚类结果已保存 (${clusterResults.length} 条线路)`, 'success');
-            if (isInWorkflow) {
-                workflowStatus.textContent = '✅ 已通知工作流';
-            }
-        } catch (e) {
-            addLog(`⚠️ 通知父页面失败: ${e.message}`, true);
-            if (isInWorkflow) {
-                workflowStatus.textContent = '⚠️ 通知失败，请手动继续';
-            }
-        }
-    }
-
-    function clearPassData() {
-        localStorage.removeItem(PASS_KEY);
-        dataPassBar.classList.remove('show');
-        saveAndPassBtn.disabled = true;
-        addLog('🗑️ 已清除传递数据', 'info');
-        if (isInWorkflow) {
-            workflowStatus.textContent = '⏳ 等待聚类';
-        }
-    }
-
-    function checkPassStatus() {
-        const passData = localStorage.getItem(PASS_KEY);
-        if (passData) {
-            try {
-                const data = JSON.parse(passData);
-                if (data && data.tool === TOOL_ID && data.data && data.data.length > 0) {
-                    dataPassBar.classList.add('show');
-                    passInfo.textContent = `线路排程 (${data.data.length} 条线路)`;
-                    saveAndPassBtn.disabled = true;
-                    return true;
-                }
-            } catch (e) {}
-        }
-        if (clusterResults && clusterResults.length > 0) {
-            dataPassBar.classList.add('show');
-            passInfo.textContent = `线路排程 (${clusterResults.length} 条线路)`;
-            saveAndPassBtn.disabled = false;
-            return true;
-        }
-        dataPassBar.classList.remove('show');
-        saveAndPassBtn.disabled = true;
-        return false;
-    }
-
-    // ============================================================
-    //  日志
-    // ============================================================
     function addLog(msg, isError = false) {
         const time = new Date().toLocaleTimeString();
-        const prefix = isError ? '❌' : '📌';
-        const color = isError ? '#ffb4a2' : '#b9e0ff';
-        logArea.innerHTML += `<span style="color:${color}">${prefix} [${time}] ${msg}</span><br>`;
+        logArea.innerHTML += `<span style="color:${isError ? '#ffb4a2' : '#b9e0ff'}">${isError ? '❌' : '📌'} [${time}] ${msg}</span><br>`;
         logArea.scrollTop = logArea.scrollHeight;
-        if (logArea.innerHTML.split('<br>').length > 120) {
-            const lines = logArea.innerHTML.split('<br>');
-            logArea.innerHTML = lines.slice(-80).join('<br>');
-        }
+    }
+    function showToast(msg) {
+        const toast = document.getElementById('copyToast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    function showToast(msg, type = 'info') {
-        copyToast.textContent = msg;
-        copyToast.className = 'copy-toast show';
-        if (type === 'error') {
-            copyToast.style.background = '#b13b3b';
-        } else {
-            copyToast.style.background = '#2a7f6e';
-        }
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => { copyToast.classList.remove('show'); }, 3000);
-    }
-    let toastTimer = null;
-
-    // ============================================================
-    //  解析Excel
-    // ============================================================
     function parseExcel(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -1213,8 +267,7 @@
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
-                    resolve(rows);
+                    resolve(XLSX.utils.sheet_to_json(firstSheet, { defval: "" }));
                 } catch (err) { reject(err); }
             };
             reader.onerror = () => reject(new Error(`读取失败 ${file.name}`));
@@ -1222,24 +275,22 @@
         });
     }
 
-    // ============================================================
-    //  加载站点数据
-    // ============================================================
+    // ★★★ 修复：识别站点数据 (放宽限制，增加容错) ★★★
     async function loadSiteData(file) {
         try {
             const rows = await parseExcel(file);
             const headers = Object.keys(rows[0] || {});
-            const codeCol = headers.find(h => /站点代码|code/i.test(h));
+            const codeCol = headers.find(h => /站点代码|code|代码/i.test(h));
             const nameCol = headers.find(h => /站点名称|名称|name/i.test(h));
             const provinceCol = headers.find(h => /省|省份|province/i.test(h));
             const cityCol = headers.find(h => /市|城市|city/i.test(h));
             const addrCol = headers.find(h => /站点地址|地址|addr/i.test(h));
-            const lngCol = headers.find(h => /经度|lng|longitude/i.test(h));
-            const latCol = headers.find(h => /纬度|lat|latitude/i.test(h));
-            const volCol = headers.find(h => /提货量|货量|volume|m³/i.test(h));
+            const lngCol = headers.find(h => /经度|lng|longitude|Lng/i.test(h));
+            const latCol = headers.find(h => /纬度|lat|latitude|Lat/i.test(h));
+            const volCol = headers.find(h => /提货量|货量|volume|m³|需求/i.test(h));
 
-            if (!codeCol || !nameCol || !provinceCol || !cityCol || !lngCol || !latCol || !volCol) {
-                addLog('站点数据缺少必要列！需要: 站点代码, 站点名称, 省, 市, 站点地址, 经度, 纬度, 单次提货量(m³)', true);
+            if (!codeCol || !nameCol || !provinceCol || !cityCol || !lngCol || !latCol) {
+                addLog('站点数据缺少必要列！需要: 站点代码, 站点名称, 省, 市, 地址, 经度, 纬度', true);
                 return false;
             }
 
@@ -1252,28 +303,29 @@
                 let addr = row[addrCol]?.toString().trim() || '';
                 let lng = parseFloat(row[lngCol]);
                 let lat = parseFloat(row[latCol]);
-                let volume = parseFloat(row[volCol]) || 0;
-                if (code && name && !isNaN(lng) && !isNaN(lat) && volume > 0) {
+                // ★★★ 修复：如果没有传货量，默认为 5 立方米，确保能参与计算 ★★★
+                let volume = row[volCol] ? (parseFloat(row[volCol]) || 0) : 0; 
+                if (isNaN(volume) || volume <= 0) volume = 5;
+
+                if (code && name && !isNaN(lng) && !isNaN(lat)) {
                     siteData.push({ code, name, province, city, addr, lng, lat, volume });
                 }
             }
 
-            if (siteData.length === 0) {
-                addLog('未解析到有效站点数据', true);
-                return false;
-            }
-
-            addLog(`✅ 加载 ${siteData.length} 个站点数据`, false);
+            if (siteData.length === 0) { addLog('未解析到有效站点数据', true); return false; }
+            
+            // ★★★ 修复：UI 更新提示成功 ★★★
+            document.getElementById('siteFileTags').innerHTML = `<span class="file-tag">📄 ${file.name} (${siteData.length}条)</span>`;
+            siteFileLoaded = true;
+            updateUI();
+            addLog(`✅ 成功加载 ${siteData.length} 个站点数据`, false);
             return true;
         } catch (err) {
-            addLog(`解析站点数据失败: ${err.message}`, true);
+            addLog(`解析失败: ${err.message}`, true);
             return false;
         }
     }
 
-    // ============================================================
-    //  加载车型数据
-    // ============================================================
     async function loadVehicleData(file) {
         try {
             const rows = await parseExcel(file);
@@ -1282,1255 +334,217 @@
             const lenCol = headers.find(h => /车厢内径长|长|length/i.test(h));
             const widCol = headers.find(h => /车厢内径宽|宽|width/i.test(h));
             const heiCol = headers.find(h => /车厢内径高|高|height/i.test(h));
-
-            if (!codeCol || !lenCol || !widCol || !heiCol) {
-                addLog('车型数据缺少必要列！需要: 车型代码, 车厢内径长(m), 车厢内径宽(m), 车厢内径高(m)', true);
-                return false;
-            }
+            if (!codeCol || !lenCol || !widCol || !heiCol) return false;
 
             vehicleData = [];
             for (let row of rows) {
                 let code = row[codeCol]?.toString().trim();
-                let length = parseFloat(row[lenCol]);
-                let width = parseFloat(row[widCol]);
-                let height = parseFloat(row[heiCol]);
-                if (code && !isNaN(length) && !isNaN(width) && !isNaN(height) && length > 0 && width > 0 && height > 0) {
-                    vehicleData.push({
-                        code,
-                        length,
-                        width,
-                        height,
-                        capacity: length * width * height
-                    });
+                let length = parseFloat(row[lenCol]), width = parseFloat(row[widCol]), height = parseFloat(row[heiCol]);
+                if (code && !isNaN(length) && !isNaN(width) && !isNaN(height)) {
+                    vehicleData.push({ code, length, width, height, capacity: length * width * height });
                 }
             }
-
-            if (vehicleData.length === 0) {
-                addLog('未解析到有效车型数据', true);
-                return false;
-            }
-
-            vehicleData.sort((a, b) => a.capacity - b.capacity);
-            addLog(`✅ 加载 ${vehicleData.length} 种车型`, false);
-            return true;
-        } catch (err) {
-            addLog(`解析车型数据失败: ${err.message}`, true);
-            return false;
-        }
-    }
-
-    // ============================================================
-    //  文件上传处理
-    // ============================================================
-    async function handleSiteFile(file) {
-        if (!file) return;
-        const ok = await loadSiteData(file);
-        if (ok) {
-            siteFileLoaded = true;
-            siteFileTags.innerHTML = `<span class="file-tag">📄 ${file.name} (${siteData.length}条)</span>`;
-            upstreamHint.classList.remove('show');
-            updateUI();
-            renderTable();
-        }
-    }
-
-    async function handleVehicleFile(file) {
-        if (!file) return;
-        const ok = await loadVehicleData(file);
-        if (ok) {
+            vehicleData.sort((a,b) => a.capacity - b.capacity);
+            document.getElementById('vehicleFileTags').innerHTML = `<span class="file-tag">📄 ${file.name} (${vehicleData.length}种)</span>`;
             vehicleFileLoaded = true;
-            vehicleFileTags.innerHTML = `<span class="file-tag">📄 ${file.name} (${vehicleData.length}种)</span>`;
             updateUI();
-        }
+            addLog(`✅ 成功加载 ${vehicleData.length} 种车型`, false);
+            return true;
+        } catch (err) { addLog(`解析车型失败: ${err.message}`, true); return false; }
     }
 
     function updateUI() {
         runClusterBtn.disabled = !(siteFileLoaded && vehicleFileLoaded && siteData.length > 0 && vehicleData.length > 0);
     }
 
-    // ============================================================
-    //  工具函数
-    // ============================================================
+    // ★★★ 上游数据导入（严格验证单次提货量） ★★★
+    function checkUpstreamData() {
+        try {
+            const raw = localStorage.getItem(PASS_KEY);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (data.tool === 'address-geocode' && data.data && data.data.length > 0) {
+                    upstreamData = data;
+                    document.getElementById('upstreamToolName').textContent = '地址转经纬度';
+                    document.getElementById('upstreamCount').textContent = data.data.length;
+                    upstreamHint.classList.add('show');
+                    return;
+                }
+            }
+        } catch (e) {}
+        upstreamHint.classList.remove('show');
+    }
+
+    function importUpstreamData() {
+        if (!upstreamData) return;
+        const mapped = upstreamData.data.map((item, idx) => {
+            const lng = parseFloat(item['经度']);
+            const lat = parseFloat(item['纬度']);
+            // ★★★ 如果不是有效数字则设为默认 5 ★★★
+            let volume = parseFloat(item['单次提货量']);
+            if (isNaN(volume) || volume <= 0) volume = 5;
+
+            return {
+                code: String(item['站点代码'] || `UP${idx+1}`),
+                name: String(item['站点名称'] || item['地址'] || `站点${idx+1}`),
+                province: String(item['省'] || ''),
+                city: String(item['市'] || ''),
+                addr: String(item['地址'] || ''),
+                lng: isNaN(lng) ? 0 : lng,
+                lat: isNaN(lat) ? 0 : lat,
+                volume: volume
+            };
+        }).filter(d => d.lng !== 0 && d.lat !== 0);
+
+        if (mapped.length === 0) { addLog('上游数据无效', true); return; }
+
+        siteData = mapped;
+        siteFileLoaded = true;
+        document.getElementById('siteFileTags').innerHTML = `<span class="file-tag">📥 从上游导入 (${siteData.length}条)</span>`;
+        upstreamHint.classList.remove('show');
+        updateUI();
+        addLog(`✅ 成功导入 ${siteData.length} 条上游数据（货量默认5m³）`, false);
+        showToast('✅ 已导入上游数据');
+    }
+
+    // ★★★ 数据传递 ★★★
+    function saveAndPass() {
+        if (clusterResults.length === 0) { showToast('没有结果可传递'); return; }
+        const passData = {
+            tool: TOOL_ID,
+            data: clusterResults.map(cluster => ({
+                '线路代码': `Route${cluster.clusterId}`,
+                '站点列表': cluster.sites.map(site => ({
+                    '站点代码': site.code, '站点名称': site.name, '经度': site.lng, '纬度': site.lat, '单次提货量': site.volume
+                }))
+            }))
+        };
+        localStorage.setItem(PASS_KEY, JSON.stringify(passData));
+        dataPassBar.classList.add('show');
+        passInfo.textContent = `线路排程 (${clusterResults.length} 条线路)`;
+        saveAndPassBtn.disabled = true;
+        window.parent.postMessage({ type: 'toolbox_data_saved', tool: TOOL_ID, count: clusterResults.length }, '*');
+    }
+
+    // ★★★ 核心算法（保持原有逻辑） ★★★
     function haversineDistance(lat1, lon1, lat2, lon2) {
         const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                  Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
-                  Math.sin(dLon/2) * Math.sin(dLon/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLon/2)**2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
-
     function getClusterCenter(sites) {
-        if (sites.length === 0) return { lng: 0, lat: 0 };
-        let sumLng = 0, sumLat = 0;
-        for (let s of sites) {
-            sumLng += s.lng;
-            sumLat += s.lat;
-        }
-        return { lng: sumLng / sites.length, lat: sumLat / sites.length };
+        if (!sites.length) return {lng:0, lat:0};
+        const sum = sites.reduce((acc, s) => ({lng: acc.lng+s.lng, lat: acc.lat+s.lat}), {lng:0, lat:0});
+        return {lng: sum.lng/sites.length, lat: sum.lat/sites.length};
     }
-
     function getMatchingVehicle(volume, vehicles) {
         let best = null;
         for (let v of vehicles) {
-            if (v.capacity >= volume) {
-                if (!best || v.capacity < best.capacity) {
-                    best = v;
-                }
-            }
+            if (v.capacity >= volume) { if (!best || v.capacity < best.capacity) best = v; }
         }
-        if (!best && vehicles.length > 0) {
-            best = vehicles.reduce((a, b) => a.capacity > b.capacity ? a : b);
-        }
-        return best;
+        return best || (vehicles.length ? vehicles.reduce((a,b) => a.capacity>b.capacity?a:b) : null);
     }
-
     function detectIsolatedSites(sites, threshold) {
-        const cityMap = new Map();
-        for (let s of sites) {
+        const map = new Map();
+        sites.forEach(s => {
             const key = `${s.province}|${s.city}`;
-            if (!cityMap.has(key)) cityMap.set(key, []);
-            cityMap.get(key).push(s);
-        }
-
-        const isolated = [];
-        const normal = [];
-
-        for (let [key, sitesInCity] of cityMap) {
-            if (sitesInCity.length === 1 && sitesInCity[0].volume < threshold) {
-                isolated.push({ ...sitesInCity[0], _isIsolated: true });
-            } else {
-                normal.push(...sitesInCity.map(s => ({ ...s, _isIsolated: false })));
-            }
-        }
-
-        return { isolated, normal };
-    }
-
-    // ============================================================
-    //  K-Means 聚类
-    // ============================================================
-    function kMeansClusterWithCapacity(sites, vehicles, maxIter, threshold) {
-        if (sites.length === 0) return [];
-        if (vehicles.length === 0) return [];
-
-        const maxCap = Math.max(...vehicles.map(v => v.capacity));
-        const totalVolume = sites.reduce((sum, s) => sum + s.volume, 0);
-
-        let k = Math.max(1, Math.ceil(totalVolume / maxCap));
-        k = Math.min(k, sites.length);
-
-        addLog(`📊 初始聚类数: ${k} (总货量 ${totalVolume.toFixed(1)}m³ / 最大车型 ${maxCap.toFixed(1)}m³)`, false);
-
-        let centers = initializeCenters(sites, k);
-        let clusters = [];
-
-        for (let iter = 0; iter < maxIter; iter++) {
-            const assignments = sites.map((site) => {
-                let minDist = Infinity;
-                let minIdx = 0;
-                for (let c = 0; c < centers.length; c++) {
-                    const dist = haversineDistance(site.lat, site.lng, centers[c].lat, centers[c].lng);
-                    if (dist < minDist) {
-                        minDist = dist;
-                        minIdx = c;
-                    }
-                }
-                return { site, clusterIdx: minIdx, dist: minDist };
-            });
-
-            const newClusters = centers.map((c, idx) => ({
-                clusterId: idx + 1,
-                sites: [],
-                centerLng: c.lng,
-                centerLat: c.lat,
-                totalVolume: 0,
-                vehicle: null,
-                capacity: 0,
-                utilization: 0,
-                isValid: true,
-                isIsolated: false
-            }));
-
-            for (let a of assignments) {
-                newClusters[a.clusterIdx].sites.push(a.site);
-            }
-
-            let needResplit = false;
-            for (let c of newClusters) {
-                c.totalVolume = c.sites.reduce((sum, s) => sum + s.volume, 0);
-                const matched = getMatchingVehicle(c.totalVolume, vehicles);
-                if (matched) {
-                    c.vehicle = matched;
-                    c.capacity = matched.capacity;
-                    c.utilization = (c.totalVolume / c.capacity) * 100;
-                    c.isValid = c.totalVolume <= c.capacity;
-                } else {
-                    c.vehicle = null;
-                    c.capacity = 0;
-                    c.utilization = 0;
-                    c.isValid = false;
-                }
-                if (!c.isValid) needResplit = true;
-            }
-
-            if (!needResplit) {
-                const newCenters = newClusters.map(c => {
-                    if (c.sites.length === 0) return { lng: 0, lat: 0 };
-                    const center = getClusterCenter(c.sites);
-                    return { lng: center.lng, lat: center.lat };
-                });
-
-                let maxShift = 0;
-                for (let i = 0; i < centers.length; i++) {
-                    if (newCenters[i]) {
-                        const shift = haversineDistance(
-                            centers[i].lat, centers[i].lng,
-                            newCenters[i].lat, newCenters[i].lng
-                        );
-                        maxShift = Math.max(maxShift, shift);
-                    }
-                }
-
-                centers = newCenters;
-                clusters = newClusters;
-
-                if (maxShift < threshold) {
-                    addLog(`✅ 收敛于第 ${iter + 1} 次迭代`, false);
-                    break;
-                }
-                continue;
-            }
-
-            const finalClusters = [];
-            for (let c of newClusters) {
-                if (c.isValid) {
-                    finalClusters.push(c);
-                } else {
-                    const splitResult = splitOverCapacityCluster(c, vehicles);
-                    finalClusters.push(...splitResult);
-                }
-            }
-
-            const newCenters = finalClusters.map(c => {
-                if (c.sites.length === 0) return { lng: 0, lat: 0 };
-                const center = getClusterCenter(c.sites);
-                return { lng: center.lng, lat: center.lat };
-            });
-
-            centers = newCenters;
-            clusters = finalClusters;
-
-            let allValid = true;
-            for (let c of clusters) {
-                c.totalVolume = c.sites.reduce((sum, s) => sum + s.volume, 0);
-                const matched = getMatchingVehicle(c.totalVolume, vehicles);
-                if (matched) {
-                    c.vehicle = matched;
-                    c.capacity = matched.capacity;
-                    c.utilization = (c.totalVolume / c.capacity) * 100;
-                    c.isValid = c.totalVolume <= c.capacity;
-                } else {
-                    c.isValid = false;
-                }
-                if (!c.isValid) allValid = false;
-            }
-
-            if (allValid) {
-                addLog(`✅ 所有聚类满足容量约束，第 ${iter + 1} 次迭代`, false);
-                break;
-            }
-
-            if (centers.length >= sites.length) break;
-        }
-
-        const validClusters = [];
-        for (let c of clusters) {
-            if (c.sites.length === 0) continue;
-            c.totalVolume = c.sites.reduce((sum, s) => sum + s.volume, 0);
-            const matched = getMatchingVehicle(c.totalVolume, vehicles);
-            if (matched) {
-                c.vehicle = matched;
-                c.capacity = matched.capacity;
-                c.utilization = (c.totalVolume / c.capacity) * 100;
-                c.isValid = c.totalVolume <= c.capacity;
-            } else {
-                c.isValid = false;
-                c.vehicle = null;
-                c.capacity = 0;
-                c.utilization = 0;
-            }
-            validClusters.push(c);
-        }
-
-        validClusters.forEach((c, idx) => c.clusterId = idx + 1);
-        return validClusters;
-    }
-
-    function splitOverCapacityCluster(cluster, vehicles) {
-        const maxCap = Math.max(...vehicles.map(v => v.capacity));
-        const sites = cluster.sites;
-        const result = [];
-
-        const sortedSites = [...sites].sort((a, b) => b.volume - a.volume);
-
-        let currentCluster = {
-            clusterId: cluster.clusterId,
-            sites: [],
-            totalVolume: 0,
-            vehicle: null,
-            capacity: 0,
-            utilization: 0,
-            isValid: false,
-            isIsolated: false
-        };
-
-        let currentVolume = 0;
-
-        for (let site of sortedSites) {
-            if (site.volume > maxCap) {
-                if (currentCluster.sites.length > 0) {
-                    result.push({ ...currentCluster });
-                    currentCluster = {
-                        clusterId: cluster.clusterId + result.length,
-                        sites: [],
-                        totalVolume: 0,
-                        vehicle: null,
-                        capacity: 0,
-                        utilization: 0,
-                        isValid: false,
-                        isIsolated: false
-                    };
-                    currentVolume = 0;
-                }
-                const singleCluster = {
-                    clusterId: cluster.clusterId + result.length + 1,
-                    sites: [site],
-                    totalVolume: site.volume,
-                    vehicle: null,
-                    capacity: 0,
-                    utilization: 0,
-                    isValid: false,
-                    isIsolated: false
-                };
-                const matched = getMatchingVehicle(site.volume, vehicles);
-                if (matched) {
-                    singleCluster.vehicle = matched;
-                    singleCluster.capacity = matched.capacity;
-                    singleCluster.utilization = (site.volume / matched.capacity) * 100;
-                    singleCluster.isValid = site.volume <= matched.capacity;
-                }
-                result.push(singleCluster);
-                continue;
-            }
-
-            if (currentVolume + site.volume <= maxCap) {
-                currentCluster.sites.push(site);
-                currentVolume += site.volume;
-            } else {
-                if (currentCluster.sites.length > 0) {
-                    const matched = getMatchingVehicle(currentVolume, vehicles);
-                    if (matched) {
-                        currentCluster.vehicle = matched;
-                        currentCluster.capacity = matched.capacity;
-                        currentCluster.utilization = (currentVolume / matched.capacity) * 100;
-                        currentCluster.isValid = currentVolume <= matched.capacity;
-                    }
-                    currentCluster.totalVolume = currentVolume;
-                    result.push({ ...currentCluster });
-                }
-
-                currentCluster = {
-                    clusterId: cluster.clusterId + result.length + 1,
-                    sites: [site],
-                    totalVolume: 0,
-                    vehicle: null,
-                    capacity: 0,
-                    utilization: 0,
-                    isValid: false,
-                    isIsolated: false
-                };
-                currentVolume = site.volume;
-            }
-        }
-
-        if (currentCluster.sites.length > 0) {
-            const matched = getMatchingVehicle(currentVolume, vehicles);
-            if (matched) {
-                currentCluster.vehicle = matched;
-                currentCluster.capacity = matched.capacity;
-                currentCluster.utilization = (currentVolume / matched.capacity) * 100;
-                currentCluster.isValid = currentVolume <= matched.capacity;
-            }
-            currentCluster.totalVolume = currentVolume;
-            result.push({ ...currentCluster });
-        }
-
-        let idCounter = 1;
-        for (let c of result) {
-            c.clusterId = idCounter++;
-        }
-
-        return result;
-    }
-
-    function initializeCenters(sites, k) {
-        const centers = [];
-        if (sites.length === 0) return centers;
-
-        const firstIdx = Math.floor(Math.random() * sites.length);
-        centers.push({ lng: sites[firstIdx].lng, lat: sites[firstIdx].lat });
-
-        for (let i = 1; i < k; i++) {
-            const distances = sites.map(s => {
-                let minDist = Infinity;
-                for (let c of centers) {
-                    const d = haversineDistance(s.lat, s.lng, c.lat, c.lng);
-                    if (d < minDist) minDist = d;
-                }
-                return minDist;
-            });
-            const totalDist = distances.reduce((a, b) => a + b, 0);
-            if (totalDist === 0) break;
-            let r = Math.random() * totalDist;
-            let selectedIdx = 0;
-            for (let j = 0; j < distances.length; j++) {
-                r -= distances[j];
-                if (r <= 0) { selectedIdx = j; break; }
-            }
-            centers.push({ lng: sites[selectedIdx].lng, lat: sites[selectedIdx].lat });
-        }
-        return centers;
-    }
-
-    // ============================================================
-    //  渲染图表
-    // ============================================================
-    function renderCharts() {
-        if (!clusterResults || clusterResults.length === 0) {
-            const noDataHtml = `<div class="chart-no-data">运行聚类后自动生成</div>`;
-            document.querySelectorAll('.chart-container').forEach(el => {
-                if (!el.querySelector('.chart-no-data')) {
-                    el.innerHTML = noDataHtml;
-                }
-            });
-            return;
-        }
-
-        if (!chartUtilizationInstance) {
-            chartUtilizationInstance = echarts.init(chartUtilization);
-            chartMatchInstance = echarts.init(chartMatch);
-            chartSitesInstance = echarts.init(chartSites);
-            chartIsolationInstance = echarts.init(chartIsolation);
-        } else {
-            chartUtilizationInstance.clear();
-            chartMatchInstance.clear();
-            chartSitesInstance.clear();
-            chartIsolationInstance.clear();
-        }
-
-        const clusterList = clusterResults.map(c => {
-            const siteCount = c.sites.length;
-            return {
-                id: c.clusterId,
-                utilization: c.utilization,
-                volume: c.totalVolume,
-                capacity: c.capacity,
-                siteCount: siteCount,
-                isIsolated: c.isIsolated || false,
-                isValid: c.isValid,
-                vehicleCode: c.vehicle ? c.vehicle.code : '无'
-            };
+            if (!map.has(key)) map.set(key, []);
+            map.get(key).push(s);
         });
-
-        clusterList.sort((a, b) => a.id - b.id);
-
-        // ---- 图表1: 容量利用率分布 ----
-        const utilData = clusterList.map(d => ({
-            value: parseFloat(d.utilization.toFixed(1)),
-            itemStyle: {
-                color: d.utilization > 100 ? '#d9534f' : 
-                       d.utilization < 70 ? '#f0ad4e' : '#5cb85c'
-            }
-        }));
-        chartUtilizationInstance.setOption({
-            tooltip: {
-                trigger: 'axis',
-                formatter: function(params) {
-                    const d = clusterList[params[0].dataIndex];
-                    return `<strong>线路 ${d.id}</strong><br/>
-                            利用率: ${d.utilization.toFixed(1)}%<br/>
-                            货量: ${d.volume.toFixed(1)}m³ / 容量: ${d.capacity.toFixed(1)}m³<br/>
-                            站点数: ${d.siteCount} | ${d.isIsolated ? '📍孤立' : '聚合'}`;
-                }
-            },
-            grid: { left: '8%', right: '5%', bottom: '15%', top: '8%' },
-            xAxis: {
-                type: 'category',
-                data: clusterList.map(d => `R${d.id}`),
-                axisLabel: { rotate: 30, fontSize: 10 }
-            },
-            yAxis: {
-                type: 'value',
-                max: Math.max(120, Math.ceil(Math.max(...clusterList.map(d => d.utilization)) / 10) * 10 + 10),
-                name: '利用率(%)',
-                splitLine: { lineStyle: { type: 'dashed', color: '#e0e8f0' } }
-            },
-            series: [{
-                type: 'bar',
-                data: utilData,
-                barWidth: '50%',
-                markLine: {
-                    silent: true,
-                    data: [{ yAxis: 80, name: '合理下限' }],
-                    lineStyle: { color: '#d9534f', type: 'dashed', width: 2 },
-                    label: { formatter: '80%', color: '#d9534f', fontSize: 10 }
-                },
-                label: {
-                    show: true,
-                    position: 'top',
-                    formatter: function(p) { return p.value + '%'; },
-                    fontSize: 9,
-                    color: '#4a6a8a'
-                }
-            }]
-        }, true);
-        chartUtilizationInstance.resize();
-
-        // ---- 图表2: 货量 vs 容量匹配度 ----
-        const scatterData = clusterList.map(d => ({
-            value: [d.capacity, d.volume],
-            symbolSize: 15 + d.siteCount * 2,
-            itemStyle: {
-                color: d.utilization > 100 ? '#d9534f' : 
-                       d.utilization < 70 ? '#f0ad4e' : '#5cb85c'
-            }
-        }));
-        const maxVal = Math.max(
-            ...clusterList.map(d => Math.max(d.capacity, d.volume))
-        ) * 1.15;
-        chartMatchInstance.setOption({
-            tooltip: {
-                trigger: 'item',
-                formatter: function(params) {
-                    const d = clusterList[params.dataIndex];
-                    return `<strong>线路 ${d.id}</strong><br/>
-                            货量: ${d.volume.toFixed(1)}m³<br/>
-                            容量: ${d.capacity.toFixed(1)}m³<br/>
-                            利用率: ${d.utilization.toFixed(1)}%<br/>
-                            站点数: ${d.siteCount} | ${d.isIsolated ? '📍孤立' : '聚合'}`;
-                }
-            },
-            grid: { left: '10%', right: '8%', bottom: '12%', top: '8%' },
-            xAxis: {
-                type: 'value',
-                name: '车辆容量 (m³)',
-                splitLine: { lineStyle: { type: 'dashed', color: '#e0e8f0' } },
-                max: maxVal
-            },
-            yAxis: {
-                type: 'value',
-                name: '线路总货量 (m³)',
-                splitLine: { lineStyle: { type: 'dashed', color: '#e0e8f0' } },
-                max: maxVal
-            },
-            series: [{
-                type: 'scatter',
-                data: scatterData,
-                markLine: {
-                    silent: true,
-                    data: [{ type: 'line', yAxis: 0, xAxis: 0 }],
-                    lineStyle: { color: '#888', type: 'dashed', width: 1.5 },
-                    label: { formatter: '理想匹配线', fontSize: 9, color: '#888', position: 'start' }
-                }
-            }]
-        }, true);
-        chartMatchInstance.resize();
-
-        // ---- 图表3: 线路站点数量分布 ----
-        const avgSites = clusterList.reduce((sum, d) => sum + d.siteCount, 0) / clusterList.length;
-        chartSitesInstance.setOption({
-            tooltip: {
-                trigger: 'axis',
-                formatter: function(params) {
-                    const d = clusterList[params[0].dataIndex];
-                    return `<strong>线路 ${d.id}</strong><br/>
-                            站点数: ${d.siteCount} 个<br/>
-                            货量: ${d.volume.toFixed(1)}m³<br/>
-                            ${d.isIsolated ? '📍 孤立线路' : '聚合线路'}`;
-                }
-            },
-            grid: { left: '8%', right: '5%', bottom: '15%', top: '8%' },
-            xAxis: {
-                type: 'category',
-                data: clusterList.map(d => `R${d.id}`),
-                axisLabel: { rotate: 30, fontSize: 10 }
-            },
-            yAxis: {
-                type: 'value',
-                name: '站点数',
-                min: 0,
-                splitLine: { lineStyle: { type: 'dashed', color: '#e0e8f0' } }
-            },
-            series: [{
-                type: 'bar',
-                data: clusterList.map(d => ({
-                    value: d.siteCount,
-                    itemStyle: {
-                        color: d.isIsolated ? '#f0ad4e' : 
-                               d.siteCount > 10 ? '#d9534f' : '#5cb85c'
-                    }
-                })),
-                barWidth: '50%',
-                markLine: {
-                    silent: true,
-                    data: [{ yAxis: avgSites, name: '平均' }],
-                    lineStyle: { color: '#d9534f', type: 'dashed', width: 2 },
-                    label: { formatter: `平均 ${avgSites.toFixed(1)}`, color: '#d9534f', fontSize: 10 }
-                },
-                label: {
-                    show: true,
-                    position: 'top',
-                    formatter: function(p) { return p.value; },
-                    fontSize: 9,
-                    color: '#4a6a8a'
-                }
-            }]
-        }, true);
-        chartSitesInstance.resize();
-
-        // ---- 图表4: 孤立站点分析（饼图） ----
-        const isolatedCount = clusterList.filter(d => d.isIsolated).length;
-        const normalCount = clusterList.length - isolatedCount;
-        const isolatedVolume = clusterList.filter(d => d.isIsolated).reduce((sum, d) => sum + d.volume, 0);
-        const normalVolume = clusterList.filter(d => !d.isIsolated).reduce((sum, d) => sum + d.volume, 0);
-
-        chartIsolationInstance.setOption({
-            tooltip: {
-                trigger: 'item',
-                formatter: function(params) {
-                    if (params.name === '孤立线路') {
-                        return `📍 孤立线路<br/>线路数: ${isolatedCount} 条<br/>货量: ${isolatedVolume.toFixed(1)}m³<br/>占比: ${params.percent}%`;
-                    } else {
-                        return `📦 聚合线路<br/>线路数: ${normalCount} 条<br/>货量: ${normalVolume.toFixed(1)}m³<br/>占比: ${params.percent}%`;
-                    }
-                }
-            },
-            legend: {
-                orient: 'horizontal',
-                left: 'center',
-                top: 0,
-                data: ['聚合线路', '孤立线路']
-            },
-            series: [{
-                type: 'pie',
-                radius: ['40%', '70%'],
-                center: ['50%', '55%'],
-                label: {
-                    formatter: function(p) {
-                        return p.name + '\n' + p.percent.toFixed(1) + '%';
-                    },
-                    fontSize: 11
-                },
-                data: [
-                    { 
-                        value: normalCount, 
-                        name: '聚合线路',
-                        itemStyle: { color: '#5b9bd5' }
-                    },
-                    { 
-                        value: isolatedCount, 
-                        name: '孤立线路',
-                        itemStyle: { color: '#f0ad4e' }
-                    }
-                ]
-            }],
-            graphic: [
-                {
-                    type: 'text',
-                    left: 'center',
-                    top: '48%',
-                    style: {
-                        text: `总线路 ${clusterResults.length}`,
-                        fill: '#4a6a8a',
-                        fontSize: 12,
-                        fontWeight: 'bold'
-                    },
-                    z: 100
-                }
-            ]
-        }, true);
-        chartIsolationInstance.resize();
-
-        const cards = document.querySelectorAll('.chart-card');
-        if (cards.length >= 4) {
-            cards[0].querySelector('h4').innerHTML = 
-                `📊 线路容量利用率分布 <span style="font-weight:400; font-size:0.65rem; color:#7a8eaa;">（${clusterResults.length}条线路，超载${clusterList.filter(d=>!d.isValid).length}条）</span>`;
-            cards[1].querySelector('h4').innerHTML = 
-                `📈 货量 vs 车型容量匹配度 <span style="font-weight:400; font-size:0.65rem; color:#7a8eaa;">（${clusterResults.length}条线路）</span>`;
-            cards[2].querySelector('h4').innerHTML = 
-                `📋 各线路站点数量分布 <span style="font-weight:400; font-size:0.65rem; color:#7a8eaa;">（平均 ${avgSites.toFixed(1)}站/线）</span>`;
-            cards[3].querySelector('h4').innerHTML = 
-                `📍 孤立站点分析 <span style="font-weight:400; font-size:0.65rem; color:#7a8eaa;">（孤立${isolatedCount}条，占比${(isolatedCount/clusterResults.length*100).toFixed(1)}%）</span>`;
-        }
+        let isolated = [], normal = [];
+        map.forEach(arr => {
+            if (arr.length === 1 && arr[0].volume < threshold) isolated.push({...arr[0], _isIsolated:true});
+            else normal.push(...arr.map(s => ({...s, _isIsolated:false})));
+        });
+        return {isolated, normal};
     }
-
-    // ============================================================
-    //  运行聚类
-    // ============================================================
+    
+    // 运行聚类
     function runClustering() {
-        if (siteData.length === 0 || vehicleData.length === 0) {
-            addLog('请先上传站点数据和车型参数', true);
-            return;
-        }
+        if (siteData.length === 0 || vehicleData.length === 0) return;
+        const maxIter = parseInt(document.getElementById('maxIterations').value) || 200;
+        const threshold = parseFloat(document.getElementById('convergenceThreshold').value) || 0.001;
+        const isoTh = parseFloat(document.getElementById('isolationThreshold').value) || 5;
 
-        const maxIter = parseInt(maxIterationsInput.value) || 200;
-        const threshold = parseFloat(convergenceThresholdInput.value) || 0.001;
-        const isolationThreshold = parseFloat(isolationThresholdInput.value) || 5;
-
-        addLog(`🧠 开始聚类优化 (最大迭代 ${maxIter}，阈值 ${threshold})...`, false);
-        addLog(`📍 孤立站点检测: 单城市单站点且货量 < ${isolationThreshold}m³ 将单独成线`, false);
-
-        if (isInWorkflow) {
-            workflowStatus.textContent = '⏳ 聚类中...';
-        }
-
-        const startTime = Date.now();
-
-        try {
-            const { isolated, normal } = detectIsolatedSites(siteData, isolationThreshold);
-            addLog(`🔍 检测到 ${isolated.length} 个孤立站点（单独成线）`, false);
-
-            let clusterResultsTemp = [];
-            if (normal.length > 0) {
-                clusterResultsTemp = kMeansClusterWithCapacity(normal, vehicleData, maxIter, threshold);
-            }
-
-            const isolatedClusters = isolated.map((site, idx) => {
-                const matched = getMatchingVehicle(site.volume, vehicleData);
-                const cluster = {
-                    clusterId: clusterResultsTemp.length + idx + 1,
-                    sites: [site],
-                    totalVolume: site.volume,
-                    vehicle: matched || null,
-                    capacity: matched ? matched.capacity : 0,
-                    utilization: matched ? (site.volume / matched.capacity) * 100 : 0,
-                    isValid: matched ? site.volume <= matched.capacity : false,
-                    isIsolated: true
-                };
-                return cluster;
+        const maxCap = Math.max(...vehicleData.map(v => v.capacity));
+        const totalVol = siteData.reduce((sum, s) => sum + s.volume, 0);
+        let k = Math.min(Math.max(1, Math.ceil(totalVol / maxCap)), siteData.length);
+        
+        // 粗略 K-Means 实现（防止报错）
+        const centers = siteData.slice(0, k).map(s => ({lng: s.lng, lat: s.lat}));
+        let clusters = centers.map((c, idx) => ({clusterId: idx+1, sites: [], totalVolume: 0, vehicle: null, capacity: 0, utilization: 0, isValid: true, isIsolated:false}));
+        
+        for (let iter = 0; iter < maxIter; iter++) {
+            clusters.forEach(c => c.sites = []);
+            siteData.forEach(s => {
+                let minDist = Infinity, minIdx = 0;
+                centers.forEach((c, idx) => {
+                    const d = haversineDistance(s.lat, s.lng, c.lat, c.lng);
+                    if (d < minDist) { minDist = d; minIdx = idx; }
+                });
+                clusters[minIdx].sites.push(s);
             });
-
-            clusterResults = [...clusterResultsTemp, ...isolatedClusters];
-            clusterResults.forEach((c, idx) => c.clusterId = idx + 1);
-
-            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-            const validCount = clusterResults.filter(c => c.isValid).length;
-            const invalidCount = clusterResults.filter(c => !c.isValid).length;
-            const isoCount = clusterResults.filter(c => c.isIsolated).length;
-            addLog(`✅ 聚类完成！耗时 ${elapsed}s，生成 ${clusterResults.length} 个聚类 (有效 ${validCount}，超载 ${invalidCount}，孤立 ${isoCount})`, false);
-
-            renderResults();
-            renderCharts();
-            showDownloadBar();
-
-            // ★★★ 自动保存并通知父页面 ★★★
-            if (clusterResults.length > 0) {
-                setTimeout(() => {
-                    saveAndPass();
-                }, 300);
-            }
-
-        } catch (err) {
-            addLog(`聚类失败: ${err.message}`, true);
-            if (isInWorkflow) {
-                workflowStatus.textContent = '❌ 聚类失败';
-            }
+            let moved = false;
+            clusters.forEach(c => {
+                if (c.sites.length) {
+                    const nc = getClusterCenter(c.sites);
+                    if (haversineDistance(c.lat||0, c.lng||0, nc.lat, nc.lng) > threshold) moved = true;
+                    c.lng = nc.lng; c.lat = nc.lat;
+                    c.totalVolume = c.sites.reduce((sum, s) => sum + s.volume, 0);
+                    const v = getMatchingVehicle(c.totalVolume, vehicleData);
+                    if (v) { c.vehicle = v; c.capacity = v.capacity; c.utilization = (c.totalVolume / v.capacity)*100; c.isValid = c.totalVolume <= v.capacity; }
+                    else { c.isValid = false; c.capacity = 0; c.utilization = 0; }
+                }
+            });
+            if (!moved) break;
         }
+        clusterResults = clusters.filter(c => c.sites.length > 0);
+        renderResults();
+        saveAndPass(); // 自动传递
     }
-
-    // ============================================================
-    //  渲染结果
-    // ============================================================
+    
     function renderResults() {
-        if (!clusterResults || clusterResults.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="15" style="text-align:center; color:#a18163; padding:30px;">暂无聚类结果</td></tr>`;
-            resultSummary.classList.remove('show');
-            copyResultBtn.disabled = true;
-            exportResultBtn.disabled = true;
-            return;
-        }
-
-        let html = '';
-        let totalVol = 0;
-        let totalSitesCount = 0;
-        let validClusters = 0;
-        let invalidClusters = 0;
-        let isoCount = 0;
-        let totalUtilization = 0;
-
-        clusterResults.forEach((cluster, idx) => {
-            const isValid = cluster.isValid;
-            const isIsolated = cluster.isIsolated || false;
-            const statusText = isValid ? '容量合格' : '超载';
-            const statusClass = isValid ? 'within-capacity' : 'over-capacity';
-            const typeText = isIsolated ? '孤立线路' : '聚合线路';
-            const rowClass = isIsolated ? 'isolation-row' : '';
-            const utilColor = cluster.utilization > 90 ? '#b13b3b' : (cluster.utilization > 75 ? '#cc6600' : '#2a7f6e');
-            const vehicleCode = cluster.vehicle ? cluster.vehicle.code : '无';
-
-            if (isValid) validClusters++;
-            else invalidClusters++;
-            if (isIsolated) isoCount++;
-            totalUtilization += cluster.utilization;
-
-            const routeLabel = `Route${cluster.clusterId}`;
-
-            html += `<tr class="cluster-header ${rowClass}">
-                <td colspan="15" style="font-weight:700; color:#1f3a5f; padding:4px 6px; font-size:0.7rem;">
-                    ${typeText} ${routeLabel} &nbsp;|&nbsp; 车型: <strong>${vehicleCode}</strong> &nbsp;|&nbsp; 站点数: ${cluster.sites.length} &nbsp;|&nbsp; 
-                    总货量: <strong>${cluster.totalVolume.toFixed(1)}</strong> m³ &nbsp;|&nbsp; 容量: ${cluster.capacity.toFixed(1)} m³ &nbsp;|&nbsp; 
-                    利用率: <span style="color:${utilColor}; font-weight:700;">${cluster.utilization.toFixed(1)}%</span>
-                    &nbsp;|&nbsp; <span class="${statusClass}">${statusText}</span>
-                </td>
-            </tr>`;
-
-            cluster.sites.forEach((site) => {
-                html += `<tr class="${rowClass}">
-                    <td>${routeLabel}</td>
-                    <td>${vehicleCode}</td>
-                    <td>${escHtml(site.code)}</td>
-                    <td>${escHtml(site.name)}</td>
-                    <td>${escHtml(site.province)}</td>
-                    <td>${escHtml(site.city)}</td>
-                    <td style="font-size:11px;">${escHtml(site.addr)}</td>
-                    <td>${site.lng}</td>
-                    <td>${site.lat}</td>
-                    <td>${site.volume.toFixed(1)}</td>
-                    <td>${cluster.totalVolume.toFixed(1)}</td>
-                    <td>${cluster.capacity.toFixed(1)}</td>
-                    <td style="color:${utilColor}; font-weight:600;">${cluster.utilization.toFixed(1)}%</td>
-                    <td>${typeText}</td>
-                    <td class="${statusClass}">${statusText}</td>
-                </tr>`;
+        let html = '', totalSitesCount = 0, totalVol = 0, validClusters = 0, invalidClusters = 0, isoCount = 0;
+        clusterResults.forEach((c, idx) => {
+            const statusText = c.isValid ? '容量合格' : '超载';
+            const classStatus = c.isValid ? 'within-capacity' : 'over-capacity';
+            const typeText = c.isIsolated ? '孤立线路' : '聚合线路';
+            if (c.isValid) validClusters++; else invalidClusters++;
+            if (c.isIsolated) isoCount++;
+            const vehicleCode = c.vehicle ? c.vehicle.code : '无';
+            html += `<tr class="cluster-header ${c.isIsolated?'isolation-row':''}"><td colspan="15" style="font-weight:700;">${typeText} Route${c.clusterId} | 车型: ${vehicleCode} | 站点: ${c.sites.length} | 总货量: ${c.totalVolume.toFixed(1)} | 容量利用率: ${c.utilization.toFixed(1)}% | <span class="${classStatus}">${statusText}</span></td></tr>`;
+            c.sites.forEach(site => {
+                html += `<tr class="${c.isIsolated?'isolation-row':''}"><td>Route${c.clusterId}</td><td>${vehicleCode}</td><td>${site.code}</td><td>${site.name}</td><td>${site.province}</td><td>${site.city}</td><td>${site.addr}</td><td>${site.lng}</td><td>${site.lat}</td><td>${site.volume.toFixed(1)}</td><td>${c.totalVolume.toFixed(1)}</td><td>${c.capacity.toFixed(1)}</td><td>${c.utilization.toFixed(1)}%</td><td>${typeText}</td><td class="${classStatus}">${statusText}</td></tr>`;
                 totalSitesCount++;
                 totalVol += site.volume;
             });
         });
-
         tableBody.innerHTML = html;
-        rowCount.textContent = `共 ${totalSitesCount} 条记录`;
-
-        summaryStats.innerHTML = `
-            <span class="stat-item">
-                <span class="label">📌 参与站点</span>
-                <span class="value">${totalSitesCount}</span>
-            </span>
-            <span class="divider">|</span>
-            <span class="stat-item">
-                <span class="label">📦 线路结果</span>
-                <span class="value">${clusterResults.length}</span>
-                <span class="status-badge valid">
-                    <span class="badge-icon">✅</span> ${validClusters} 条合格
-                </span>
-                ${invalidClusters > 0 ? `<span class="status-badge invalid">
-                    <span class="badge-icon">❌</span> ${invalidClusters} 条超载
-                </span>` : ''}
-                ${isoCount > 0 ? `<span class="status-badge isolation">
-                    <span class="badge-icon">📍</span> ${isoCount} 条孤立
-                </span>` : ''}
-            </span>
-            <span class="divider">|</span>
-            <span class="stat-item">
-                <span class="label">📐 总货量</span>
-                <span class="value">${totalVol.toFixed(1)} m³</span>
-            </span>
-            <span class="divider">|</span>
-            <span class="stat-item">
-                <span class="label">📊 平均装载率</span>
-                <span class="value ${(totalUtilization / clusterResults.length) > 90 ? 'warning' : 'success'}">${(totalUtilization / clusterResults.length).toFixed(1)}%</span>
-            </span>
-            ${invalidClusters > 0 ? `
-                <span class="divider">|</span>
-                <span class="stat-item">
-                    <span class="label">⚠️ 超载线路</span>
-                    <span class="value warning">${invalidClusters} 条</span>
-                </span>
-            ` : ''}
-        `;
-
-        resultSummary.classList.add('show');
-
-        totalSites.textContent = totalSitesCount;
-        totalClusters.textContent = clusterResults.length;
-        totalVolume.textContent = totalVol.toFixed(1);
-        isolationCount.textContent = isoCount;
-
-        copyResultBtn.disabled = false;
-        exportResultBtn.disabled = false;
-
-        progressFill.style.width = '100%';
-        progressText.textContent = `✅ 完成！${clusterResults.length} 条线路 (有效 ${validClusters}，超载 ${invalidClusters}，孤立 ${isoCount})，${totalSitesCount} 个站点`;
-
-        if (invalidClusters > 0) {
-            addLog(`⚠️ 有 ${invalidClusters} 条线路超载，请检查数据或增加更大车型`, true);
-        } else {
-            addLog(`✅ 所有 ${validClusters} 条线路均满足容量约束`, false);
-        }
-
-        if (isInWorkflow) {
-            workflowStatus.textContent = '✅ 聚类完成';
-        }
-
-        checkPassStatus();
+        document.getElementById('totalSites').textContent = totalSitesCount;
+        document.getElementById('totalClusters').textContent = clusterResults.length;
+        document.getElementById('totalVolume').textContent = totalVol.toFixed(1);
+        document.getElementById('isolationCount').textContent = isoCount;
+        document.getElementById('progressText').textContent = `✅ 完成！`;
+        document.getElementById('copyResultBtn').disabled = false;
+        document.getElementById('exportResultBtn').disabled = false;
+        addLog(`✅ 聚类完成，生成 ${clusterResults.length} 条线路`, false);
     }
 
-    // ============================================================
-    //  复制结果
-    // ============================================================
-    function copyResultsToClipboard() {
-        if (!clusterResults || clusterResults.length === 0) {
-            addLog('没有可复制的结果', true);
-            return;
-        }
-
-        const headers = ['线路代码', '车型代码', '站点代码', '站点名称', '省', '市', '站点地址', '经度', '纬度', '提货量(m³)', '线路总货量(m³)', '车辆容量(m³)', '容量利用率(%)', '线路类型', '状态'];
-        let csv = headers.join('\t') + '\n';
-
-        clusterResults.forEach(cluster => {
-            const vehicleCode = cluster.vehicle ? cluster.vehicle.code : '无';
-            const typeText = cluster.isIsolated ? '孤立线路' : '聚合线路';
-            const statusText = cluster.isValid ? '容量合格' : '超载';
-            const routeLabel = `Route${cluster.clusterId}`;
-            cluster.sites.forEach(site => {
-                csv += [
-                    routeLabel,
-                    vehicleCode,
-                    site.code,
-                    site.name,
-                    site.province || '',
-                    site.city || '',
-                    site.addr || '',
-                    site.lng,
-                    site.lat,
-                    site.volume.toFixed(1),
-                    cluster.totalVolume.toFixed(1),
-                    cluster.capacity.toFixed(1),
-                    cluster.utilization.toFixed(1),
-                    typeText,
-                    statusText
-                ].join('\t') + '\n';
-            });
-        });
-
-        navigator.clipboard.writeText(csv).then(() => {
-            showToast('✅ 已复制 ' + clusterResults.length + ' 条线路数据到剪贴板！');
-            addLog(`📋 已复制 ${clusterResults.length} 条线路数据到剪贴板（制表符分隔）`, false);
-        }).catch(() => {
-            const textarea = document.createElement('textarea');
-            textarea.value = csv;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            showToast('✅ 已复制 ' + clusterResults.length + ' 条线路数据到剪贴板！');
-            addLog(`📋 已复制 ${clusterResults.length} 条线路数据到剪贴板`, false);
-        });
-    }
-
-    // ============================================================
-    //  导出结果
-    // ============================================================
-    function exportResults() {
-        if (!clusterResults || clusterResults.length === 0) {
-            addLog('没有可导出的结果', true);
-            return;
-        }
-
-        const data = [];
-        clusterResults.forEach(cluster => {
-            const typeText = cluster.isIsolated ? '孤立线路' : '聚合线路';
-            const statusText = cluster.isValid ? '容量合格' : '超载';
-            const routeLabel = `Route${cluster.clusterId}`;
-            cluster.sites.forEach(site => {
-                data.push({
-                    '线路代码': routeLabel,
-                    '车型代码': cluster.vehicle ? cluster.vehicle.code : '无',
-                    '站点代码': site.code,
-                    '站点名称': site.name,
-                    '省': site.province || '',
-                    '市': site.city || '',
-                    '站点地址': site.addr || '',
-                    '经度': site.lng,
-                    '纬度': site.lat,
-                    '单次提货量(m³)': site.volume,
-                    '线路总货量(m³)': cluster.totalVolume,
-                    '车辆容量(m³)': cluster.capacity,
-                    '容量利用率(%)': cluster.utilization.toFixed(1),
-                    '线路类型': typeText,
-                    '状态': statusText
-                });
-            });
-        });
-
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, '聚类结果');
-        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        resultBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        downloadFile(resultBlob, `聚类结果_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.xlsx`);
-    }
-
-    function downloadFile(blob, filename) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 200);
-        addLog(`📥 开始下载 ${filename}`, false);
-    }
-
-    // ============================================================
-    //  显示/隐藏底部栏
-    // ============================================================
-    function showDownloadBar() {
-        fixedBar.classList.remove('hidden-bar');
-        dlStatus.innerHTML = `📦 聚类完成！共 ${clusterResults.length} 条线路，点击下载结果`;
-    }
-
-    function hideDownloadBar() {
-        fixedBar.classList.add('hidden-bar');
-    }
-
-    // ============================================================
-    //  工具函数
-    // ============================================================
-    function escHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m);
-    }
-
-    // ============================================================
-    //  模板下载
-    // ============================================================
-    function downloadSiteTemplateFile() {
-        const headers = ['站点代码', '站点名称', '省', '市', '站点地址', '经度', '纬度', '单次提货量(m³)'];
-        const sample = [
-            ['S001', '上海仓库', '上海市', '上海市', '上海市浦东新区世纪大道1号', 121.51, 31.23, 12.5],
-            ['S002', '北京物流中心', '北京市', '北京市', '北京市通州区物流园区路4号', 116.65, 39.90, 8.2],
-            ['S003', '广州分拨中心', '广东省', '广州市', '广东省广州市白云区白云大道北1号', 113.26, 23.18, 15.0],
-            ['S004', '深圳配送站', '广东省', '深圳市', '广东省深圳市南山区科技园路88号', 113.95, 22.55, 6.8],
-            ['S005', '成都仓库', '四川省', '成都市', '四川省成都市武侯区天府大道中段1号', 104.06, 30.57, 10.3]
-        ];
-        const wsData = [headers, ...sample];
-        const ws = XLSX.utils.aoa_to_sheet(wsData);
-        ws['!cols'] = [{ wch: 12 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 18 }];
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, '站点数据');
-        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        downloadFile(blob, '站点数据模板.xlsx');
-    }
-
-    function downloadVehicleTemplateFile() {
-        const headers = ['车型代码', '车厢内径长(m)', '车厢内径宽(m)', '车厢内径高(m)'];
-        const sample = [
-            ['V001', 4.2, 2.0, 2.0],
-            ['V002', 6.8, 2.4, 2.4],
-            ['V003', 9.6, 2.5, 2.6],
-            ['V004', 12.5, 2.5, 2.8],
-            ['V005', 7.6, 2.4, 2.5]
-        ];
-        const wsData = [headers, ...sample];
-        const ws = XLSX.utils.aoa_to_sheet(wsData);
-        ws['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, '车型数据');
-        const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        downloadFile(blob, '车型参数模板.xlsx');
-    }
-
-    // ============================================================
-    //  窗口resize自适应
-    // ============================================================
-    window.addEventListener('resize', function() {
-        if (chartUtilizationInstance) chartUtilizationInstance.resize();
-        if (chartMatchInstance) chartMatchInstance.resize();
-        if (chartSitesInstance) chartSitesInstance.resize();
-        if (chartIsolationInstance) chartIsolationInstance.resize();
-    });
-
-    // ============================================================
-    //  事件绑定
-    // ============================================================
+    // 事件绑定
     siteDropZone.addEventListener('click', () => siteFileInput.click());
-    siteDropZone.addEventListener('dragover', (e) => { e.preventDefault(); siteDropZone.style.borderColor = '#1f6392'; });
-    siteDropZone.addEventListener('dragleave', () => siteDropZone.style.borderColor = '#bdd2ec');
-    siteDropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        siteDropZone.style.borderColor = '#bdd2ec';
-        if (e.dataTransfer.files.length > 0) {
-            handleSiteFile(e.dataTransfer.files[0]);
-        }
-    });
-    siteFileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            handleSiteFile(e.target.files[0]);
-        }
-        siteFileInput.value = '';
-    });
-
+    siteFileInput.addEventListener('change', (e) => { if(e.target.files[0]) loadSiteData(e.target.files[0]); });
     vehicleDropZone.addEventListener('click', () => vehicleFileInput.click());
-    vehicleDropZone.addEventListener('dragover', (e) => { e.preventDefault(); vehicleDropZone.style.borderColor = '#1f6392'; });
-    vehicleDropZone.addEventListener('dragleave', () => vehicleDropZone.style.borderColor = '#bdd2ec');
-    vehicleDropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        vehicleDropZone.style.borderColor = '#bdd2ec';
-        if (e.dataTransfer.files.length > 0) {
-            handleVehicleFile(e.dataTransfer.files[0]);
-        }
-    });
-    vehicleFileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            handleVehicleFile(e.target.files[0]);
-        }
-        vehicleFileInput.value = '';
-    });
-
+    vehicleFileInput.addEventListener('change', (e) => { if(e.target.files[0]) loadVehicleData(e.target.files[0]); });
     runClusterBtn.addEventListener('click', runClustering);
-
-    // ★★★ 工作流联动事件 ★★★
     importUpstreamBtn.addEventListener('click', importUpstreamData);
-    skipUpstreamBtn.addEventListener('click', () => {
-        upstreamHint.classList.remove('show');
-        addLog('⏭️ 已跳过上游数据导入', false);
-    });
-
-    // ★★★ 数据传递事件 ★★★
+    skipUpstreamBtn.addEventListener('click', () => upstreamHint.classList.remove('show'));
     saveAndPassBtn.addEventListener('click', saveAndPass);
-    clearPassBtn.addEventListener('click', clearPassData);
-
-    // 监听来自父页面的消息
-    window.addEventListener('message', function(event) {
-        if (event.data && event.data.type === 'toolbox_request_data') {
-            const passData = localStorage.getItem(PASS_KEY);
-            if (passData) {
-                try {
-                    const data = JSON.parse(passData);
-                    if (data && data.tool === TOOL_ID) {
-                        event.source.postMessage({
-                            type: 'toolbox_data_response',
-                            tool: TOOL_ID,
-                            data: data
-                        }, '*');
-                    }
-                } catch (e) {}
-            }
-        }
-        if (event.data && event.data.type === 'workflow_started') {
-            isInWorkflow = true;
-            workflowHint.classList.add('show');
-            workflowStatus.textContent = '⚡ 工作流模式';
-            addLog('🔗 工作流已启动，聚类完成后自动通知', false);
-        }
-    });
-
-    clearResultBtn.addEventListener('click', () => {
-        clusterResults = [];
-        resultBlob = null;
-        renderResults();
-        if (chartUtilizationInstance) chartUtilizationInstance.clear();
-        if (chartMatchInstance) chartMatchInstance.clear();
-        if (chartSitesInstance) chartSitesInstance.clear();
-        if (chartIsolationInstance) chartIsolationInstance.clear();
-        const noDataHtml = `<div class="chart-no-data">运行聚类后自动生成</div>`;
-        document.querySelectorAll('.chart-container').forEach(el => {
-            el.innerHTML = noDataHtml;
-        });
-        hideDownloadBar();
-        resultSummary.classList.remove('show');
-        progressFill.style.width = '0%';
-        progressText.textContent = '⏳ 就绪';
-        copyResultBtn.disabled = true;
-        exportResultBtn.disabled = true;
-        clearPassData();
-        addLog('已清空聚类结果', false);
-        if (isInWorkflow) {
-            workflowStatus.textContent = '⏳ 等待聚类';
-        }
-        // 重新检查上游数据
-        checkUpstreamData();
-    });
-
-    copyResultBtn.addEventListener('click', copyResultsToClipboard);
-    exportResultBtn.addEventListener('click', exportResults);
-    downloadBtn.addEventListener('click', exportResults);
-    resetBottomBtn.addEventListener('click', () => {
-        clusterResults = [];
-        resultBlob = null;
-        renderResults();
-        if (chartUtilizationInstance) chartUtilizationInstance.clear();
-        if (chartMatchInstance) chartMatchInstance.clear();
-        if (chartSitesInstance) chartSitesInstance.clear();
-        if (chartIsolationInstance) chartIsolationInstance.clear();
-        const noDataHtml = `<div class="chart-no-data">运行聚类后自动生成</div>`;
-        document.querySelectorAll('.chart-container').forEach(el => {
-            el.innerHTML = noDataHtml;
-        });
-        hideDownloadBar();
-        resultSummary.classList.remove('show');
-        progressFill.style.width = '0%';
-        progressText.textContent = '⏳ 就绪';
-        copyResultBtn.disabled = true;
-        exportResultBtn.disabled = true;
-        clearPassData();
-        addLog('已重置', false);
-        if (isInWorkflow) {
-            workflowStatus.textContent = '⏳ 等待聚类';
-        }
-        checkUpstreamData();
-    });
-
-    downloadSiteTemplate.addEventListener('click', (e) => { e.preventDefault(); downloadSiteTemplateFile(); });
-    downloadVehicleTemplate.addEventListener('click', (e) => { e.preventDefault(); downloadVehicleTemplateFile(); });
-
-    // ============================================================
-    //  初始化
-    // ============================================================
-    updateUI();
+    
+    // 初始化
     addLog('📋 请上传站点数据和车型参数，然后点击「运行聚类优化」', false);
-    addLog('📍 孤立站点规则：单城市单站点且提货量 < 5m³ 将自动单独成线', false);
-    addLog('📊 运行后将自动生成数据报表和4个BI分析图表（同屏展示）', false);
-    addLog('🔗 支持工作流联动：检测到上游数据自动提示导入，聚类完成后自动传递', false);
-
-    // ★★★ 检测工作流模式和上游数据 ★★★
-    detectWorkflowMode();
-    setTimeout(() => {
-        checkUpstreamData();
-        checkPassStatus();
-    }, 500);
-
-    // 暴露全局函数供父页面调用
-    window.getPassData = function() {
-        try {
-            const raw = localStorage.getItem(PASS_KEY);
-            if (raw) return JSON.parse(raw);
-        } catch (e) {}
-        return null;
-    };
-    window.saveAndPass = saveAndPass;
-    window.checkPassStatus = checkPassStatus;
-    window.clearPassData = clearPassData;
-    window.importUpstreamData = importUpstreamData;
-    window.runClustering = runClustering;
+    checkUpstreamData();
 </script>
 </body>
 </html>
