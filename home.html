@@ -213,7 +213,6 @@
             border-color: #1a5d8c;
         }
 
-        /* ===== 内容区 ===== */
         .content-body {
             flex: 1;
             overflow: hidden;
@@ -240,7 +239,6 @@
             display: block;
         }
 
-        /* ===== ★★★ 工作流覆盖层 ★★★ ===== */
         .workflow-overlay {
             position: absolute;
             top: 0;
@@ -533,7 +531,6 @@
             color: #ffd78a;
         }
 
-        /* ===== 其他页面样式 ===== */
         .stats-dashboard {
             height: 100%;
             overflow-y: auto;
@@ -1205,7 +1202,7 @@
             // ★★★ 立即执行第一步 ★★★
             setTimeout(function() {
                 executeStep(0);
-            }, 300);
+            }, 400);
         }
 
         // ============================================================
@@ -1398,7 +1395,7 @@
         }
 
         // ============================================================
-        //  ★★★ 核心：执行步骤（确保 iframe 正确加载） ★★★
+        //  ★★★ 核心：执行步骤（修复版 - 增加 iframe 加载检测） ★★★
         // ============================================================
         function executeStep(idx) {
             var workflow = workflowState.workflow;
@@ -1432,35 +1429,54 @@
                 return;
             }
 
-            // ★★★ 移除旧内容（保留 overlay） ★★★
+            // ★★★ 1. 保留 overlay 引用 ★★★
+            var overlay = document.getElementById('workflowOverlay');
+
+            // ★★★ 2. 移除旧内容（但保留 overlay） ★★★
             var oldIframe = body.querySelector('.iframe-wrapper');
-            if (oldIframe) oldIframe.remove();
-
+            if (oldIframe) {
+                oldIframe.remove();
+            }
             var oldContent = body.querySelector('.welcome-content, .stats-dashboard, .tool-error');
-            if (oldContent) oldContent.remove();
+            if (oldContent) {
+                oldContent.remove();
+            }
 
-            // ★★★ 创建新的 iframe ★★★
+            // ★★★ 3. 创建新的 iframe 容器 ★★★
             var iframeWrapper = document.createElement('div');
             iframeWrapper.className = 'iframe-wrapper';
-            iframeWrapper.style.width = '100%';
-            iframeWrapper.style.height = '100%';
-            iframeWrapper.style.position = 'relative';
-            iframeWrapper.style.zIndex = '1';
+            iframeWrapper.style.cssText = 'width:100%;height:100%;background:white;border-radius:12px;overflow:hidden;border:1px solid #e2edf5;position:relative;z-index:1;';
 
             var iframe = document.createElement('iframe');
             iframe.src = filePath;
             iframe.allow = 'geolocation';
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.border = 'none';
-            iframe.style.display = 'block';
+            iframe.style.cssText = 'width:100%;height:100%;border:none;display:block;';
+            
+            // ★★★ 4. 添加加载事件监听 ★★★
+            iframe.onload = function() {
+                console.log('✅ iframe 加载完成: ' + filePath);
+                addWorkflowLog('✅ 工具已加载: ' + tool.label, 'success');
+                // 隐藏加载提示
+                var loadingHint = document.getElementById('wfLoadingHint');
+                if (loadingHint) loadingHint.style.display = 'none';
+            };
+            iframe.onerror = function() {
+                console.error('❌ iframe 加载失败: ' + filePath);
+                addWorkflowLog('❌ 工具加载失败: ' + tool.label + '，请检查文件路径', 'error');
+                // 显示错误提示
+                var loadingHint = document.getElementById('wfLoadingHint');
+                if (loadingHint) {
+                    loadingHint.innerHTML = '❌ 工具加载失败，请检查文件是否存在: ' + filePath;
+                    loadingHint.style.color = '#ff6b6b';
+                }
+            };
+
             iframeWrapper.appendChild(iframe);
 
-            // ★★★ 将 iframe 插入到 overlay 之前（确保 iframe 在 overlay 下层） ★★★
-            var overlay = document.getElementById('workflowOverlay');
+            // ★★★ 5. 插入到 overlay 之前 ★★★
             body.insertBefore(iframeWrapper, overlay);
 
-            // ★★★ 确保 overlay 在顶层 ★★★
+            // ★★★ 6. 确保 overlay 在顶层 ★★★
             overlay.style.zIndex = '100';
 
             // 更新标题
@@ -1485,7 +1501,7 @@
                 nextBtn.disabled = true;
             }
 
-            // ★★★ 监听来自 iframe 的消息 ★★★
+            // ★★★ 7. 监听来自 iframe 的消息 ★★★
             var messageHandler = function(event) {
                 if (event.data && event.data.type === 'toolbox_data_saved') {
                     var toolId = event.data.tool;
@@ -1513,7 +1529,29 @@
                 updateStepUI(idx, 'running', '计算中...');
             }
 
-            // 超时提示（每10秒提醒一次）
+            // ★★★ 8. 添加加载状态提示 ★★★
+            var loadingHint = document.getElementById('wfLoadingHint');
+            if (!loadingHint) {
+                loadingHint = document.createElement('div');
+                loadingHint.id = 'wfLoadingHint';
+                loadingHint.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#6c86a3;font-size:14px;z-index:0;text-align:center;pointer-events:none;';
+                loadingHint.innerHTML = '⏳ 正在加载工具...<br><span style="font-size:12px;color:#a0b8cc;">请稍候</span>';
+                body.appendChild(loadingHint);
+            } else {
+                loadingHint.style.display = 'block';
+                loadingHint.innerHTML = '⏳ 正在加载工具...<br><span style="font-size:12px;color:#a0b8cc;">请稍候</span>';
+                loadingHint.style.color = '#6c86a3';
+            }
+
+            // 5秒后如果 iframe 还没加载完成，更新提示
+            setTimeout(function() {
+                var hint = document.getElementById('wfLoadingHint');
+                if (hint && hint.style.display !== 'none') {
+                    hint.innerHTML = '⏳ 工具加载中，请稍候...<br><span style="font-size:12px;color:#a0b8cc;">如果长时间无响应，请检查网络或刷新页面</span>';
+                }
+            }, 5000);
+
+            // ★★★ 9. 超时提示（每10秒提醒一次） ★★★
             var hintCount = 0;
             var hintInterval = setInterval(function() {
                 if (workflowState.isRunning === false) {
@@ -1532,8 +1570,7 @@
                 }
             }, 10000);
 
-            console.log('✅ 步骤 ' + (idx + 1) + ' iframe 已加载: ' + filePath);
-            console.log('✅ iframe 父容器:', iframeWrapper);
+            console.log('✅ 步骤 ' + (idx + 1) + ' iframe 已创建，src: ' + filePath);
             console.log('✅ iframe 元素:', iframe);
         }
 
@@ -1568,6 +1605,11 @@
             var iframeWrapper = body.querySelector('.iframe-wrapper');
             if (iframeWrapper) {
                 iframeWrapper.remove();
+            }
+            // 移除加载提示
+            var loadingHint = document.getElementById('wfLoadingHint');
+            if (loadingHint) {
+                loadingHint.remove();
             }
 
             // 加载欢迎页
@@ -1874,18 +1916,12 @@
 
             var iframeWrapper = document.createElement('div');
             iframeWrapper.className = 'iframe-wrapper';
-            iframeWrapper.style.width = '100%';
-            iframeWrapper.style.height = '100%';
-            iframeWrapper.style.position = 'relative';
-            iframeWrapper.style.zIndex = '1';
+            iframeWrapper.style.cssText = 'width:100%;height:100%;background:white;border-radius:12px;overflow:hidden;border:1px solid #e2edf5;position:relative;z-index:1;';
 
             var iframe = document.createElement('iframe');
             iframe.src = filePath;
             iframe.allow = 'geolocation';
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.border = 'none';
-            iframe.style.display = 'block';
+            iframe.style.cssText = 'width:100%;height:100%;border:none;display:block;';
             iframeWrapper.appendChild(iframe);
 
             body.insertBefore(iframeWrapper, document.getElementById('workflowOverlay'));
