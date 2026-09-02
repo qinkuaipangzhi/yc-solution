@@ -811,7 +811,7 @@
         }, {
             id: 'workflow',
             icon: '⚡',
-            label: '一键串联',
+            label: '工作流',
             section: '导航',
             desc: '工作流自动化',
             isWorkflow: true
@@ -1398,13 +1398,19 @@
             var loadingHint = document.getElementById('wfLoadingHint');
             if (loadingHint) loadingHint.remove();
 
-            loadTool('welcome');
-
+            // ★★★ 修改：点击“完成”后，不回到欢迎页，而是直接加载聚类工具（最后一步） ★★★
             if (reason === '完成') {
                 addWorkflowLog('🎉 工作流执行完成!', 'success');
                 setTimeout(function() { showToast('✅ 工作流执行完成!'); }, 300);
+                
+                // ★★★ 核心修改：直接加载最后一个工具（聚类） ★★★
+                // 如果您的完整链路最后一步是聚类，则调用 loadTool('kmeans-cluster')
+                // 如果是“完整链路”（地址->聚类->排程），请改成 loadTool('route-distance')
+                loadTool('kmeans-cluster'); 
+                
             } else {
                 addWorkflowLog('⏹️ 工作流已' + reason, 'info');
+                loadTool('welcome'); // 取消时才回到欢迎页
             }
         }
 
@@ -1759,7 +1765,7 @@
 
             container.innerHTML = `
                         <div style="margin-bottom:16px;">
-                            <h2 style="font-size:22px;color:#1f3a5f;">⚡ 一键串联 · 工作流自动化</h2>
+                            <h2 style="font-size:22px;color:#1f3a5f;">⚡ 工作流 · 工作流自动化</h2>
                             <p style="color:#7a8eaa;font-size:14px;margin-top:4px;">选择预置的工作流，系统将自动按顺序打开工具并传递数据</p>
                             <p style="color:#7a8eaa;font-size:13px;margin-top:2px;">📍 支持联动的工具：地址转经纬度 → K-Means聚类 → 线路排程</p>
                             <p style="color:#d48c2c;font-size:13px;margin-top:4px;background:#fff8e1;padding:6px 12px;border-radius:8px;">💡 工作流启动后，<strong>直接在内容区操作工具</strong>，完成后点击「下一步」继续</p>
@@ -1864,7 +1870,7 @@
         console.log('📦 物流工具箱 (工作流真实联动版) 已加载');
         console.log('📋 所有工具已保留，共 ' + TOOLS.length + ' 个');
         console.log('⚡ 支持联动的工具: address-geocode → kmeans-cluster → route-distance');
-        console.log('💡 点击「一键串联」菜单，选择工作流开始自动化');
+        console.log('💡 点击「工作流」菜单，选择工作流开始自动化');
     </script>
 </body>
 </html>
