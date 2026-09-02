@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
     </script>
     <style>
-        /* ========== 全局重置 & 基础 ========== */
+        /* ========== 所有样式保持不变 ========== */
         * {
             margin: 0;
             padding: 0;
@@ -28,7 +28,6 @@
             width: 100%;
         }
 
-        /* ===== 左侧导航 ===== */
         .sidebar {
             width: 280px;
             min-width: 280px;
@@ -166,7 +165,6 @@
             flex-shrink: 0;
         }
 
-        /* ===== 右侧内容区 ===== */
         .main-content {
             flex: 1;
             display: flex;
@@ -238,7 +236,6 @@
             display: block;
         }
 
-        /* ===== ★★★ 工作流执行器（覆盖在内容区上方） ★★★ ===== */
         .workflow-overlay {
             position: absolute;
             top: 0;
@@ -528,7 +525,6 @@
             color: #ffd78a;
         }
 
-        /* ===== 统计页面 ===== */
         .stats-dashboard {
             height: 100%;
             overflow-y: auto;
@@ -735,7 +731,6 @@
             transform: translateY(-1px);
         }
 
-        /* ===== 欢迎页 ===== */
         .welcome-content {
             display: flex;
             flex-direction: column;
@@ -804,7 +799,6 @@
             margin-top: 2px;
         }
 
-        /* ===== 响应式 ===== */
         @media (max-width: 768px) {
             .sidebar {
                 width: 200px;
@@ -891,25 +885,16 @@
 </head>
 <body>
 
-    <!-- ===== 应用容器 ===== -->
     <div class="app-container">
-        <!-- 左侧导航 -->
         <nav class="sidebar" id="sidebar">
             <div class="sidebar-brand">
                 <h1><span>📦</span> 物流工具箱</h1>
                 <p>Logistics Toolbox</p>
             </div>
-
-            <div class="sidebar-nav" id="sidebarNav">
-                <!-- 导航树由 JS 动态渲染 -->
-            </div>
-
-            <div class="sidebar-footer">
-                v2.0 · 工作流真实联动
-            </div>
+            <div class="sidebar-nav" id="sidebarNav"></div>
+            <div class="sidebar-footer">v2.0 · 工作流真实联动</div>
         </nav>
 
-        <!-- 右侧内容区 -->
         <main class="main-content">
             <header class="content-header">
                 <h2 id="pageTitle">📦 物流工具箱</h2>
@@ -918,13 +903,8 @@
             </header>
 
             <div class="content-body" id="contentBody">
-                <!-- 默认显示欢迎页，由 JS 渲染 -->
-
-                <!-- ===== ★★★ 工作流覆盖层 ★★★ ===== -->
                 <div class="workflow-overlay" id="workflowOverlay">
-                    <div class="workflow-panel" id="workflowPanel">
-                        <!-- 由 JS 动态渲染 -->
-                    </div>
+                    <div class="workflow-panel" id="workflowPanel"></div>
                 </div>
             </div>
         </main>
@@ -932,7 +912,7 @@
 
     <script>
         // ============================================================
-        //  ★★★ 所有工具导航配置（完整保留） ★★★
+        //  工具导航配置
         // ============================================================
         const TOOLS = [{
             id: 'welcome',
@@ -944,7 +924,7 @@
         }, {
             id: 'workflow',
             icon: '⚡',
-            label: '一键串联',
+            label: '工作流自动化',
             section: '导航',
             desc: '工作流自动化',
             isWorkflow: true
@@ -1035,7 +1015,7 @@
         }];
 
         // ============================================================
-        //  ★★★ 工作流配置（只联动三个核心工具） ★★★
+        //  工作流配置
         // ============================================================
         const WORKFLOWS = [{
             id: 'address-to-cluster',
@@ -1159,9 +1139,24 @@
                 return;
             }
 
+            // ★★★ 强制重置状态 ★★★
             if (workflowState.isRunning) {
-                alert('已有工作流正在执行中，请等待完成');
-                return;
+                // 如果 overlay 可见，说明真的有工作流在运行
+                const overlay = document.getElementById('workflowOverlay');
+                if (overlay.classList.contains('active')) {
+                    alert('已有工作流正在执行中，请等待完成');
+                    return;
+                } else {
+                    // 状态异常，强制重置
+                    workflowState.isRunning = false;
+                    workflowState.currentStep = 0;
+                    workflowState.results = {};
+                    workflowState.errors = [];
+                    workflowState.logs = [];
+                    workflowState.workflow = null;
+                    workflowState.activeToolId = null;
+                    console.log('🔧 强制重置工作流状态');
+                }
             }
 
             // 重置状态
@@ -1173,19 +1168,15 @@
             workflowState.workflow = workflow;
             workflowState.activeToolId = null;
 
-            // 清空旧的传递数据
             localStorage.removeItem(PASS_KEY);
 
-            // 显示覆盖层
             const overlay = document.getElementById('workflowOverlay');
             overlay.classList.add('active');
 
-            // 渲染工作流面板
             renderWorkflowPanel(workflow);
 
             addWorkflowLog(`🚀 开始执行工作流: ${workflow.name}`, 'info');
 
-            // 开始执行第一步
             executeStep(0);
         }
 
@@ -1421,7 +1412,6 @@
                 nextBtn.disabled = true;
             }
 
-            // 监听来自 iframe 的消息
             const messageHandler = function(event) {
                 if (event.data && event.data.type === 'toolbox_data_saved') {
                     const toolId = event.data.tool;
@@ -1463,14 +1453,19 @@
             const overlay = document.getElementById('workflowOverlay');
             overlay.classList.remove('active');
 
+            // ★★★ 完全重置工作流状态 ★★★
             workflowState.isRunning = false;
+            workflowState.currentStep = 0;
+            workflowState.results = {};
+            workflowState.errors = [];
+            workflowState.workflow = null;
             workflowState.activeToolId = null;
 
             document.getElementById('pageTitle').textContent = '📦 物流工具箱';
             document.getElementById('breadcrumbCurrent').textContent = '欢迎';
 
             const body = document.getElementById('contentBody');
-            if (!body.querySelector('.welcome-content')) {
+            if (!body.querySelector('.welcome-content') && !body.querySelector('.iframe-wrapper')) {
                 loadTool('welcome');
             }
 
@@ -1686,11 +1681,24 @@
         }
 
         // ============================================================
-        //  加载工具
+        //  ★★★ 加载工具（修复版） ★★★
         // ============================================================
         function loadTool(toolId) {
             const tool = TOOLS.find(t => t.id === toolId);
             if (!tool) return;
+
+            // ★★★ 修复：检查工作流是否真正在运行 ★★★
+            const overlay = document.getElementById('workflowOverlay');
+            if (workflowState.isRunning && !overlay.classList.contains('active')) {
+                // 工作流状态异常，重置
+                workflowState.isRunning = false;
+                workflowState.currentStep = 0;
+                workflowState.results = {};
+                workflowState.errors = {};
+                workflowState.workflow = null;
+                workflowState.activeToolId = null;
+                console.log('🔧 自动重置异常的工作流状态');
+            }
 
             if (workflowState.isRunning) {
                 alert('工作流正在执行中，请先完成或取消工作流');
@@ -1751,7 +1759,7 @@
             body.innerHTML = `
                     <div style="height:100%;overflow-y:auto;padding:4px 0 12px;">
                         <div style="margin-bottom:16px;">
-                            <h2 style="font-size:22px;color:#1f3a5f;">⚡ 一键串联 · 工作流自动化</h2>
+                            <h2 style="font-size:22px;color:#1f3a5f;">⚡ 工作流 · 工作流自动化</h2>
                             <p style="color:#7a8eaa;font-size:14px;margin-top:4px;">选择预置的工作流，系统将自动按顺序打开工具并传递数据</p>
                             <p style="color:#7a8eaa;font-size:13px;margin-top:2px;">📍 支持联动的工具：地址转经纬度 → K-Means聚类 → 线路排程</p>
                         </div>
@@ -1833,6 +1841,21 @@
         renderNav();
         loadTool('welcome');
 
+        // ★★★ 页面加载时确保工作流状态重置 ★★★
+        window.addEventListener('load', function() {
+            const overlay = document.getElementById('workflowOverlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
+            workflowState.isRunning = false;
+            workflowState.currentStep = 0;
+            workflowState.results = {};
+            workflowState.errors = [];
+            workflowState.workflow = null;
+            workflowState.activeToolId = null;
+            console.log('🔧 页面加载完成，工作流状态已重置');
+        });
+
         window.addEventListener('resize', () => {
             document.querySelectorAll('.nav-items').forEach(el => {
                 if (!el.classList.contains('collapsed')) {
@@ -1844,7 +1867,6 @@
         console.log('📦 物流工具箱 (工作流真实联动版) 已加载');
         console.log('📋 所有工具已保留，共 ' + TOOLS.length + ' 个');
         console.log('⚡ 支持联动的工具: address-geocode → kmeans-cluster → route-distance');
-        console.log('💡 点击「一键串联」菜单，选择工作流开始自动化');
     </script>
 </body>
 </html>
