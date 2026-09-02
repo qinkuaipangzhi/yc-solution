@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
     </script>
     <style>
-        /* ===== 所有样式保持不变 ===== */
+        /* ===== 所有样式 ===== */
         * {
             margin: 0;
             padding: 0;
@@ -170,6 +170,7 @@
             flex-direction: column;
             background: #f0f3f7;
             overflow: hidden;
+            position: relative;
         }
 
         .content-header {
@@ -181,6 +182,7 @@
             align-items: center;
             flex-shrink: 0;
             min-height: 64px;
+            z-index: 10;
         }
         .content-header h2 {
             font-size: 18px;
@@ -211,6 +213,7 @@
             border-color: #1a5d8c;
         }
 
+        /* ===== 内容区 ===== */
         .content-body {
             flex: 1;
             overflow: hidden;
@@ -235,6 +238,7 @@
             display: block;
         }
 
+        /* ===== ★★★ 工作流覆盖层（放在 content-body 内部，但不会被清空） ★★★ ===== */
         .workflow-overlay {
             position: absolute;
             top: 0;
@@ -248,9 +252,11 @@
             align-items: center;
             justify-content: center;
             border-radius: 12px;
+            pointer-events: none;
         }
         .workflow-overlay.active {
             display: flex;
+            pointer-events: auto;
         }
 
         .workflow-panel {
@@ -263,6 +269,7 @@
             padding: 24px 28px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             animation: slideUp 0.3s ease;
+            pointer-events: auto;
         }
         @keyframes slideUp {
             from {
@@ -524,6 +531,7 @@
             color: #ffd78a;
         }
 
+        /* ===== 统计页面 ===== */
         .stats-dashboard {
             height: 100%;
             overflow-y: auto;
@@ -885,6 +893,7 @@
 <body>
 
     <div class="app-container">
+        <!-- 左侧导航 -->
         <nav class="sidebar" id="sidebar">
             <div class="sidebar-brand">
                 <h1><span>📦</span> 物流工具箱</h1>
@@ -894,6 +903,7 @@
             <div class="sidebar-footer">v2.0 · 工作流真实联动</div>
         </nav>
 
+        <!-- 右侧内容区 -->
         <main class="main-content">
             <header class="content-header">
                 <h2 id="pageTitle">📦 物流工具箱</h2>
@@ -901,7 +911,11 @@
                 <button class="logout-top" id="logoutTopBtn">🚪 退出登录</button>
             </header>
 
+            <!-- ★★★ content-body：包含内容区和 overlay ★★★ -->
             <div class="content-body" id="contentBody">
+                <!-- 内容区由 JS 动态渲染 -->
+                
+                <!-- ★★★ 工作流覆盖层 ★★★ -->
                 <div class="workflow-overlay" id="workflowOverlay">
                     <div class="workflow-panel" id="workflowPanel"></div>
                 </div>
@@ -923,7 +937,7 @@
         }, {
             id: 'workflow',
             icon: '⚡',
-            label: '工作流',
+            label: '一键串联',
             section: '导航',
             desc: '工作流自动化',
             isWorkflow: true
@@ -1131,7 +1145,9 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // ★★★ 核心修复：启动工作流 ★★★
+        // ============================================================
+        //  ★★★ 核心：启动工作流 ★★★
+        // ============================================================
         function startWorkflow(workflowId) {
             const workflow = WORKFLOWS.find(w => w.id === workflowId);
             if (!workflow) {
@@ -1139,13 +1155,14 @@
                 return;
             }
 
-            // 强制重置状态
-            const overlay = document.getElementById('workflowOverlay');
+            // 检查是否已有工作流在运行
             if (workflowState.isRunning) {
+                const overlay = document.getElementById('workflowOverlay');
                 if (overlay.classList.contains('active')) {
                     alert('已有工作流正在执行中，请等待完成');
                     return;
                 } else {
+                    // 状态异常，强制重置
                     workflowState.isRunning = false;
                     workflowState.currentStep = 0;
                     workflowState.results = {};
@@ -1166,9 +1183,11 @@
             workflowState.workflow = workflow;
             workflowState.activeToolId = null;
 
+            // 清空旧数据
             localStorage.removeItem(PASS_KEY);
 
             // ★★★ 显示覆盖层 ★★★
+            const overlay = document.getElementById('workflowOverlay');
             overlay.classList.add('active');
 
             // ★★★ 渲染工作流面板 ★★★
@@ -1177,11 +1196,14 @@
             addWorkflowLog(`🚀 开始执行工作流: ${workflow.name}`, 'info');
 
             // ★★★ 延迟执行第一步，确保面板渲染完成 ★★★
-            setTimeout(() => {
+            setTimeout(function() {
                 executeStep(0);
-            }, 300);
+            }, 500);
         }
 
+        // ============================================================
+        //  渲染工作流面板
+        // ============================================================
         function renderWorkflowPanel(workflow) {
             const panel = document.getElementById('workflowPanel');
             panel.innerHTML = `
@@ -1224,12 +1246,14 @@
                 </div>
             `;
 
+            // 取消按钮
             document.getElementById('wfCancelBtn').addEventListener('click', function() {
                 if (confirm('确定要取消当前工作流吗？')) {
                     cancelWorkflow();
                 }
             });
 
+            // 各步骤按钮
             workflow.steps.forEach((step, idx) => {
                 const btn = document.getElementById(`wfStepBtn_${idx}`);
                 if (btn) {
@@ -1239,6 +1263,7 @@
                 }
             });
 
+            // 初始化步骤状态
             workflow.steps.forEach((step, idx) => {
                 updateStepUI(idx, 'pending', '等待执行');
                 const btn = document.getElementById(`wfStepBtn_${idx}`);
@@ -1258,6 +1283,9 @@
             updateNextButton();
         }
 
+        // ============================================================
+        //  更新步骤UI
+        // ============================================================
         function updateStepUI(idx, status, text) {
             const stepEl = document.getElementById(`wfStep_${idx}`);
             if (!stepEl) return;
@@ -1294,6 +1322,9 @@
             }
         }
 
+        // ============================================================
+        //  更新下一步按钮
+        // ============================================================
         function updateNextButton() {
             const btn = document.getElementById('wfNextBtn');
             if (!btn) return;
@@ -1325,12 +1356,11 @@
             const currentStepEl = document.getElementById(`wfStep_${currentStep}`);
             if (currentStepEl && currentStepEl.classList.contains('done')) {
                 if (currentStep < workflow.steps.length - 1) {
-                    const nextIdx = currentStep + 1;
-                    btn.textContent = `▶ 执行下一步 (${nextIdx + 1}/${workflow.steps.length})`;
+                    btn.textContent = `▶ 执行下一步 (${currentStep + 1}/${workflow.steps.length})`;
                     btn.className = 'btn btn-success';
                     btn.disabled = false;
                     btn.onclick = function() {
-                        executeStep(nextIdx);
+                        executeStep(currentStep + 1);
                     };
                     return;
                 } else {
@@ -1349,7 +1379,9 @@
             btn.disabled = true;
         }
 
-        // ★★★ 核心修复：执行步骤 ★★★
+        // ============================================================
+        //  ★★★ 核心：执行步骤 ★★★
+        // ============================================================
         function executeStep(idx) {
             const workflow = workflowState.workflow;
             if (!workflow) {
@@ -1382,15 +1414,20 @@
                 return;
             }
 
-            // ★★★ 清除之前的内容，加载 iframe ★★★
-            const existingIframe = body.querySelector('iframe');
-            if (existingIframe) {
-                existingIframe.remove();
+            // ★★★ 重要：保留 overlay，只更新内容区域 ★★★
+            // 移除旧的 iframe（如果有）
+            const oldIframe = body.querySelector('.iframe-wrapper');
+            if (oldIframe) {
+                oldIframe.remove();
             }
 
-            // 清除其他内容
-            body.innerHTML = '';
+            // 移除旧的欢迎页或内容
+            const oldContent = body.querySelector('.welcome-content, .stats-dashboard, .tool-error');
+            if (oldContent) {
+                oldContent.remove();
+            }
 
+            // 创建新的 iframe
             const iframeWrapper = document.createElement('div');
             iframeWrapper.className = 'iframe-wrapper';
             const iframe = document.createElement('iframe');
@@ -1400,13 +1437,17 @@
             iframe.style.height = '100%';
             iframe.style.border = 'none';
             iframeWrapper.appendChild(iframe);
-            body.appendChild(iframeWrapper);
+            
+            // ★★★ 将 iframe 插入到 overlay 之前 ★★★
+            body.insertBefore(iframeWrapper, document.getElementById('workflowOverlay'));
 
+            // 更新标题
             document.getElementById('pageTitle').textContent = tool.icon + ' ' + tool.label + ' (工作流步骤 ' + (idx + 1) + ')';
             document.getElementById('breadcrumbCurrent').textContent = tool.label + ' 🔗 工作流';
 
             workflowState.activeToolId = tool.id;
 
+            // 更新步骤按钮
             const btn = document.getElementById(`wfStepBtn_${idx}`);
             if (btn) {
                 btn.textContent = '⏳ 等待用户操作...';
@@ -1414,6 +1455,7 @@
                 btn.disabled = true;
             }
 
+            // 更新下一步按钮
             const nextBtn = document.getElementById('wfNextBtn');
             if (nextBtn) {
                 nextBtn.textContent = '⏳ 请完成当前步骤...';
@@ -1450,20 +1492,25 @@
             }
 
             // 超时提示
-            setTimeout(() => {
-                addWorkflowLog(`💡 提示: 如果已完成操作但未自动识别，请点击「下一步」继续`, 'info');
+            setTimeout(function() {
+                addWorkflowLog(`💡 提示: 如果已完成操作但未自动识别，请手动点击「下一步」继续`, 'info');
             }, 15000);
 
-            // 日志：确认 iframe 已加载
             console.log(`✅ 步骤 ${idx+1} iframe 已加载: ${filePath}`);
         }
 
+        // ============================================================
+        //  取消工作流
+        // ============================================================
         function cancelWorkflow() {
             workflowState.isRunning = false;
             closeWorkflow('已取消');
             addWorkflowLog('❌ 工作流已取消', 'error');
         }
 
+        // ============================================================
+        //  关闭工作流
+        // ============================================================
         function closeWorkflow(reason) {
             const overlay = document.getElementById('workflowOverlay');
             overlay.classList.remove('active');
@@ -1478,15 +1525,19 @@
             document.getElementById('pageTitle').textContent = '📦 物流工具箱';
             document.getElementById('breadcrumbCurrent').textContent = '欢迎';
 
+            // 移除 iframe
             const body = document.getElementById('contentBody');
-            // 如果当前没有内容，加载欢迎页
-            if (!body.querySelector('.welcome-content') && !body.querySelector('.iframe-wrapper')) {
-                loadTool('welcome');
+            const iframeWrapper = body.querySelector('.iframe-wrapper');
+            if (iframeWrapper) {
+                iframeWrapper.remove();
             }
+
+            // 加载欢迎页
+            loadTool('welcome');
 
             if (reason === '完成') {
                 addWorkflowLog('🎉 工作流执行完成!', 'success');
-                setTimeout(() => {
+                setTimeout(function() {
                     showToast('✅ 工作流执行完成!');
                 }, 300);
             } else {
@@ -1494,16 +1545,19 @@
             }
         }
 
+        // ============================================================
+        //  Toast 提示
+        // ============================================================
         function showToast(msg) {
             const toast = document.createElement('div');
             toast.style.cssText =
                 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#2a7f6e;color:white;padding:10px 24px;border-radius:60px;font-weight:600;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:1000;animation:fadeInDown 0.3s ease;';
             toast.textContent = msg;
             document.body.appendChild(toast);
-            setTimeout(() => {
+            setTimeout(function() {
                 toast.style.opacity = '0';
                 toast.style.transition = 'opacity 0.3s';
-                setTimeout(() => toast.remove(), 400);
+                setTimeout(function() { toast.remove(); }, 400);
             }, 3000);
         }
 
@@ -1574,6 +1628,10 @@
             const data = getStatsData();
             const body = document.getElementById('contentBody');
 
+            // 移除旧内容，保留 overlay
+            const oldContent = body.querySelector('.welcome-content, .iframe-wrapper, .stats-dashboard, .tool-error');
+            if (oldContent) oldContent.remove();
+
             const toolNameMap = {};
             TOOLS.forEach(t => { toolNameMap[t.id] = t.label; });
 
@@ -1619,8 +1677,9 @@
                 tableHtml += `</tbody></table>`;
             }
 
-            body.innerHTML = `
-                    <div class="stats-dashboard">
+            const dashboard = document.createElement('div');
+            dashboard.className = 'stats-dashboard';
+            dashboard.innerHTML = `
                         <div class="stats-summary">
                             <div class="stat-card color-primary"><span class="stat-icon">📊</span><div class="stat-label">总访问量</div><div class="stat-value">${totalUsage}</div><div class="stat-sub">累计工具使用次数</div></div>
                             <div class="stat-card color-success"><span class="stat-icon">🔧</span><div class="stat-label">已使用工具</div><div class="stat-value">${toolCount}</div><div class="stat-sub">共 ${TOOLS.filter(t => !t.isWelcome && !t.isStats).length} 个工具</div></div>
@@ -1637,9 +1696,12 @@
                             <div class="table-header"><span>📋 工具使用明细</span></div>
                             <div class="table-scroll">${tableHtml}</div>
                         </div>
-                    </div>
-                `;
+                    `;
 
+            // 插入到 overlay 之前
+            body.insertBefore(dashboard, document.getElementById('workflowOverlay'));
+
+            // 渲染图表
             const ctx1 = document.getElementById('usageChart');
             if (ctx1) {
                 if (usageChartInstance) { usageChartInstance.destroy();
@@ -1696,7 +1758,7 @@
         }
 
         // ============================================================
-        //  ★★★ 加载工具（修复版） ★★★
+        //  ★★★ 加载工具 ★★★
         // ============================================================
         function loadTool(toolId) {
             const tool = TOOLS.find(t => t.id === toolId);
@@ -1732,6 +1794,10 @@
 
             const body = document.getElementById('contentBody');
 
+            // 移除旧内容（保留 overlay）
+            const oldContent = body.querySelector('.welcome-content, .iframe-wrapper, .stats-dashboard, .tool-error');
+            if (oldContent) oldContent.remove();
+
             if (tool.isWelcome) {
                 renderWelcome(body);
                 return;
@@ -1743,37 +1809,44 @@
             }
 
             if (tool.isStats) {
-                renderStatsPage(body);
+                renderStatsPage();
                 return;
             }
 
             const filePath = tool.file;
             if (!filePath) {
-                body.innerHTML = `
-                        <div class="tool-error">
-                            <div class="icon-big">🔧</div>
-                            <h3>${tool.label}</h3>
-                            <p>此工具配置错误，未指定文件路径。</p>
-                        </div>
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'tool-error';
+                errorDiv.innerHTML = `
+                        <div class="icon-big">🔧</div>
+                        <h3>${tool.label}</h3>
+                        <p>此工具配置错误，未指定文件路径。</p>
                     `;
+                body.insertBefore(errorDiv, document.getElementById('workflowOverlay'));
                 return;
             }
 
-            body.innerHTML = `
-                    <div class="iframe-wrapper">
-                        <iframe src="${filePath}" allow="geolocation" style="width:100%;height:100%;border:none;"></iframe>
-                    </div>
-                `;
+            const iframeWrapper = document.createElement('div');
+            iframeWrapper.className = 'iframe-wrapper';
+            const iframe = document.createElement('iframe');
+            iframe.src = filePath;
+            iframe.allow = 'geolocation';
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            iframeWrapper.appendChild(iframe);
+            body.insertBefore(iframeWrapper, document.getElementById('workflowOverlay'));
         }
 
         // ============================================================
         //  工作流页面
         // ============================================================
         function renderWorkflowPage(body) {
-            body.innerHTML = `
-                    <div style="height:100%;overflow-y:auto;padding:4px 0 12px;">
+            const container = document.createElement('div');
+            container.style.cssText = 'height:100%;overflow-y:auto;padding:4px 0 12px;';
+            container.innerHTML = `
                         <div style="margin-bottom:16px;">
-                            <h2 style="font-size:22px;color:#1f3a5f;">⚡ 工作流 · 工作流自动化</h2>
+                            <h2 style="font-size:22px;color:#1f3a5f;">⚡ 一键串联 · 工作流自动化</h2>
                             <p style="color:#7a8eaa;font-size:14px;margin-top:4px;">选择预置的工作流，系统将自动按顺序打开工具并传递数据</p>
                             <p style="color:#7a8eaa;font-size:13px;margin-top:2px;">📍 支持联动的工具：地址转经纬度 → K-Means聚类 → 线路排程</p>
                         </div>
@@ -1806,16 +1879,17 @@
                                 数据会在工具间自动传递！
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+            body.insertBefore(container, document.getElementById('workflowOverlay'));
         }
 
         // ============================================================
         //  欢迎页
         // ============================================================
         function renderWelcome(body) {
-            body.innerHTML = `
-                    <div class="welcome-content">
+            const container = document.createElement('div');
+            container.className = 'welcome-content';
+            container.innerHTML = `
                         <div class="logo-big">📦</div>
                         <h2>物流工具箱</h2>
                         <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析、3D装载可视化、仓库规划等核心工具</p>
@@ -1834,8 +1908,8 @@
                                 <div class="desc">查看工具使用分析</div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+            body.insertBefore(container, document.getElementById('workflowOverlay'));
         }
 
         // ============================================================
@@ -1871,8 +1945,8 @@
             console.log('🔧 页面加载完成，工作流状态已重置');
         });
 
-        window.addEventListener('resize', () => {
-            document.querySelectorAll('.nav-items').forEach(el => {
+        window.addEventListener('resize', function() {
+            document.querySelectorAll('.nav-items').forEach(function(el) {
                 if (!el.classList.contains('collapsed')) {
                     el.style.maxHeight = el.scrollHeight + 'px';
                 }
@@ -1882,7 +1956,7 @@
         console.log('📦 物流工具箱 (工作流真实联动版) 已加载');
         console.log('📋 所有工具已保留，共 ' + TOOLS.length + ' 个');
         console.log('⚡ 支持联动的工具: address-geocode → kmeans-cluster → route-distance');
-        console.log('💡 点击「工作流」菜单，选择工作流开始自动化');
+        console.log('💡 点击「一键串联」菜单，选择工作流开始自动化');
     </script>
 </body>
 </html>
