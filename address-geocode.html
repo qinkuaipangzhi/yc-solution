@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>站点地址批量转经纬度 - 文件导入版（限流优化）</title>
+    <title>站点地址批量转经纬度 - 工作流联动版</title>
     <!-- SheetJS 核心库 -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <!-- Leaflet CSS + JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js">
+    </script>
     <style>
         * {
             margin: 0;
@@ -17,328 +21,351 @@
         body {
             background: linear-gradient(145deg, #eef2f9 0%, #e0e8f2 100%);
             min-height: 100vh;
-            padding: 2rem 1.5rem 140px;
+            padding: 10px;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background: #ffffff;
-            border-radius: 2rem;
-            box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.2);
+            border-radius: 1.5rem;
+            box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.18);
             overflow: hidden;
+            height: calc(100vh - 20px);
+            display: flex;
+            flex-direction: column;
         }
 
+        /* ===== 头部 ===== */
         .header {
             background: linear-gradient(135deg, #1e3a5f, #0f2b44);
-            padding: 2rem 2.2rem;
+            padding: 10px 20px;
             color: white;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
         }
         .header h1 {
-            font-size: 1.8rem;
+            font-size: 1.1rem;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
         }
-        .header p {
-            opacity: 0.85;
-            margin-top: 8px;
-            font-size: 0.95rem;
+        .header h1 small {
+            font-size: 0.6rem;
+            font-weight: 400;
+            opacity: 0.7;
         }
         .badge-group {
             display: flex;
-            gap: 12px;
+            gap: 4px;
             flex-wrap: wrap;
-            margin-top: 12px;
         }
         .badge {
-            background: #2c6288;
-            padding: 4px 16px;
-            border-radius: 40px;
+            background: rgba(255, 255, 255, 0.12);
+            padding: 2px 8px;
+            border-radius: 30px;
+            font-size: 0.5rem;
+        }
+        .badge.limit { background: #cc6600; }
+        .badge.map { background: #2a7f6e; }
+        .badge.link { background: #6c5b7b; }
+
+        /* ===== 主体 ===== */
+        .main-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 8px 12px 8px 12px;
+            gap: 6px;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* ===== ★★★ 工作流状态提示栏 ★★★ ===== */
+        .workflow-hint {
+            background: linear-gradient(135deg, #e8f0fa, #d4e4f0);
+            border-radius: 0.5rem;
+            padding: 6px 12px;
+            border: 1px solid #b8cde0;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .workflow-hint.show {
+            display: flex;
+        }
+        .workflow-hint .icon {
+            font-size: 1.2rem;
+        }
+        .workflow-hint .info {
             font-size: 0.7rem;
+            color: #1f3a5f;
+            flex: 1;
         }
-        .badge.limit {
-            background: #cc6600;
+        .workflow-hint .info strong {
+            color: #1a5d8c;
+        }
+        .workflow-hint .status {
+            font-size: 0.6rem;
+            color: #2a7f6e;
+            font-weight: 600;
+            background: rgba(42, 127, 110, 0.12);
+            padding: 2px 10px;
+            border-radius: 30px;
         }
 
-        .content {
-            padding: 2rem;
+        /* ===== 数据传递状态栏 ===== */
+        .data-pass-bar {
+            background: #e8f5ee;
+            border-radius: 0.5rem;
+            padding: 4px 10px;
+            border: 1px solid #b8ddd0;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .data-pass-bar.show {
+            display: flex;
+        }
+        .data-pass-bar .info {
+            font-size: 0.55rem;
+            color: #1e6657;
+        }
+        .data-pass-bar .info strong {
+            color: #0f3a2f;
+        }
+        .data-pass-bar .actions {
+            display: flex;
+            gap: 4px;
+        }
+        .data-pass-bar .actions .btn {
+            font-size: 0.5rem;
+            padding: 2px 8px;
         }
 
-        /* 上传区域 */
+        /* ===== 上半部分：左（上传区）+ 右（表格） ===== */
+        .top-section {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 8px;
+            flex-shrink: 0;
+            height: 240px;
+            min-height: 240px;
+            max-height: 240px;
+        }
+        @media (max-width: 900px) {
+            .top-section {
+                grid-template-columns: 1fr;
+                height: auto;
+                min-height: auto;
+                max-height: none;
+            }
+        }
+
+        /* ===== 左：上传区 ===== */
         .upload-card {
             background: #f8fafd;
-            border-radius: 1.5rem;
-            padding: 1.5rem;
-            margin-bottom: 1.8rem;
+            border-radius: 0.8rem;
+            padding: 8px 10px;
             border: 1px solid #e2edf5;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow: hidden;
+        }
+        .upload-card .section-label {
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #4a6a8a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
         }
         .drop-zone {
             background: #fafcff;
             border: 2px dashed #bdd2ec;
-            border-radius: 1.5rem;
-            padding: 2rem 1.5rem;
+            border-radius: 0.6rem;
+            padding: 6px 8px;
             text-align: center;
             cursor: pointer;
             transition: 0.2s;
+            flex-shrink: 0;
         }
         .drop-zone:hover {
             border-color: #1f6392;
             background: #f2f8ff;
         }
-        .drop-zone .icon {
-            font-size: 2.5rem;
-            margin-bottom: 8px;
-        }
+        .drop-zone .icon { font-size: 1rem; }
         .drop-zone .title {
             font-weight: 600;
             color: #1f3a5f;
-            font-size: 1rem;
+            font-size: 0.65rem;
         }
         .drop-zone .sub {
-            font-size: 0.75rem;
+            font-size: 0.5rem;
             color: #7a8eaa;
-            margin-top: 4px;
         }
         .btn-group {
             display: flex;
-            gap: 14px;
+            gap: 3px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-top: 14px;
+            margin-top: 3px;
         }
-
         .btn {
             border: none;
-            padding: 10px 28px;
+            padding: 2px 10px;
             border-radius: 60px;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.55rem;
             cursor: pointer;
             transition: 0.2s;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 3px;
         }
-        .btn-primary {
-            background: #1a5d8c;
-            color: white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-        .btn-primary:hover:not(:disabled) {
-            background: #0e466b;
-            transform: translateY(-1px);
-        }
-        .btn-success {
-            background: #2a7f6e;
-            color: white;
-        }
-        .btn-success:hover:not(:disabled) {
-            background: #1e6657;
-            transform: translateY(-1px);
-        }
-        .btn-outline {
-            background: #eef3fc;
-            color: #1f4970;
-            border: 1px solid #cde0ee;
-        }
-        .btn-outline:hover {
-            background: #e2ebf5;
-        }
-        .btn-danger {
-            background: #fce4e4;
-            color: #b13b3b;
-            border: 1px solid #f5c2c2;
-        }
-        .btn-danger:hover {
-            background: #fccfcf;
-        }
-        .btn-warning {
-            background: #ffecd6;
-            color: #a1552a;
-            border: 1px solid #ffd5aa;
-        }
-        .btn-copy {
-            background: #4a7a9c;
-            color: white;
-        }
-        .btn-copy:hover:not(:disabled) {
-            background: #1e5a7a;
-            transform: translateY(-1px);
-        }
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
+        .btn-primary { background: #1a5d8c; color: white; }
+        .btn-primary:hover:not(:disabled) { background: #0e466b; }
+        .btn-success { background: #2a7f6e; color: white; }
+        .btn-success:hover:not(:disabled) { background: #1e6657; }
+        .btn-outline { background: #eef3fc; color: #1f4970; border: 1px solid #cde0ee; }
+        .btn-outline:hover { background: #e2ebf5; }
+        .btn-danger { background: #fce4e4; color: #b13b3b; border: 1px solid #f5c2c2; }
+        .btn-danger:hover { background: #fccfcf; }
+        .btn-warning { background: #ffecd6; color: #a1552a; border: 1px solid #ffd5aa; }
+        .btn-copy { background: #4a7a9c; color: white; }
+        .btn-copy:hover:not(:disabled) { background: #1e5a7a; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .file-stats {
-            background: #eef2f7;
-            border-radius: 60px;
-            padding: 6px 18px;
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.8rem;
-            margin-top: 12px;
-        }
-        .file-list-box {
-            background: #f8fafd;
-            border-radius: 1rem;
-            padding: 12px 16px;
-            margin-top: 12px;
-            max-height: 120px;
-            overflow-y: auto;
-        }
-        .file-tag {
-            background: white;
-            border-radius: 30px;
-            padding: 4px 12px;
-            margin: 4px 6px;
-            display: inline-flex;
-            align-items: center;
-            font-size: 0.7rem;
-            border: 1px solid #d4e2f0;
-        }
-
-        /* Key 输入 */
         .key-input-row {
             background: #f1f5f9;
-            border-radius: 1.2rem;
-            padding: 12px 18px;
-            margin-top: 16px;
+            border-radius: 0.5rem;
+            padding: 2px 6px;
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 12px;
-            justify-content: space-between;
+            gap: 3px;
+            flex-shrink: 0;
         }
         .key-input-row label {
             font-weight: 600;
             color: #1f3a5f;
-            font-size: 0.85rem;
+            font-size: 0.55rem;
             white-space: nowrap;
         }
         .key-input-row input {
-            flex: 2;
-            min-width: 200px;
-            padding: 10px 16px;
+            flex: 1;
+            min-width: 60px;
+            padding: 2px 6px;
             border-radius: 60px;
             border: 1px solid #cbdde9;
-            font-size: 0.8rem;
+            font-size: 0.6rem;
             background: white;
         }
-        .key-input-row .hint {
-            font-size: 0.7rem;
-            color: #cc6600;
-        }
+        .key-input-row .hint { font-size: 0.45rem; color: #cc6600; }
 
         .action-bar {
             display: flex;
             flex-wrap: wrap;
-            gap: 14px;
-            margin-top: 16px;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+        .action-bar .btn { font-size: 0.55rem; padding: 2px 8px; }
+
+        .file-stats {
+            background: #eef2f7;
+            border-radius: 60px;
+            padding: 1px 8px;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
+            gap: 4px;
+            font-size: 0.55rem;
+            flex-shrink: 0;
+        }
+        .file-list-box {
+            background: #f8fafd;
+            border-radius: 0.5rem;
+            padding: 2px 4px;
+            max-height: 32px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .file-list-box::-webkit-scrollbar { width: 3px; }
+        .file-list-box::-webkit-scrollbar-thumb { background: #c8d8e8; border-radius: 8px; }
+        .file-tag {
+            background: white;
+            border-radius: 30px;
+            padding: 1px 5px;
+            margin: 1px 2px;
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.5rem;
+            border: 1px solid #d4e2f0;
         }
 
-        /* 数据表格 */
-        .table-wrap {
-            overflow-x: auto;
-            border-radius: 1.2rem;
-            border: 1px solid #e3ecf5;
-            background: white;
-            margin-top: 0.5rem;
-            max-height: 450px;
-            overflow-y: auto;
+        .rate-limit-info {
+            background: #fff8e1;
+            border-radius: 0.4rem;
+            padding: 2px 6px;
+            font-size: 0.5rem;
+            color: #8a6d3b;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
         }
-        .data-table {
-            width: 100%;
-            font-size: 0.8rem;
-            border-collapse: collapse;
-            min-width: 750px;
+        .rate-limit-info strong { color: #cc6600; }
+
+        .template-download {
+            text-align: center;
+            font-size: 0.5rem;
+            color: #7a8eaa;
+            flex-shrink: 0;
         }
-        .data-table th {
-            background: #f1f6fc;
-            color: #1f3a5f;
+        .template-download a {
+            color: #1a5d8c;
+            cursor: pointer;
             font-weight: 600;
-            padding: 12px 10px;
-            border-bottom: 2px solid #d3e0ee;
-            position: sticky;
-            top: 0;
-            z-index: 5;
-            white-space: nowrap;
+            text-decoration: none;
         }
-        .data-table td {
-            padding: 10px 10px;
-            border-bottom: 1px solid #e6edf5;
-            vertical-align: middle;
-        }
-        .data-table tr:hover td {
-            background: #f8fafd;
-        }
-        .data-table .status-ok {
-            color: #2a7f6e;
-            font-weight: 600;
-        }
-        .data-table .status-fail {
-            color: #b13b3b;
-            font-weight: 600;
-        }
-        .data-table .status-pending {
-            color: #b08a3a;
-        }
-        .data-table .status-retry {
-            color: #cc6600;
-            font-weight: 600;
-        }
+        .template-download a:hover { text-decoration: underline; }
 
         .stat-bar {
             display: flex;
             flex-wrap: wrap;
-            gap: 18px;
-            padding: 12px 16px;
+            gap: 4px;
+            padding: 2px 6px;
             background: #f8fafd;
-            border-radius: 1rem;
-            margin-top: 12px;
+            border-radius: 0.4rem;
+            border: 1px solid #e8eef5;
             align-items: center;
-            justify-content: space-between;
+            flex-shrink: 0;
         }
         .stat-item {
-            font-size: 0.8rem;
+            font-size: 0.55rem;
             color: #2c3e66;
         }
-        .stat-item strong {
-            color: #1a5d8c;
-            font-size: 1rem;
-        }
-        .stat-item .success-count {
-            color: #2a7f6e;
-        }
-        .stat-item .fail-count {
-            color: #b13b3b;
-        }
-
-        .log-card {
-            background: #0f1a24;
-            border-radius: 1.2rem;
-            padding: 1rem;
-            margin-top: 1.2rem;
-        }
-        .log-content {
-            color: #c9e1f0;
-            font-family: monospace;
-            font-size: 0.75rem;
-            max-height: 120px;
-            overflow-y: auto;
-        }
+        .stat-item strong { color: #1a5d8c; font-size: 0.65rem; }
+        .stat-item .success-count { color: #2a7f6e; }
+        .stat-item .fail-count { color: #b13b3b; }
 
         .progress-wrap {
-            height: 4px;
+            height: 2px;
             background: #dce3ec;
             border-radius: 4px;
-            margin: 12px 0 4px;
             overflow: hidden;
+            flex-shrink: 0;
         }
         .progress-fill {
             height: 100%;
@@ -347,23 +374,177 @@
             transition: width 0.3s;
         }
 
-        .template-download {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 0.75rem;
-            color: #7a8eaa;
+        .log-card {
+            background: #0f1a24;
+            border-radius: 0.4rem;
+            padding: 2px 6px;
+            flex-shrink: 0;
+            max-height: 30px;
+            overflow-y: auto;
         }
-        .template-download a {
-            color: #1a5d8c;
-            cursor: pointer;
-            font-weight: 600;
-            text-decoration: none;
-        }
-        .template-download a:hover {
-            text-decoration: underline;
+        .log-card::-webkit-scrollbar { width: 3px; }
+        .log-card::-webkit-scrollbar-thumb { background: #446688; border-radius: 8px; }
+        .log-content {
+            color: #c9e1f0;
+            font-family: monospace;
+            font-size: 0.5rem;
+            line-height: 1.3;
         }
 
-        /* 底部固定下载栏 */
+        /* ===== 右：表格区（固定高度 + 滚动） ===== */
+        .table-card {
+            background: #f8fafd;
+            border-radius: 0.8rem;
+            padding: 6px 10px;
+            border: 1px solid #e2edf5;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 100%;
+            min-height: 0;
+        }
+        .table-card .section-label {
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #4a6a8a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .table-card .section-label .count {
+            font-size: 0.5rem;
+            color: #7a8eaa;
+            font-weight: 400;
+        }
+        .table-wrap {
+            flex: 1;
+            overflow: auto;
+            border-radius: 0.4rem;
+            border: 1px solid #e3ecf5;
+            background: white;
+            margin-top: 2px;
+            min-height: 0;
+        }
+        .table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+        .table-wrap::-webkit-scrollbar-thumb { background: #c8d8e8; border-radius: 8px; }
+        .table-wrap::-webkit-scrollbar-track { background: #f5f8fc; }
+
+        .data-table {
+            width: 100%;
+            font-size: 0.6rem;
+            border-collapse: collapse;
+            min-width: 450px;
+        }
+        .data-table th {
+            background: #f1f6fc;
+            color: #1f3a5f;
+            font-weight: 600;
+            padding: 3px 4px;
+            border-bottom: 2px solid #d3e0ee;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            white-space: nowrap;
+            font-size: 0.5rem;
+        }
+        .data-table td {
+            padding: 2px 4px;
+            border-bottom: 1px solid #e6edf5;
+            vertical-align: middle;
+            font-size: 0.55rem;
+        }
+        .data-table tr:hover td { background: #f8fafd; }
+        .data-table .status-ok { color: #2a7f6e; font-weight: 600; }
+        .data-table .status-fail { color: #b13b3b; font-weight: 600; }
+        .data-table .status-pending { color: #b08a3a; }
+        .data-table .status-retry { color: #cc6600; font-weight: 600; }
+        .data-table .empty-row td {
+            text-align: center;
+            color: #a0b8cc;
+            padding: 8px;
+        }
+
+        /* ===== 下半部分：地图（填满剩余空间） ===== */
+        .map-section {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            border-top: 1px solid #e2edf5;
+            padding-top: 4px;
+        }
+        .map-section .map-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .map-section .map-header .label {
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #4a6a8a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .map-section .map-header .status {
+            font-size: 0.5rem;
+            color: #7a8eaa;
+        }
+
+        #mapContainer {
+            flex: 1;
+            border-radius: 0.6rem;
+            border: 1px solid #e2edf5;
+            overflow: hidden;
+            background: #e8ecf0;
+            position: relative;
+            min-height: 0;
+        }
+        #mapContainer .leaflet-container {
+            height: 100% !important;
+            width: 100% !important;
+            background: #e8ecf0;
+        }
+        .map-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #8aa0b8;
+            font-size: 0.7rem;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .map-placeholder .icon { font-size: 1.6rem; opacity: 0.4; }
+
+        .map-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 2px 6px;
+            background: #f8fafd;
+            border-radius: 0.4rem;
+            border: 1px solid #e8eef5;
+            font-size: 0.5rem;
+            color: #4a6a8a;
+            flex-shrink: 0;
+        }
+        .map-legend .item { display: flex; align-items: center; gap: 2px; }
+        .map-legend .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        /* ===== 底部固定栏 ===== */
         .fixed-bar {
             position: fixed;
             bottom: 0;
@@ -371,100 +552,108 @@
             right: 0;
             background: linear-gradient(135deg, #0f2f46, #1a405e);
             border-top: 3px solid #ffb347;
-            padding: 14px 28px;
+            padding: 5px 14px;
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            gap: 16px;
+            gap: 5px;
             z-index: 999;
-            box-shadow: 0 -6px 24px rgba(0,0,0,0.25);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
         }
-        .fixed-bar .info {
-            color: #ffde9c;
-            font-size: 14px;
-            font-weight: 500;
-        }
+        .fixed-bar .info { color: #ffde9c; font-size: 10px; font-weight: 500; }
         .fixed-bar .dl-btn {
             background: #ffc107;
             border: none;
-            padding: 10px 32px;
+            padding: 4px 14px;
             border-radius: 60px;
-            font-weight: 800;
-            font-size: 15px;
+            font-weight: 700;
+            font-size: 11px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 10px;
+            gap: 4px;
             transition: 0.2s;
             color: #1e3a5f;
         }
-        .fixed-bar .dl-btn:hover:not(:disabled) {
-            background: #ffda6a;
-            transform: scale(1.02);
-        }
-        .fixed-bar .dl-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .fixed-bar .dl-btn:hover:not(:disabled) { background: #ffda6a; }
+        .fixed-bar .dl-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .fixed-bar .reset-btn {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
             color: #ffdfb3;
             border: none;
-            padding: 8px 20px;
+            padding: 3px 10px;
             border-radius: 40px;
             cursor: pointer;
+            font-size: 10px;
         }
-        .fixed-bar .reset-btn:hover {
-            background: rgba(255,255,255,0.25);
-        }
-        .hidden-bar {
-            display: none !important;
-        }
-
-        footer {
-            text-align: center;
-            font-size: 0.7rem;
-            color: #6c86a3;
-            padding: 1rem 0 0;
-        }
+        .fixed-bar .reset-btn:hover { background: rgba(255, 255, 255, 0.25); }
+        .hidden-bar { display: none !important; }
 
         .copy-toast {
             position: fixed;
-            top: 20px;
+            top: 16px;
             left: 50%;
             transform: translateX(-50%);
             background: #2a7f6e;
             color: white;
-            padding: 12px 28px;
+            padding: 5px 16px;
             border-radius: 60px;
             font-weight: 600;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
             z-index: 2000;
             animation: fadeInDown 0.3s ease;
             display: none;
+            font-size: 0.75rem;
         }
-        .copy-toast.show {
-            display: block;
-        }
+        .copy-toast.show { display: block; }
         @keyframes fadeInDown {
-            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
-        .rate-limit-info {
-            background: #fff8e1;
-            border-radius: 1rem;
-            padding: 8px 16px;
-            margin-top: 10px;
-            font-size: 0.75rem;
-            color: #8a6d3b;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 900px) {
+            .container { height: auto; min-height: 100vh; }
+            .top-section {
+                grid-template-columns: 1fr;
+                height: auto;
+                min-height: auto;
+                max-height: none;
+            }
+            .upload-card { max-height: 260px; }
+            .table-card { min-height: 160px; max-height: 220px; }
+            .map-section { min-height: 160px; }
+            .header h1 { font-size: 0.9rem; }
+            .header h1 small { display: none; }
         }
-        .rate-limit-info strong {
-            color: #cc6600;
+        @media (max-width: 600px) {
+            body { padding: 4px; }
+            .header { padding: 6px 10px; }
+            .header h1 { font-size: 0.75rem; }
+            .main-body { padding: 4px 6px; gap: 4px; }
+            .top-section { gap: 4px; }
+            .upload-card { padding: 4px 6px; max-height: 220px; }
+            .drop-zone { padding: 4px 6px; }
+            .drop-zone .icon { font-size: 0.8rem; }
+            .drop-zone .title { font-size: 0.55rem; }
+            .table-card { padding: 4px 6px; min-height: 120px; max-height: 160px; }
+            .data-table { font-size: 0.5rem; min-width: 320px; }
+            .data-table th, .data-table td { padding: 1px 2px; }
+            .map-section { min-height: 120px; }
+            .stat-bar { gap: 3px; padding: 1px 4px; }
+            .stat-item { font-size: 0.45rem; }
+            .fixed-bar { padding: 3px 8px; flex-direction: column; align-items: stretch; }
+            .fixed-bar .dl-btn { justify-content: center; font-size: 10px; padding: 3px 10px; }
+            .btn { font-size: 0.45rem; padding: 1px 6px; }
+            .key-input-row input { font-size: 0.5rem; min-width: 50px; }
+            .rate-limit-info { font-size: 0.45rem; gap: 3px; padding: 1px 4px; }
+            .log-card { max-height: 24px; }
+            .log-content { font-size: 0.45rem; }
+            .data-pass-bar { padding: 3px 6px; }
+            .data-pass-bar .info { font-size: 0.5rem; }
+            .workflow-hint { padding: 4px 8px; }
+            .workflow-hint .info { font-size: 0.6rem; }
         }
     </style>
 </head>
@@ -472,112 +661,152 @@
 <div id="copyToast" class="copy-toast">✅ 已复制到剪贴板！</div>
 
 <div class="container">
+    <!-- ===== 头部 ===== -->
     <div class="header">
-        <h1>📍 站点地址转经纬度 · 限流优化版</h1>
-        <p>上传Excel文件（包含站点代码、站点名称、站点地址），批量查询经纬度坐标</p>
+        <h1>📍 地址转经纬度 <small>批量地理编码 · 工作流联动版</small></h1>
         <div class="badge-group">
-            <span class="badge">📁 支持文件导入</span>
-            <span class="badge">🗺️ 高德地理编码</span>
-            <span class="badge">🛑 限流控制 (QPS≤3)</span>
-            <span class="badge">📋 结果可复制</span>
-            <span class="badge limit">⏱️ 自动重试</span>
+            <span class="badge">📁 文件导入</span>
+            <span class="badge limit">🛑 QPS≤3</span>
+            <span class="badge">⏱️ 重试3次</span>
+            <span class="badge map">🗺️ 地图展示</span>
+            <span class="badge link">🔗 工具联动</span>
         </div>
     </div>
 
-    <div class="content">
-        <div class="upload-card">
-            <div class="drop-zone" id="dropZone">
-                <div class="icon">📂</div>
-                <div class="title">拖拽 Excel 文件 / 文件夹至此，或点击下方按钮</div>
-                <div class="sub">支持 .xlsx, .xls, .csv 格式，需包含列：<strong>站点代码, 站点名称, 站点地址</strong></div>
-                <div class="btn-group">
-                    <label class="btn btn-primary" style="cursor:pointer;">
-                        📁 选择文件夹(批量Excel)
-                        <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;">
-                    </label>
-                    <label class="btn btn-outline" style="cursor:pointer;">
-                        📄 选择Excel文件
-                        <input type="file" id="fileInput" multiple accept=".xlsx, .xls, .csv" style="display:none;">
-                    </label>
-                    <button class="btn btn-warning" id="clearBtn">🗑️ 清空数据</button>
+    <!-- ===== 主体 ===== -->
+    <div class="main-body">
+
+        <!-- ★★★ 工作流状态提示栏 ★★★ -->
+        <div class="workflow-hint" id="workflowHint">
+            <span class="icon">⚡</span>
+            <span class="info">🔗 <strong>工作流模式</strong> · 查询完成后数据将自动保存，供下游工具使用</span>
+            <span class="status" id="workflowStatus">⏳ 等待查询</span>
+        </div>
+
+        <!-- ★★★ 数据传递状态栏 ★★★ -->
+        <div class="data-pass-bar" id="dataPassBar">
+            <span class="info">💾 数据已保存，可传递给下游工具：<strong id="passInfo">K-Means聚类</strong></span>
+            <div class="actions">
+                <button class="btn btn-success" id="saveAndPassBtn" disabled>💾 保存并传递</button>
+                <button class="btn btn-outline" id="clearPassBtn">✕ 清除</button>
+            </div>
+        </div>
+
+        <!-- ===== 上半部分：左（上传区）+ 右（表格） ===== -->
+        <div class="top-section">
+            <!-- ===== 左：上传区 ===== -->
+            <div class="upload-card">
+                <div class="section-label">📥 导入数据</div>
+                <div class="drop-zone" id="dropZone">
+                    <div class="icon">📂</div>
+                    <div class="title">拖拽或点击上传</div>
+                    <div class="sub">.xlsx, .xls, .csv</div>
+                    <div class="btn-group">
+                        <label class="btn btn-primary" style="cursor:pointer;font-size:0.5rem;padding:1px 6px;">
+                            📁 文件夹
+                            <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;">
+                        </label>
+                        <label class="btn btn-outline" style="cursor:pointer;font-size:0.5rem;padding:1px 6px;">
+                            📄 Excel
+                            <input type="file" id="fileInput" multiple accept=".xlsx, .xls, .csv" style="display:none;">
+                        </label>
+                        <button class="btn btn-warning" id="clearBtn" style="font-size:0.5rem;padding:1px 6px;">🗑️</button>
+                    </div>
+                    <div id="fileStatsArea" class="file-stats" style="display:none;"></div>
+                    <div id="fileListBox" class="file-list-box" style="display:none;"></div>
+                    <div class="template-download">
+                        📋 <a id="downloadTemplateBtn">下载模板</a>
+                    </div>
                 </div>
-                <div id="fileStatsArea" class="file-stats" style="display:none;"></div>
-                <div id="fileListBox" class="file-list-box" style="display:none;"></div>
-                <div class="template-download">
-                    📋 下载Excel模板：<a id="downloadTemplateBtn">点击下载 template.xlsx</a>
+
+                <div class="key-input-row">
+                    <label>🗺️ Key</label>
+                    <input type="text" id="amapKey" placeholder="高德Web服务Key" value="9a5f6a8c2b3d4e5f6a7b8c9d0e1f2a3b">
+                    <span class="hint">⚠️ 需开启地理编码</span>
+                </div>
+
+                <div class="action-bar">
+                    <button class="btn btn-success" id="queryBtn" disabled>🔍 查询</button>
+                    <button class="btn btn-outline" id="stopBtn" disabled>⛔ 停止</button>
+                    <button class="btn btn-copy" id="copyResultBtn" disabled>📋 复制</button>
+                    <button class="btn btn-outline" id="exportResultBtn" disabled>📥 导出</button>
+                </div>
+
+                <div class="rate-limit-info">
+                    <span>🛑 限流 <strong>3次/秒</strong></span>
+                    <span>|</span>
+                    <span>⏱️ 间隔 <strong>350ms</strong></span>
+                    <span>|</span>
+                    <span>🔄 重试 <strong>最多3次</strong></span>
+                </div>
+
+                <div class="stat-bar">
+                    <span class="stat-item">📌 <strong id="totalCount">0</strong></span>
+                    <span class="stat-item">✅ <strong class="success-count" id="successCount">0</strong></span>
+                    <span class="stat-item">❌ <strong class="fail-count" id="failCount">0</strong></span>
+                    <span class="stat-item" id="progressText" style="margin-left:auto;">⏳ 就绪</span>
+                </div>
+                <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+
+                <div class="log-card">
+                    <div class="log-content" id="logArea">⚙️ 等待操作… 上传Excel文件</div>
                 </div>
             </div>
 
-            <!-- 限流信息 -->
-            <div class="rate-limit-info">
-                <span>🛑 限流设置：</span>
-                <strong>每秒最多 3 次请求</strong>
-                <span>|</span>
-                <span>⏱️ 请求间隔：<strong>350ms</strong></span>
-                <span>|</span>
-                <span>🔄 失败自动重试：<strong>最多 3 次</strong></span>
+            <!-- ===== 右：表格区 ===== -->
+            <div class="table-card">
+                <div class="section-label">
+                    <span>📊 站点数据</span>
+                    <span class="count" id="rowCount">共 0 条</span>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width:24px;">#</th>
+                                <th>代码</th>
+                                <th>名称</th>
+                                <th style="min-width:80px;">地址</th>
+                                <th>经度</th>
+                                <th>纬度</th>
+                                <th style="width:55px;">状态</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr class="empty-row"><td colspan="7">📭 请上传Excel文件</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
+        </div>
 
-            <!-- 高德Key -->
-            <div class="key-input-row">
-                <label>🗺️ 高德Web服务Key</label>
-                <input type="text" id="amapKey" placeholder="请输入高德地图Web服务API Key" value="9a5f6a8c2b3d4e5f6a7b8c9d0e1f2a3b">
-                <span class="hint">⚠️ 需开启地理编码权限</span>
+        <!-- ===== 下半部分：地图 ===== -->
+        <div class="map-section">
+            <div class="map-header">
+                <span class="label">🗺️ 站点地图 <span id="mapCount" style="font-weight:400;color:#7a8eaa;font-size:0.5rem;">📍 0 个</span></span>
+                <span class="status" id="mapStatus">🟢 就绪</span>
             </div>
-
-            <!-- 操作按钮 -->
-            <div class="action-bar">
-                <button class="btn btn-success" id="queryBtn" disabled>🔍 批量查询经纬度</button>
-                <button class="btn btn-outline" id="stopBtn" disabled>⛔ 停止查询</button>
-                <button class="btn btn-copy" id="copyResultBtn" disabled>📋 复制全部结果</button>
-                <button class="btn btn-outline" id="exportResultBtn" disabled>📥 导出Excel</button>
+            <div id="mapContainer">
+                <div class="map-placeholder">
+                    <span class="icon">🗺️</span>
+                    <span>上传数据并点击「查询」</span>
+                    <span style="font-size:0.55rem;color:#a0b8cc;">成功解析的站点将显示在地图上</span>
+                </div>
+            </div>
+            <div class="map-legend">
+                <span class="item"><span class="dot" style="background:#4A9EFF;"></span> 成功</span>
+                <span class="item"><span class="dot" style="background:#FF6B6B;"></span> 失败</span>
+                <span class="item" style="margin-left:auto;color:#7a8eaa;">💡 点击标记查看详情</span>
             </div>
         </div>
-
-        <!-- 数据表格 -->
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
-            <span style="font-weight:600; color:#1f3a5f;">📊 站点数据列表</span>
-            <span style="font-size:0.75rem; color:#7a8eaa;" id="rowCount">共 0 条</span>
-        </div>
-        <div class="table-wrap">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th style="width:40px;">#</th>
-                        <th>站点代码</th>
-                        <th>站点名称</th>
-                        <th>站点地址</th>
-                        <th>经度</th>
-                        <th>纬度</th>
-                        <th style="width:100px;">状态</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-        </div>
-
-        <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
-
-        <div class="stat-bar">
-            <span class="stat-item">📌 总计：<strong id="totalCount">0</strong> 条</span>
-            <span class="stat-item">✅ 成功：<strong class="success-count" id="successCount">0</span>
-            <span class="stat-item">❌ 失败：<strong class="fail-count" id="failCount">0</span>
-            <span class="stat-item" id="progressText">⏳ 就绪</span>
-        </div>
-
-        <div class="log-card">
-            <div class="log-content" id="logArea">⚙️ 等待操作… 请上传包含站点数据的Excel文件</div>
-        </div>
-
-        <footer>🔒 所有处理在浏览器本地完成，数据安全；限流设置：QPS ≤ 3，失败自动重试</footer>
     </div>
 </div>
 
-<!-- 底部固定下载栏 -->
+<!-- ===== 底部固定下载栏 ===== -->
 <div id="fixedBar" class="fixed-bar hidden-bar">
     <span class="info" id="dlStatus">📦 查询完成，可导出结果</span>
-    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
-        <button class="dl-btn" id="downloadBtn">⬇️ 下载经纬度结果 (Excel)</button>
+    <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
+        <button class="dl-btn" id="downloadBtn">⬇️ 下载Excel</button>
         <button class="reset-btn" id="resetBottomBtn">🔄 重新查询</button>
     </div>
 </div>
@@ -587,12 +816,31 @@
     //  限流配置
     // ============================================================
     const CONFIG = {
-        QPS_LIMIT: 3,              // 每秒最多请求数
-        REQUEST_INTERVAL: 350,      // 每次请求间隔（毫秒），确保 QPS ≤ 3
-        MAX_RETRIES: 3,            // 最大重试次数
-        RETRY_DELAY: 1000,         // 重试等待时间（毫秒）
-        RATE_LIMIT_ERROR: 'CUQPS_HAS_EXCEEDED_THE_LIMIT'  // 限流错误码
+        QPS_LIMIT: 3,
+        REQUEST_INTERVAL: 350,
+        MAX_RETRIES: 3,
+        RETRY_DELAY: 1000,
+        RATE_LIMIT_ERROR: 'CUQPS_HAS_EXCEEDED_THE_LIMIT'
     };
+
+    // ============================================================
+    //  ★★★ 工具联动配置 ★★★
+    // ============================================================
+    const PASS_KEY = 'toolbox_data_pass';
+    const TOOL_ID = 'address-geocode';
+
+    // ============================================================
+    //  地图图层配置
+    // ============================================================
+    const TILE_LAYERS = [{
+        name: '高德地图',
+        url: 'https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+        options: { maxZoom: 18, attribution: '© 高德地图' }
+    }, {
+        name: 'OpenStreetMap',
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        options: { maxZoom: 19, attribution: '© OpenStreetMap', subdomains: ['a', 'b', 'c'] }
+    }];
 
     // ============================================================
     //  数据模型
@@ -603,6 +851,14 @@
     let abortFlag = false;
     let resultBlob = null;
     let nextId = 1;
+
+    let mapInstance = null;
+    let mapLayers = [];
+    let isMapInitialized = false;
+    let passDataCache = null;
+
+    // 工作流检测
+    let isInWorkflow = false;
 
     // DOM
     const tableBody = document.getElementById('tableBody');
@@ -630,6 +886,34 @@
     const fileListBox = document.getElementById('fileListBox');
     const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
     const copyToast = document.getElementById('copyToast');
+    const mapContainer = document.getElementById('mapContainer');
+    const mapStatus = document.getElementById('mapStatus');
+    const mapCount = document.getElementById('mapCount');
+
+    // 工作流DOM
+    const workflowHint = document.getElementById('workflowHint');
+    const workflowStatus = document.getElementById('workflowStatus');
+
+    // 数据传递DOM
+    const dataPassBar = document.getElementById('dataPassBar');
+    const passInfo = document.getElementById('passInfo');
+    const saveAndPassBtn = document.getElementById('saveAndPassBtn');
+    const clearPassBtn = document.getElementById('clearPassBtn');
+
+    // ========== 检测是否在工作流中 ==========
+    function detectWorkflowMode() {
+        try {
+            if (window.parent && window.parent !== window) {
+                isInWorkflow = true;
+                workflowHint.classList.add('show');
+                workflowStatus.textContent = '⚡ 工作流模式';
+                addLog('🔗 检测到工作流模式，查询完成后将自动通知父页面', false);
+                return true;
+            }
+        } catch (e) {}
+        workflowHint.classList.remove('show');
+        return false;
+    }
 
     // ========== 日志 ==========
     function addLog(msg, isError = false) {
@@ -638,45 +922,169 @@
         const color = isError ? '#ffb4a2' : '#b9e0ff';
         logArea.innerHTML += `<span style="color:${color}">${prefix} [${time}] ${msg}</span><br>`;
         logArea.scrollTop = logArea.scrollHeight;
-        if (logArea.innerHTML.split('<br>').length > 120) {
+        if (logArea.innerHTML.split('<br>').length > 60) {
             const lines = logArea.innerHTML.split('<br>');
-            logArea.innerHTML = lines.slice(-80).join('<br>');
+            logArea.innerHTML = lines.slice(-40).join('<br>');
+        }
+    }
+
+    // ========== ★★★ 数据传递功能 ★★★ ==========
+    function getPassData() {
+        try {
+            const raw = localStorage.getItem(PASS_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return null;
+    }
+
+    function savePassData(data) {
+        localStorage.setItem(PASS_KEY, JSON.stringify(data));
+        passDataCache = data;
+    }
+
+    function clearPassData() {
+        localStorage.removeItem(PASS_KEY);
+        passDataCache = null;
+        dataPassBar.classList.remove('show');
+        saveAndPassBtn.disabled = true;
+        addLog('🗑️ 已清除传递数据', 'info');
+        if (isInWorkflow) {
+            workflowStatus.textContent = '⏳ 等待查询';
+        }
+    }
+
+    function checkPassStatus() {
+        const passData = getPassData();
+        if (passData && passData.tool === TOOL_ID && passData.data && passData.data.length > 0) {
+            dataPassBar.classList.add('show');
+            passInfo.textContent = `K-Means聚类 (${passData.data.length} 条地址)`;
+            saveAndPassBtn.disabled = true;
+            if (isInWorkflow) {
+                workflowStatus.textContent = '✅ 数据已保存';
+            }
+            return true;
+        } else {
+            const successResults = dataRows.filter(r => r.status === '成功');
+            if (successResults.length > 0) {
+                dataPassBar.classList.add('show');
+                passInfo.textContent = `K-Means聚类 (${successResults.length} 条地址)`;
+                saveAndPassBtn.disabled = false;
+                if (isInWorkflow) {
+                    workflowStatus.textContent = '📦 数据待保存';
+                }
+                return true;
+            }
+            dataPassBar.classList.remove('show');
+            saveAndPassBtn.disabled = true;
+            if (isInWorkflow) {
+                workflowStatus.textContent = '⏳ 等待查询';
+            }
+            return false;
+        }
+    }
+
+    // ========== ★★★ 核心：保存并通知父页面 ★★★ ==========
+    function saveAndPass() {
+        const successResults = dataRows.filter(r => r.status === '成功' && r.lng !== null && r.lat !== null);
+        if (successResults.length === 0) {
+            showToast('⚠️ 没有成功解析的地址可以传递', 'error');
+            return;
+        }
+
+        const passData = {
+            tool: TOOL_ID,
+            timestamp: new Date().toISOString(),
+            count: successResults.length,
+            data: successResults.map(r => ({
+                '站点代码': r.code || '',
+                '站点名称': r.name || '',
+                '地址': r.addr,
+                '经度': r.lng,
+                '纬度': r.lat,
+                '省': r.province || '',
+                '市': r.city || '',
+                '区': r.district || ''
+            }))
+        };
+
+        savePassData(passData);
+        dataPassBar.classList.add('show');
+        passInfo.textContent = `K-Means聚类 (${successResults.length} 条地址)`;
+        saveAndPassBtn.disabled = true;
+
+        showToast(`✅ 已保存 ${successResults.length} 条地址数据`, 'success');
+        addLog(`💾 已保存 ${successResults.length} 条数据，供下游工具使用`, 'success');
+
+        if (isInWorkflow) {
+            workflowStatus.textContent = '✅ 已保存，通知父页面...';
+        }
+
+        // ★★★ 关键：通知父页面（工作流引擎） ★★★
+        try {
+            window.parent.postMessage({
+                type: 'toolbox_data_saved',
+                tool: TOOL_ID,
+                count: successResults.length,
+                data: passData
+            }, '*');
+            addLog(`📤 已通知父页面: 数据已保存 (${successResults.length} 条)`, 'success');
+            if (isInWorkflow) {
+                workflowStatus.textContent = '✅ 已通知工作流';
+            }
+        } catch (e) {
+            addLog(`⚠️ 通知父页面失败: ${e.message}`, true);
+            if (isInWorkflow) {
+                workflowStatus.textContent = '⚠️ 通知失败，请手动继续';
+            }
         }
     }
 
     // ========== 渲染表格 ==========
     function renderTable() {
         let html = '';
-        dataRows.forEach((row, idx) => {
-            let statusClass = 'status-pending';
-            if (row.status === '成功') statusClass = 'status-ok';
-            else if (row.status === '失败') statusClass = 'status-fail';
-            else if (row.status && row.status.includes('重试')) statusClass = 'status-retry';
-            
-            const lngDisplay = row.lng !== null && row.lng !== undefined && row.lng !== '' ? row.lng : '-';
-            const latDisplay = row.lat !== null && row.lat !== undefined && row.lat !== '' ? row.lat : '-';
-            html += `<tr>
-                <td>${idx + 1}</td>
-                <td>${escHtml(row.code)}</td>
-                <td>${escHtml(row.name)}</td>
-                <td style="font-size:12px;">${escHtml(row.addr)}</td>
-                <td>${lngDisplay}</td>
-                <td>${latDisplay}</td>
-                <td class="${statusClass}">${row.status || '待查询'}</td>
-            </tr>`;
-        });
-        tableBody.innerHTML = html || `<tr><td colspan="7" style="text-align:center; color:#a18163; padding:20px;">暂无数据，请上传Excel文件</td></tr>`;
+        if (dataRows.length === 0) {
+            html = `<tr class="empty-row"><td colspan="7">📭 请上传Excel文件</td></tr>`;
+        } else {
+            dataRows.forEach((row, idx) => {
+                let statusClass = 'status-pending';
+                let statusText = row.status || '待查询';
+                if (row.status === '成功') { statusClass = 'status-ok'; }
+                else if (row.status === '失败' || (row.status && row.status.includes('最终失败'))) { statusClass = 'status-fail'; }
+                else if (row.status && row.status.includes('重试')) { statusClass = 'status-retry'; }
+
+                const lngDisplay = (row.lng !== null && row.lng !== undefined && row.lng !== '') ? row.lng : '-';
+                const latDisplay = (row.lat !== null && row.lat !== undefined && row.lat !== '') ? row.lat : '-';
+
+                html += `<tr>
+                    <td>${idx + 1}</td>
+                    <td>${escHtml(row.code)}</td>
+                    <td>${escHtml(row.name)}</td>
+                    <td style="font-size:0.5rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(row.addr)}">${escHtml(row.addr)}</td>
+                    <td>${lngDisplay}</td>
+                    <td>${latDisplay}</td>
+                    <td class="${statusClass}">${statusText}</td>
+                </tr>`;
+            });
+        }
+        tableBody.innerHTML = html;
         rowCount.textContent = `共 ${dataRows.length} 条`;
         totalCount.textContent = dataRows.length;
         const succ = dataRows.filter(r => r.status === '成功').length;
         const fail = dataRows.filter(r => r.status === '失败' || (r.status && r.status.includes('最终失败'))).length;
         successCount.textContent = succ;
         failCount.textContent = fail;
+
         const hasResult = dataRows.some(r => r.status === '成功' || r.status === '失败' || (r.status && r.status.includes('最终失败')));
         const hasData = dataRows.length > 0;
         exportResultBtn.disabled = !hasResult || isQuerying;
         copyResultBtn.disabled = !hasResult || isQuerying;
         queryBtn.disabled = !hasData || isQuerying;
+
+        if (isMapInitialized) {
+            renderMapMarkers();
+        }
+
+        checkPassStatus();
     }
 
     function escHtml(str) {
@@ -750,7 +1158,10 @@
                         addr: r.addr,
                         lng: null,
                         lat: null,
-                        status: '待查询'
+                        status: '待查询',
+                        province: '',
+                        city: '',
+                        district: ''
                     });
                     totalAdded++;
                 }
@@ -760,6 +1171,12 @@
         renderTable();
         updateDownloadBarVisibility();
         addLog(`✅ 共加载 ${totalAdded} 条站点数据`, false);
+
+        if (isMapInitialized) {
+            renderMapMarkers();
+        }
+        mapStatus.textContent = `📌 ${dataRows.length} 条，点击「查询」获取坐标`;
+        checkPassStatus();
     }
 
     // ========== 文件UI ==========
@@ -771,9 +1188,9 @@
             return;
         }
         fileStatsArea.style.display = 'inline-flex';
-        fileStatsArea.innerHTML = `📁 已加载 ${cnt} 个Excel文件`;
+        fileStatsArea.innerHTML = `📁 ${cnt} 个文件`;
         fileListBox.style.display = 'block';
-        fileListBox.innerHTML = `<div style="font-weight:500; margin-bottom:4px;">📋 文件列表</div><div>${uploadedFiles.map(f => `<span class="file-tag">📄 ${f.name}</span>`).join('')}</div>`;
+        fileListBox.innerHTML = uploadedFiles.map(f => `<span class="file-tag">📄 ${f.name}</span>`).join('');
     }
 
     // ========== 清空 ==========
@@ -803,64 +1220,181 @@
         progressFill.style.width = '0%';
         progressText.textContent = '⏳ 就绪';
         addLog('已清空所有数据', false);
+        if (isMapInitialized) {
+            clearMapMarkers();
+        }
+        mapStatus.textContent = '🟢 就绪';
+        mapCount.textContent = '📍 0 个';
+        clearPassData();
+        if (isInWorkflow) {
+            workflowStatus.textContent = '⏳ 等待查询';
+        }
     }
 
-    // ========== 高德地理编码（含限流和重试） ==========
-    async function geocodeAddressWithRetry(address, key, rowIndex) {
-        let lastError = null;
-        
+    // ========== 地图功能 ==========
+    function initMap() {
+        if (isMapInitialized && mapInstance) {
+            mapInstance.invalidateSize();
+            return;
+        }
+
+        try {
+            mapInstance = L.map(mapContainer, {
+                center: [30.0, 120.0],
+                zoom: 6,
+                zoomControl: true,
+                fadeAnimation: true,
+                attributionControl: true
+            });
+
+            let layerLoaded = false;
+            let currentIdx = 0;
+
+            function tryLoadLayer(index) {
+                if (index >= TILE_LAYERS.length) {
+                    if (!layerLoaded) mapStatus.textContent = '⚠️ 地图加载失败';
+                    return;
+                }
+                const layer = TILE_LAYERS[index];
+                const tileLayer = L.tileLayer(layer.url, layer.options);
+                let loaded = false;
+
+                const onLoad = () => {
+                    if (!loaded) { loaded = true; layerLoaded = true; mapStatus.textContent = '✅ 地图就绪'; }
+                };
+                const onError = () => {
+                    if (!loaded) {
+                        loaded = true;
+                        if (mapInstance) mapInstance.removeLayer(tileLayer);
+                        setTimeout(() => { if (!layerLoaded) tryLoadLayer(index + 1); }, 500);
+                    }
+                };
+                tileLayer.on('load', onLoad);
+                tileLayer.on('tileload', onLoad);
+                tileLayer.on('tileerror', onError);
+                setTimeout(() => { if (!loaded) onError(); }, 8000);
+                tileLayer.addTo(mapInstance);
+            }
+            tryLoadLayer(0);
+
+            isMapInitialized = true;
+            addLog('🗺️ 地图初始化完成', false);
+        } catch (e) {
+            addLog('❌ 地图初始化失败: ' + e.message, true);
+            mapStatus.textContent = '❌ 地图加载失败';
+        }
+    }
+
+    function clearMapMarkers() {
+        if (mapLayers.length > 0) {
+            mapLayers.forEach(layer => {
+                if (mapInstance) mapInstance.removeLayer(layer);
+            });
+            mapLayers = [];
+        }
+        mapCount.textContent = '📍 0 个';
+    }
+
+    function renderMapMarkers() {
+        if (!isMapInitialized || !mapInstance) return;
+        clearMapMarkers();
+
+        const successRows = dataRows.filter(r => r.status === '成功' && r.lng !== null && r.lat !== null);
+
+        if (successRows.length === 0) {
+            mapStatus.textContent = `📌 ${dataRows.length} 条，暂无坐标`;
+            mapCount.textContent = '📍 0 个';
+            return;
+        }
+
+        const bounds = [];
+        successRows.forEach((row) => {
+            const icon = L.divIcon({
+                html: `<div style="background:#4A9EFF;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+                className: '',
+                iconSize: [12, 12],
+                iconAnchor: [6, 6]
+            });
+            const popupContent = `<strong>${escHtml(row.name)}</strong><br>📍 ${row.lng}, ${row.lat}<br>🏷️ ${escHtml(row.code)}<br>📌 ${escHtml(row.addr)}`;
+            const marker = L.marker([row.lat, row.lng], { icon }).bindPopup(popupContent);
+            mapInstance.addLayer(marker);
+            mapLayers.push(marker);
+            bounds.push([row.lat, row.lng]);
+        });
+
+        mapCount.textContent = `📍 ${successRows.length} 个`;
+
+        if (bounds.length > 0) {
+            try {
+                mapInstance.fitBounds(bounds, { padding: [40, 40] });
+            } catch (e) {
+                const centerLat = successRows.reduce((s, r) => s + r.lat, 0) / successRows.length;
+                const centerLng = successRows.reduce((s, r) => s + r.lng, 0) / successRows.length;
+                mapInstance.setView([centerLat, centerLng], 8);
+            }
+            mapStatus.textContent = `✅ ${successRows.length} 个已标记`;
+        }
+    }
+
+    // ========== 高德地理编码 ==========
+    async function geocodeAddressWithRetry(address, key) {
         for (let attempt = 1; attempt <= CONFIG.MAX_RETRIES + 1; attempt++) {
             if (abortFlag) return { lng: null, lat: null, status: 'abort', info: '已终止' };
-            
+
             try {
                 const url = `https://restapi.amap.com/v3/geocode/geo?address=${encodeURIComponent(address)}&output=json&key=${key}`;
                 const response = await fetch(url);
                 const data = await response.json();
-                
-                // 检查是否限流
+
                 if (data.status === '0' && data.info && data.info.includes(CONFIG.RATE_LIMIT_ERROR)) {
-                    // 限流错误，等待后重试
                     if (attempt <= CONFIG.MAX_RETRIES) {
-                        addLog(`⏳ 地址 "${address}" 触发限流，${attempt}/${CONFIG.MAX_RETRIES} 次重试，等待 ${CONFIG.RETRY_DELAY}ms...`, false);
                         await new Promise(r => setTimeout(r, CONFIG.RETRY_DELAY));
                         continue;
                     } else {
-                        return { lng: null, lat: null, status: 'failed', info: '限流超限，最终失败' };
+                        return { lng: null, lat: null, status: 'failed', info: '限流超限' };
                     }
                 }
-                
+
                 if (data.status === '1' && data.geocodes && data.geocodes.length > 0) {
                     const location = data.geocodes[0].location;
                     const [lng, lat] = location.split(',').map(Number);
-                    return { lng, lat, status: 'ok' };
+                    const addressComponent = data.geocodes[0].addressComponent || {};
+                    return {
+                        lng,
+                        lat,
+                        status: 'ok',
+                        province: addressComponent.province || '',
+                        city: addressComponent.city || '',
+                        district: addressComponent.district || ''
+                    };
                 } else {
                     return { lng: null, lat: null, status: 'failed', info: data.info || '无结果' };
                 }
             } catch (err) {
-                lastError = err;
                 if (attempt <= CONFIG.MAX_RETRIES) {
-                    addLog(`⚠️ 请求异常，${attempt}/${CONFIG.MAX_RETRIES} 次重试...`, false);
                     await new Promise(r => setTimeout(r, CONFIG.RETRY_DELAY));
                     continue;
                 }
                 return { lng: null, lat: null, status: 'error', info: err.message };
             }
         }
-        return { lng: null, lat: null, status: 'error', info: lastError ? lastError.message : '未知错误' };
+        return { lng: null, lat: null, status: 'error', info: '未知错误' };
     }
 
-    // ========== 批量查询（限流控制） ==========
+    // ========== 批量查询 ==========
     async function startQuery() {
         if (isQuerying) { addLog('已有查询进行中', true); return; }
         if (dataRows.length === 0) { addLog('请先上传包含站点数据的Excel文件', true); return; }
         const key = amapKeyInput.value.trim();
         if (!key || key.length < 10) { addLog('请填写有效的高德地图Web服务API Key', true); return; }
 
-        // 重置之前的结果
         dataRows.forEach(r => {
             r.lng = null;
             r.lat = null;
             r.status = '待查询';
+            r.province = '';
+            r.city = '';
+            r.district = '';
         });
         renderTable();
 
@@ -872,16 +1406,17 @@
         copyResultBtn.disabled = true;
         progressFill.style.width = '0%';
         progressText.textContent = '⏳ 查询中...';
+        if (isInWorkflow) {
+            workflowStatus.textContent = '⏳ 查询中...';
+        }
 
         const total = dataRows.length;
         let completed = 0;
         let success = 0;
         let failed = 0;
-
-        addLog(`🚀 开始查询 ${total} 个地址（限流: QPS ≤ ${CONFIG.QPS_LIMIT}）...`);
-
-        // 请求时间戳队列，用于限流
         let requestTimestamps = [];
+
+        addLog(`🚀 开始查询 ${total} 个地址 (限流: QPS ≤ ${CONFIG.QPS_LIMIT})...`);
 
         for (let i = 0; i < dataRows.length; i++) {
             if (abortFlag) {
@@ -889,34 +1424,30 @@
                 break;
             }
 
-            // ===== 限流控制 =====
             const now = Date.now();
-            // 移除1秒前的记录
             requestTimestamps = requestTimestamps.filter(t => now - t < 1000);
-            
-            // 如果当前秒内请求数已达到限制，等待
             while (requestTimestamps.length >= CONFIG.QPS_LIMIT) {
                 const oldest = requestTimestamps[0];
                 const waitTime = 1000 - (now - oldest) + 50;
                 if (waitTime > 0 && waitTime < 2000) {
                     await new Promise(r => setTimeout(r, waitTime));
                 }
-                // 重新计算
                 const newNow = Date.now();
                 requestTimestamps = requestTimestamps.filter(t => newNow - t < 1000);
                 if (requestTimestamps.length < CONFIG.QPS_LIMIT) break;
             }
-
-            // 记录本次请求
             requestTimestamps.push(Date.now());
 
             const row = dataRows[i];
             try {
-                const result = await geocodeAddressWithRetry(row.addr, key, i);
+                const result = await geocodeAddressWithRetry(row.addr, key);
                 if (result.status === 'ok') {
                     row.lng = result.lng;
                     row.lat = result.lat;
                     row.status = '成功';
+                    row.province = result.province || '';
+                    row.city = result.city || '';
+                    row.district = result.district || '';
                     success++;
                 } else if (result.status === 'abort') {
                     row.status = '已终止';
@@ -929,17 +1460,16 @@
                 row.status = `失败(${e.message})`;
                 failed++;
             }
-            
+
             completed++;
             const pct = (completed / total) * 100;
             progressFill.style.width = `${Math.min(pct, 100)}%`;
             progressText.textContent = `⏳ ${completed}/${total} (${Math.round(pct)}%) 成功:${success} 失败:${failed}`;
-            
+
             if (i % 3 === 0 || i === total - 1) {
                 renderTable();
             }
-            
-            // 基础间隔（确保不超过限流）
+
             if (i < dataRows.length - 1 && !abortFlag) {
                 await new Promise(r => setTimeout(r, CONFIG.REQUEST_INTERVAL));
             }
@@ -955,19 +1485,37 @@
         progressText.textContent = `✅ 完成！成功 ${success} 条，失败 ${failed} 条`;
         renderTable();
 
+        if (isMapInitialized) {
+            renderMapMarkers();
+        }
+
         addLog(`✅ 查询结束，成功 ${success} 条，失败 ${failed} 条`, false);
 
         generateResultBlob();
         if (success > 0 || failed > 0) {
             showDownloadBar(success, failed);
         }
+        mapStatus.textContent = `✅ 查询完成 · 成功 ${success} · 失败 ${failed}`;
+
+        // ★★★ 查询完成后自动保存并通知父页面 ★★★
+        if (success > 0) {
+            setTimeout(() => {
+                saveAndPass();
+            }, 300);
+        } else {
+            if (isInWorkflow) {
+                workflowStatus.textContent = '⚠️ 查询完成但无成功数据';
+            }
+        }
     }
 
-    // ========== 停止查询 ==========
     function stopQuery() {
         if (isQuerying) {
             abortFlag = true;
             addLog('⏹️ 正在停止查询...', false);
+            if (isInWorkflow) {
+                workflowStatus.textContent = '⏹️ 已停止';
+            }
         }
     }
 
@@ -979,6 +1527,9 @@
             '站点地址': r.addr,
             '经度': r.lng !== null && r.lng !== undefined ? r.lng : '',
             '纬度': r.lat !== null && r.lat !== undefined ? r.lat : '',
+            '省': r.province || '',
+            '市': r.city || '',
+            '区': r.district || '',
             '查询状态': r.status || '待查询'
         }));
         const ws = XLSX.utils.json_to_sheet(exportData);
@@ -988,10 +1539,9 @@
         resultBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     }
 
-    // ========== 显示/隐藏底部下载栏 ==========
     function showDownloadBar(success, failed) {
         fixedBar.classList.remove('hidden-bar');
-        dlStatus.innerHTML = `📦 查询完成！成功 ${success} 条，失败 ${failed} 条，点击下载结果`;
+        dlStatus.innerHTML = `📦 查询完成！成功 ${success} 条，失败 ${failed} 条`;
         downloadBtn.disabled = false;
     }
 
@@ -1013,7 +1563,6 @@
         }
     }
 
-    // ========== 下载 ==========
     function downloadResult() {
         if (!resultBlob) { addLog('没有可下载的结果，请先查询', true); return; }
         try {
@@ -1033,22 +1582,23 @@
         }
     }
 
-    // ========== 复制结果 ==========
     function copyResultsToClipboard() {
         if (!dataRows.length || !dataRows.some(r => r.status === '成功' || r.status === '失败')) {
             addLog('没有可复制的结果，请先查询', true);
             return;
         }
-        const headers = ['站点代码', '站点名称', '站点地址', '经度', '纬度', '查询状态'];
+        const headers = ['站点代码', '站点名称', '站点地址', '经度', '纬度', '省', '市', '区', '查询状态'];
         let csv = headers.join('\t') + '\n';
         dataRows.forEach(r => {
             const lng = r.lng !== null && r.lng !== undefined ? r.lng : '';
             const lat = r.lat !== null && r.lat !== undefined ? r.lat : '';
-            csv += [r.code, r.name, r.addr, lng, lat, r.status || '待查询'].join('\t') + '\n';
+            csv += [r.code, r.name, r.addr, lng, lat, r.province || '', r.city || '', r.district || '', r.status ||
+                '待查询'
+            ].join('\t') + '\n';
         });
 
         navigator.clipboard.writeText(csv).then(() => {
-            showCopyToast('✅ 已复制 ' + dataRows.length + ' 条数据到剪贴板！');
+            showToast('✅ 已复制 ' + dataRows.length + ' 条数据到剪贴板！');
             addLog(`📋 已复制 ${dataRows.length} 条数据到剪贴板`, false);
         }).catch(() => {
             const textarea = document.createElement('textarea');
@@ -1057,20 +1607,27 @@
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
-            showCopyToast('✅ 已复制 ' + dataRows.length + ' 条数据到剪贴板！');
+            showToast('✅ 已复制 ' + dataRows.length + ' 条数据到剪贴板！');
             addLog(`📋 已复制 ${dataRows.length} 条数据到剪贴板`, false);
         });
     }
 
     let toastTimer = null;
-    function showCopyToast(msg) {
+
+    function showToast(msg, type = 'info') {
         copyToast.textContent = msg;
-        copyToast.classList.add('show');
+        copyToast.className = `copy-toast show`;
+        if (type === 'error') {
+            copyToast.style.background = '#b13b3b';
+        } else {
+            copyToast.style.background = '#2a7f6e';
+        }
         clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => { copyToast.classList.remove('show'); }, 2500);
+        toastTimer = setTimeout(() => { copyToast.classList.remove('show'); }, 3000);
     }
 
     function exportCurrentResult() { downloadResult(); }
+
     function resetAll() {
         if (isQuerying) {
             abortFlag = true;
@@ -1080,7 +1637,6 @@
         }
     }
 
-    // ========== 下载模板 ==========
     function downloadTemplate() {
         const headers = ['站点代码', '站点名称', '站点地址'];
         const sampleData = [
@@ -1152,14 +1708,40 @@
     copyResultBtn.addEventListener('click', copyResultsToClipboard);
     downloadTemplateBtn.addEventListener('click', (e) => { e.preventDefault(); downloadTemplate(); });
 
+    // ★★★ 数据传递事件 ★★★
+    saveAndPassBtn.addEventListener('click', saveAndPass);
+    clearPassBtn.addEventListener('click', clearPassData);
+
+    // ★★★ 监听来自父页面的消息 ★★★
+    window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'toolbox_request_data') {
+            const passData = getPassData();
+            if (passData && passData.tool === TOOL_ID) {
+                event.source.postMessage({
+                    type: 'toolbox_data_response',
+                    tool: TOOL_ID,
+                    data: passData
+                }, '*');
+            }
+        }
+        if (event.data && event.data.type === 'workflow_started') {
+            isInWorkflow = true;
+            workflowHint.classList.add('show');
+            workflowStatus.textContent = '⚡ 工作流模式';
+            addLog('🔗 工作流已启动，查询完成后自动通知', false);
+        }
+    });
+
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#1f6392'; });
-    dropZone.addEventListener('dragleave', () => dropZone.style.borderColor = '#bdd2ec');
+    dropZone.addEventListener('dragleave', () => dropZone.style.borderColor = '#bdd2ec';
+        dropZone.style.backgroundColor = '#fafcff'; });
     dropZone.addEventListener('drop', async (e) => {
         e.preventDefault();
         dropZone.style.borderColor = '#bdd2ec';
+        dropZone.style.backgroundColor = '#fafcff';
         const items = e.dataTransfer.items;
         let allFiles = [];
-        for (let i=0; i<items.length; i++) {
+        for (let i = 0; i < items.length; i++) {
             const entry = items[i].webkitGetAsEntry();
             if (entry) {
                 const files = await getAllFilesFromEntry(entry);
@@ -1169,15 +1751,40 @@
             }
         }
         if (allFiles.length) await handleFiles(allFiles);
-        else addLog("未获取到文件", true);
+        else addLog('未获取到文件', true);
     });
 
-    // 初始化
+    // ========== 窗口resize ==========
+    window.addEventListener('resize', function() {
+        if (mapInstance) {
+            setTimeout(() => mapInstance.invalidateSize(), 200);
+        }
+    });
+
+    // ========== 初始化 ==========
     renderTable();
     hideDownloadBar();
     updateFileUI();
-    addLog(`📋 限流设置：每秒最多 ${CONFIG.QPS_LIMIT} 次请求，失败自动重试 ${CONFIG.MAX_RETRIES} 次`, false);
-    addLog('📋 请上传包含「站点代码、站点名称、站点地址」的Excel文件', false);
+    addLog(`📋 限流：${CONFIG.QPS_LIMIT}次/秒，重试${CONFIG.MAX_RETRIES}次`, false);
+    addLog('📋 上传包含「站点代码、站点名称、站点地址」的Excel文件', false);
+    addLog('🗺️ 地图将自动展示查询成功的站点', false);
+    addLog('🔗 工具联动：查询成功后自动保存数据，供K-Means聚类使用', false);
+
+    // ★★★ 检测是否在工作流中 ★★★
+    detectWorkflowMode();
+
+    setTimeout(() => {
+        initMap();
+        checkPassStatus();
+    }, 400);
+
+    // 暴露全局函数供父页面调用
+    window.getPassData = getPassData;
+    window.savePassData = savePassData;
+    window.checkPassStatus = checkPassStatus;
+    window.clearAll = clearAll;
+    window.startQuery = startQuery;
+    window.saveAndPass = saveAndPass;
 </script>
 </body>
 </html>
