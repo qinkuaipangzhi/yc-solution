@@ -22,33 +22,15 @@
         .main-body { flex: 1; display: flex; flex-direction: column; padding: 8px 12px; gap: 6px; overflow: hidden; min-height: 0; }
         
         /* ★★★ 快照记录管理区 ★★★ */
-        .snapshot-manage-area {
-            background: #f4f7fb; border: 1px solid #dbe4ee; border-radius: 0.8rem;
-            padding: 8px 12px; flex-shrink: 0;
-        }
-        .snapshot-row {
-            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-        }
-        .snapshot-row label {
-            font-size: 0.7rem; font-weight: 600; color: #4a6a8a;
-        }
-        .snapshot-select {
-            flex: 1; max-width: 300px; padding: 4px 10px; border-radius: 6px;
-            border: 1px solid #cbdde9; background: white; font-size: 0.75rem;
-        }
-        .snapshot-btn {
-            background: #1a5d8c; color: white; border: none; padding: 4px 16px;
-            border-radius: 40px; cursor: pointer; font-size: 0.7rem; font-weight: 600;
-        }
+        .snapshot-manage-area { background: #f4f7fb; border: 1px solid #dbe4ee; border-radius: 0.8rem; padding: 8px 12px; flex-shrink: 0; }
+        .snapshot-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .snapshot-row label { font-size: 0.7rem; font-weight: 600; color: #4a6a8a; }
+        .snapshot-select { flex: 1; max-width: 300px; padding: 4px 10px; border-radius: 6px; border: 1px solid #cbdde9; background: white; font-size: 0.75rem; }
+        .snapshot-btn { background: #1a5d8c; color: white; border: none; padding: 4px 16px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; font-weight: 600; }
         .snapshot-btn:hover { background: #0e466b; }
-        .snapshot-del {
-            background: #fce4e4; border: 1px solid #f5c2c2; color: #b13b3b;
-            padding: 3px 12px; border-radius: 40px; cursor: pointer; font-size: 0.7rem;
-        }
+        .snapshot-del { background: #fce4e4; border: 1px solid #f5c2c2; color: #b13b3b; padding: 3px 12px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; }
         .snapshot-del:hover { background: #fccfcf; }
-        .snapshot-info {
-            font-size: 0.6rem; color: #7a8eaa;
-        }
+        .snapshot-info { font-size: 0.6rem; color: #7a8eaa; }
 
         .data-pass-bar { background: #e8f5ee; border-radius: 0.5rem; padding: 4px 10px; border: 1px solid #b8ddd0; display: none; align-items: center; justify-content: space-between; flex-shrink: 0; }
         .data-pass-bar.show { display: flex; }
@@ -99,6 +81,21 @@
         .copy-toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #2a7f6e; color: white; padding: 5px 16px; border-radius: 60px; font-weight: 600; z-index: 2000; display: none; font-size: 0.75rem; }
         .copy-toast.show { display: block; }
         .file-tag { background: white; border-radius: 30px; padding: 1px 5px; margin: 1px 2px; display: inline-flex; font-size: 0.45rem; border: 1px solid #d4e2f0; }
+
+        /* ★★★ 新增：小巧清晰的站点图标样式 ★★★ */
+        .custom-station-icon {
+            background: transparent;
+            border: none;
+        }
+        .station-dot {
+            width: 10px;
+            height: 10px;
+            background: #1a5d8c; /* 深蓝色 */
+            border: 2px solid #ffffff; /* 白边 */
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 0 0 2px rgba(26, 93, 140, 0.15); /* 增加一层光晕，更清晰 */
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -219,12 +216,9 @@
 </div>
 
 <script>
-    // ============================================================
-    //  全局变量
-    // ============================================================
     var CONFIG = { QPS_LIMIT: 3, REQUEST_INTERVAL: 350, MAX_RETRIES: 3, RETRY_DELAY: 1000 };
     var TOOL_ID = 'address-geocode';
-    var SAVE_KEY = 'toolbox_data_snapshots'; // 用于存储多个快照
+    var SAVE_KEY = 'toolbox_data_snapshots';
 
     var dataRows = [];
     var uploadedFiles = [];
@@ -236,10 +230,9 @@
     var mapLayers = [];
     var isMapInitialized = false;
     
-    var lastSuccessResults = []; // 刚查询出来的结果
-    var currentSnapshotId = null; // 当前选中的快照ID
+    var lastSuccessResults = [];
+    var currentSnapshotId = null;
 
-    // DOM 获取
     var tableBody = document.getElementById('tableBody');
     var totalCount = document.getElementById('totalCount');
     var successCount = document.getElementById('successCount');
@@ -265,20 +258,12 @@
     var deleteSnapshotBtn = document.getElementById('deleteSnapshotBtn');
     var snapshotInfo = document.getElementById('snapshotInfo');
 
-    // ============================================================
-    //  ★★★ 多快照管理逻辑 ★★★
-    // ============================================================
-    
-    // 获取所有快照
+    // ===== 快照管理 =====
     function getAllSnapshots() {
-        try {
-            var raw = localStorage.getItem(SAVE_KEY);
-            if (raw) return JSON.parse(raw);
-        } catch (e) {}
+        try { var raw = localStorage.getItem(SAVE_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
         return [];
     }
 
-    // 渲染下拉框
     function renderSnapshotSelect() {
         var snapshots = getAllSnapshots();
         var html = '<option value="">--- 请选择记录 ---</option>';
@@ -288,100 +273,53 @@
             html += `<option value="${item.id}">${item.name} (${item.count}条, ${dateStr})</option>`;
         }
         snapshotSelect.innerHTML = html;
-        
-        // 如果当前有选中的快照，重新选中它
-        if (currentSnapshotId) {
-            snapshotSelect.value = currentSnapshotId;
-        }
-        
-        // 控制删除按钮状态
+        if (currentSnapshotId) snapshotSelect.value = currentSnapshotId;
         deleteSnapshotBtn.disabled = !currentSnapshotId;
         saveSnapshotBtn.disabled = lastSuccessResults.length === 0;
     }
 
-    // 保存当前结果为新快照
     function saveCurrentSnapshot() {
-        if (lastSuccessResults.length === 0) {
-            showToast('⚠️ 当前没有可保存的结果');
-            return;
-        }
+        if (lastSuccessResults.length === 0) { showToast('⚠️ 当前没有可保存的结果'); return; }
         var snapshots = getAllSnapshots();
-        var newSnapshot = {
-            id: 'snap_' + Date.now(),
-            name: '快照 #' + (snapshots.length + 1),
-            timestamp: Date.now(),
-            count: lastSuccessResults.length,
-            data: lastSuccessResults
-        };
+        var newSnapshot = { id: 'snap_' + Date.now(), name: '快照 #' + (snapshots.length + 1), timestamp: Date.now(), count: lastSuccessResults.length, data: lastSuccessResults };
         snapshots.push(newSnapshot);
         localStorage.setItem(SAVE_KEY, JSON.stringify(snapshots));
-        
-        // 重置并选中新保存的快照
         currentSnapshotId = newSnapshot.id;
         renderSnapshotSelect();
         addLog('💾 已保存快照: ' + newSnapshot.name, false);
         showToast('✅ 快照已保存！');
     }
 
-    // 切换查看快照
     function onSnapshotChange() {
         var selectedId = snapshotSelect.value;
-        if (!selectedId) {
-            currentSnapshotId = null;
-            // 清空表格
-            dataRows = [];
-            renderTable();
-            snapshotInfo.textContent = '请选择或保存一个快照';
-            return;
-        }
-        
+        if (!selectedId) { currentSnapshotId = null; dataRows = []; renderTable(); snapshotInfo.textContent = '请选择或保存一个快照'; return; }
         var snapshots = getAllSnapshots();
         var snapshot = snapshots.find(function(s) { return s.id === selectedId; });
         if (snapshot) {
             currentSnapshotId = selectedId;
-            // 将快照数据重新填充到表格进行回看
             dataRows = snapshot.data.map(function(item, idx) {
-                return {
-                    id: idx + 1,
-                    code: item['站点代码'],
-                    name: item['站点名称'],
-                    addr: item['地址'],
-                    demand: item['单次提货量'] || 0,
-                    lng: item['经度'],
-                    lat: item['纬度'],
-                    status: '成功',
-                    province: item['省'] || '',
-                    city: item['市'] || '',
-                    district: item['区'] || ''
-                };
+                return { id: idx + 1, code: item['站点代码'], name: item['站点名称'], addr: item['地址'], demand: item['单次提货量'] || 0, lng: item['经度'], lat: item['纬度'], status: '成功', province: item['省'] || '', city: item['市'] || '', district: item['区'] || '' };
             });
             renderTable();
             if (isMapInitialized) renderMapMarkers();
             snapshotInfo.textContent = `当前查看: ${snapshot.name}`;
-            addLog('📂 已加载快照: ' + snapshot.name, false);
         }
     }
 
-    // 删除当前快照
     function deleteCurrentSnapshot() {
         if (!currentSnapshotId) return;
         if (!confirm('确定要删除当前选中的快照吗？')) return;
-        
         var snapshots = getAllSnapshots();
         snapshots = snapshots.filter(function(s) { return s.id !== currentSnapshotId; });
         localStorage.setItem(SAVE_KEY, JSON.stringify(snapshots));
-        
         currentSnapshotId = null;
         dataRows = [];
         renderTable();
         renderSnapshotSelect();
         showToast('🗑️ 快照已删除');
-        addLog('🗑️ 已删除快照', false);
     }
 
-    // ============================================================
-    //  核心逻辑
-    // ============================================================
+    // ===== 日志与提示 =====
     function addLog(msg, isError) {
         var time = new Date().toLocaleTimeString();
         var prefix = isError ? '❌' : '📌';
@@ -398,7 +336,7 @@
 
     function escHtml(str) { return String(str || '').replace(/[&<>]/g, function(m) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m; }); }
 
-    // 解析 Excel
+    // ===== 文件解析 =====
     function parseExcelToRows(file) {
         return new Promise(function(resolve, reject) {
             var reader = new FileReader();
@@ -409,22 +347,15 @@
                     var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     var rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
                     if (!rows || rows.length === 0) { resolve([]); return; }
-                    
                     var headers = Object.keys(rows[0]);
                     var codeCol = null, nameCol = null, addrCol = null, demandCol = null;
-                    
                     for (var h = 0; h < headers.length; h++) {
                         if (/站点代码|站点编号|code|代码/i.test(headers[h])) codeCol = headers[h];
                         if (/站点名称|站点名|名称|name/i.test(headers[h])) nameCol = headers[h];
                         if (/站点地址|地址|addr|详细地址/i.test(headers[h])) addrCol = headers[h];
                         if (/单次提货量|提货量|需求量|数量|weight|qty|demand/i.test(headers[h])) demandCol = headers[h];
                     }
-
-                    if (!codeCol || !nameCol || !addrCol) {
-                        addLog('文件 ' + file.name + ' 缺少必要列！需要: 站点代码, 站点名称, 站点地址', true);
-                        resolve([]); return;
-                    }
-
+                    if (!codeCol || !nameCol || !addrCol) { addLog('文件 ' + file.name + ' 缺少必要列！', true); resolve([]); return; }
                     var result = [];
                     for (var i = 0; i < rows.length; i++) {
                         var row = rows[i];
@@ -432,9 +363,7 @@
                         var name = row[nameCol] ? row[nameCol].toString().trim() : '';
                         var addr = row[addrCol] ? row[addrCol].toString().trim() : '';
                         var demand = row[demandCol] ? (parseFloat(row[demandCol]) || 0) : 0;
-                        if (code && name && addr) {
-                            result.push({ code: code, name: name, addr: addr, demand: demand });
-                        }
+                        if (code && name && addr) result.push({ code: code, name: name, addr: addr, demand: demand });
                     }
                     resolve(result);
                 } catch (err) { reject(err); }
@@ -452,10 +381,8 @@
             if (['xlsx', 'xls', 'csv'].indexOf(f.name.split('.').pop().toLowerCase()) !== -1) excelFiles.push(f);
         }
         if (!excelFiles.length) { addLog('未找到有效Excel文件', true); return; }
-
         for (var ei = 0; ei < excelFiles.length; ei++) uploadedFiles.push(excelFiles[ei]);
         updateFileUI();
-
         var processFile = function(index) {
             if (index >= excelFiles.length) {
                 renderTable();
@@ -467,11 +394,7 @@
             parseExcelToRows(f).then(function(rows) {
                 for (var ri = 0; ri < rows.length; ri++) {
                     var r = rows[ri];
-                    dataRows.push({
-                        id: nextId++, code: r.code, name: r.name, addr: r.addr,
-                        demand: r.demand || 0,
-                        lng: null, lat: null, status: '待查询', province: '', city: '', district: ''
-                    });
+                    dataRows.push({ id: nextId++, code: r.code, name: r.name, addr: r.addr, demand: r.demand || 0, lng: null, lat: null, status: '待查询', province: '', city: '', district: '' });
                 }
                 renderTable();
                 processFile(index + 1);
@@ -492,9 +415,8 @@
     // 渲染表格
     function renderTable() {
         var html = '';
-        if (dataRows.length === 0) {
-            html = '<tr><td colspan="7" style="text-align:center; color:#a0b8cc; padding:8px;">📭 请上传Excel文件</td></tr>';
-        } else {
+        if (dataRows.length === 0) { html = '<tr><td colspan="7" style="text-align:center; color:#a0b8cc; padding:8px;">📭 请上传Excel文件</td></tr>'; }
+        else {
             for (var i = 0; i < dataRows.length; i++) {
                 var row = dataRows[i];
                 html += '<tr><td>' + (i + 1) + '</td><td>' + escHtml(row.code) + '</td><td>' + escHtml(row.name) + '</td><td>' + escHtml(row.addr) + '</td><td>' + (row.lng || '-') + '</td><td>' + (row.lat || '-') + '</td><td>' + row.status + '</td></tr>';
@@ -509,13 +431,15 @@
         queryBtn.disabled = dataRows.length === 0 || isQuerying;
         document.getElementById('exportResultBtn').disabled = !(succ > 0 || fail > 0);
         document.getElementById('copyResultBtn').disabled = !(succ > 0 || fail > 0);
-        
         saveSnapshotBtn.disabled = lastSuccessResults.length === 0 && currentSnapshotId === null;
     }
 
-    // 地图
+    // ★★★ 优化后的地图初始化 ★★★
     function initMap() {
-        if (isMapInitialized && mapInstance) { mapInstance.invalidateSize(); return; }
+        if (isMapInitialized && mapInstance) { 
+            mapInstance.invalidateSize(); // 强制重绘
+            return; 
+        }
         try {
             mapInstance = L.map(mapContainer, { center: [30.0, 120.0], zoom: 6, zoomControl: true });
             L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', { maxZoom: 18, attribution: '© 高德地图' }).addTo(mapInstance);
@@ -523,6 +447,7 @@
         } catch (e) { addLog('地图初始化失败: ' + e.message, true); }
     }
 
+    // ★★★ 优化后的地图标记渲染（小圆点） ★★★
     function renderMapMarkers() {
         if (!isMapInitialized) return;
         if (mapLayers.length > 0) { for (var i = 0; i < mapLayers.length; i++) mapInstance.removeLayer(mapLayers[i]); mapLayers = []; }
@@ -530,7 +455,15 @@
         for (var j = 0; j < dataRows.length; j++) {
             var row = dataRows[j];
             if (row.status === '成功' && row.lng && row.lat) {
-                var marker = L.marker([row.lat, row.lng]);
+                // ★★★ 使用自定义的小巧图标 ★★★
+                var customIcon = L.divIcon({
+                    className: 'custom-station-icon', // 必须清空默认样式
+                    html: '<div class="station-dot"></div>', // 由CSS控制的小圆点
+                    iconSize: [10, 10], // 覆盖原10x10
+                    iconAnchor: [5, 5]  // 使圆点中心对准经纬度
+                });
+
+                var marker = L.marker([row.lat, row.lng], { icon: customIcon });
                 marker.bindPopup('<strong>' + escHtml(row.name) + '</strong><br>📍 ' + row.lng + ', ' + row.lat);
                 mapInstance.addLayer(marker);
                 mapLayers.push(marker);
@@ -541,7 +474,7 @@
         if (bounds.length > 0) mapInstance.fitBounds(bounds, { padding: [40, 40] });
     }
 
-    // 高德 API 查询
+    // ===== 高德查询 =====
     function geocodeAddressWithRetry(address, key) {
         return new Promise(function(resolve) {
             var attempt = 1;
@@ -566,7 +499,6 @@
         });
     }
 
-    // 查询主入口
     function startQuery() {
         if (dataRows.length === 0) { addLog('请先上传数据', true); return; }
         var key = amapKeyInput.value.trim();
@@ -595,26 +527,13 @@
                 stopBtn.disabled = true;
                 progressFill.style.width = '100%';
                 progressText.textContent = '✅ 完成！成功 ' + success + ' 条，失败 ' + failed + ' 条';
-                
-                // 提取成功数据用于保存
                 lastSuccessResults = dataRows.filter(function(r) { return r.status === '成功' && r.lng !== null; })
                     .map(function(r) {
-                        return {
-                            '站点代码': r.code || '',
-                            '站点名称': r.name || '',
-                            '地址': r.addr,
-                            '经度': r.lng,
-                            '纬度': r.lat,
-                            '单次提货量': r.demand || 0,
-                            '省': r.province || '',
-                            '市': r.city || '',
-                            '区': r.district || ''
-                        };
+                        return { '站点代码': r.code || '', '站点名称': r.name || '', '地址': r.addr, '经度': r.lng, '纬度': r.lat, '单次提货量': r.demand || 0, '省': r.province || '', '市': r.city || '', '区': r.district || '' };
                     });
-
                 renderTable();
-                renderSnapshotSelect(); // 刷新快照按钮状态
                 if (isMapInitialized) renderMapMarkers();
+                renderSnapshotSelect();
                 addLog('✅ 查询结束，成功 ' + success + ' 条，失败 ' + failed + ' 条', false);
                 addLog('💡 可以点击上方【保存当前结果为快照】存档。', false);
                 return;
@@ -636,13 +555,11 @@
                     row.province = result.province || ''; row.city = result.city || ''; row.district = result.district || '';
                     success++;
                 } else { row.status = '失败'; failed++; }
-
                 completed++;
                 var pct = (completed / total) * 100;
                 progressFill.style.width = Math.min(pct, 100) + '%';
                 progressText.textContent = '⏳ ' + completed + '/' + total + ' (' + Math.round(pct) + '%)';
                 if (i % 3 === 0 || i === total - 1) renderTable();
-
                 if (!abortFlag && i < dataRows.length - 1) setTimeout(function() { processNext(i + 1); }, CONFIG.REQUEST_INTERVAL);
                 else processNext(dataRows.length);
             });
@@ -650,7 +567,7 @@
         processNext(0);
     }
 
-    // 下载模板
+    // ===== 其他 =====
     function downloadTemplate() {
         var headers = ['站点代码', '站点名称', '站点地址', '单次提货量(m³)'];
         var sampleData = [ ['S001', '上海仓库', '上海市浦东新区世纪大道1号', 12.5], ['S002', '北京物流中心', '北京市通州区物流园区路4号', ''] ];
@@ -672,15 +589,8 @@
     folderInput.addEventListener('change', function(e) { if (e.target.files.length) handleFiles(e.target.files); folderInput.value=''; });
     queryBtn.addEventListener('click', startQuery);
     stopBtn.addEventListener('click', function(){ abortFlag = true; });
-    clearBtn.addEventListener('click', function(){ 
-        dataRows = []; uploadedFiles = []; renderTable(); updateFileUI(); 
-        lastSuccessResults = []; 
-        currentSnapshotId = null;
-        renderSnapshotSelect(); 
-    });
+    clearBtn.addEventListener('click', function(){ dataRows = []; uploadedFiles = []; renderTable(); updateFileUI(); lastSuccessResults = []; currentSnapshotId = null; renderSnapshotSelect(); });
     downloadTemplateBtn.addEventListener('click', function(e) { e.preventDefault(); downloadTemplate(); });
-    
-    // ★★★ 快照管理事件 ★★★
     saveSnapshotBtn.addEventListener('click', saveCurrentSnapshot);
     deleteSnapshotBtn.addEventListener('click', deleteCurrentSnapshot);
     snapshotSelect.addEventListener('change', onSnapshotChange);
