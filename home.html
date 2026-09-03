@@ -4,589 +4,105 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>物流工具箱 - 首页</title>
-    <!-- Chart.js 轻量图表库 -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         /* ========== 全局重置 & 基础 ========== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
-        }
-
-        body {
-            background: #f0f3f7;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .app-container {
-            display: flex;
-            height: 100vh;
-            width: 100%;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif; }
+        body { background: #f0f3f7; height: 100vh; overflow: hidden; }
+        .app-container { display: flex; height: 100vh; width: 100%; }
 
         /* ===== 左侧导航 ===== */
-        .sidebar {
-            width: 280px;
-            min-width: 280px;
-            background: linear-gradient(180deg, #1e3a5f 0%, #0f2b44 100%);
-            color: #e0eefa;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 2px 0 16px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
-            position: relative;
-            z-index: 10;
-        }
+        .sidebar { width: 280px; min-width: 280px; background: linear-gradient(180deg, #1e3a5f 0%, #0f2b44 100%); color: #e0eefa; display: flex; flex-direction: column; box-shadow: 2px 0 16px rgba(0, 0, 0, 0.15); overflow: hidden; position: relative; z-index: 10; }
+        .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); flex-shrink: 0; }
+        .sidebar-brand h1 { font-size: 20px; font-weight: 700; color: #f9e0a8; display: flex; align-items: center; gap: 10px; }
+        .sidebar-brand p { font-size: 12px; opacity: 0.6; margin-top: 4px; letter-spacing: 1px; }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0 20px; }
+        .sidebar-nav::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
 
-        .sidebar-brand {
-            padding: 20px 20px 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            flex-shrink: 0;
-        }
-        .sidebar-brand h1 {
-            font-size: 20px;
-            font-weight: 700;
-            color: #f9e0a8;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .sidebar-brand p {
-            font-size: 12px;
-            opacity: 0.6;
-            margin-top: 4px;
-            letter-spacing: 1px;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px 0 20px;
-        }
-        .sidebar-nav::-webkit-scrollbar {
-            width: 4px;
-        }
-        .sidebar-nav::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-        }
-        .sidebar-nav::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .nav-section {
-            margin-bottom: 6px;
-        }
-        .nav-section-title {
-            padding: 8px 20px 6px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: rgba(255, 255, 255, 0.35);
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .nav-section-title .arrow {
-            font-size: 10px;
-            transition: transform 0.2s;
-        }
-        .nav-section-title .arrow.collapsed {
-            transform: rotate(-90deg);
-        }
-
-        .nav-items {
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-        .nav-items.collapsed {
-            max-height: 0 !important;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 9px 20px 9px 32px;
-            cursor: pointer;
-            transition: 0.15s;
-            border-left: 3px solid transparent;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-        }
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.06);
-            color: #fff;
-        }
-        .nav-item.active {
-            background: rgba(255, 255, 255, 0.10);
-            border-left-color: #ffb347;
-            color: #fff;
-        }
-        .nav-item .icon {
-            font-size: 16px;
-            width: 22px;
-            text-align: center;
-            flex-shrink: 0;
-        }
-        .nav-item .badge {
-            margin-left: auto;
-            background: rgba(255, 255, 255, 0.12);
-            padding: 1px 10px;
-            border-radius: 30px;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .sidebar-footer {
-            padding: 14px 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.25);
-            text-align: center;
-            flex-shrink: 0;
-        }
+        .nav-section { margin-bottom: 6px; }
+        .nav-section-title { padding: 8px 20px 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255, 255, 255, 0.35); cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; }
+        .nav-section-title .arrow { font-size: 10px; transition: transform 0.2s; }
+        .nav-section-title .arrow.collapsed { transform: rotate(-90deg); }
+        .nav-items { overflow: hidden; transition: max-height 0.3s ease; }
+        .nav-items.collapsed { max-height: 0 !important; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 9px 20px 9px 32px; cursor: pointer; transition: 0.15s; border-left: 3px solid transparent; font-size: 14px; color: rgba(255, 255, 255, 0.7); text-decoration: none; }
+        .nav-item:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+        .nav-item.active { background: rgba(255, 255, 255, 0.10); border-left-color: #ffb347; color: #fff; }
+        .nav-item .icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+        .nav-item .badge { margin-left: auto; background: rgba(255, 255, 255, 0.12); padding: 1px 10px; border-radius: 30px; font-size: 10px; color: rgba(255, 255, 255, 0.5); }
+        .nav-item.workflow-item { border-left-color: #f5d742; background: rgba(245, 215, 66, 0.08); }
+        .nav-item.workflow-item:hover { background: rgba(245, 215, 66, 0.15); }
+        .nav-item.workflow-item .badge { background: #f5d742; color: #1e3a5f; }
+        .sidebar-footer { padding: 14px 20px; border-top: 1px solid rgba(255, 255, 255, 0.06); font-size: 11px; color: rgba(255, 255, 255, 0.25); text-align: center; flex-shrink: 0; }
 
         /* ===== 右侧内容区 ===== */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: #f0f3f7;
-            overflow: hidden;
-        }
+        .main-content { flex: 1; display: flex; flex-direction: column; background: #f0f3f7; overflow: hidden; }
+        .content-header { background: white; padding: 16px 28px; border-bottom: 1px solid #e2edf5; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; min-height: 64px; z-index: 10; }
+        .content-header h2 { font-size: 18px; font-weight: 600; color: #1f3a5f; }
+        .content-header .logout-top { background: rgba(26, 93, 140, 0.08); border: 1px solid #cbdde9; padding: 6px 18px; border-radius: 30px; font-size: 13px; color: #1a5d8c; cursor: pointer; transition: 0.2s; font-weight: 500; }
+        .content-header .logout-top:hover { background: #1a5d8c; color: white; border-color: #1a5d8c; }
+        .content-body { flex: 1; overflow: hidden; padding: 16px 20px 20px; background: #f0f3f7; }
 
-        .content-header {
-            background: white;
-            padding: 16px 28px;
-            border-bottom: 1px solid #e2edf5;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-            min-height: 64px;
-        }
-        .content-header h2 {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1f3a5f;
-        }
-        .content-header .breadcrumb {
-            font-size: 13px;
-            color: #7a8eaa;
-        }
-        .content-header .breadcrumb span {
-            color: #1a5d8c;
-        }
-        .content-header .logout-top {
-            background: rgba(26, 93, 140, 0.08);
-            border: 1px solid #cbdde9;
-            padding: 6px 18px;
-            border-radius: 30px;
-            font-size: 13px;
-            color: #1a5d8c;
-            cursor: pointer;
-            transition: 0.2s;
-            font-weight: 500;
-        }
-        .content-header .logout-top:hover {
-            background: #1a5d8c;
-            color: white;
-            border-color: #1a5d8c;
-        }
-
-        .content-body {
-            flex: 1;
-            overflow: hidden;
-            padding: 16px 20px 20px;
-            background: #f0f3f7;
-        }
-
-        .iframe-wrapper {
-            width: 100%;
-            height: 100%;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-            border: 1px solid #e2edf5;
-        }
-        .iframe-wrapper iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-        }
+        /* ★★★ 关键：去掉弹窗，工具直接平铺展示 ★★★ */
+        .iframe-wrapper { width: 100%; height: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); border: 1px solid #e2edf5; }
+        .iframe-wrapper iframe { width: 100%; height: 100%; border: none; display: block; }
 
         /* ===== 欢迎页 ===== */
-        .welcome-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            text-align: center;
-            padding: 40px;
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e2edf5;
-            overflow-y: auto;
-        }
-        .welcome-content .logo-big {
-            font-size: 72px;
-            margin-bottom: 20px;
-        }
-        .welcome-content h2 {
-            font-size: 28px;
-            color: #1f3a5f;
-            margin-bottom: 10px;
-        }
-        .welcome-content p {
-            color: #7a8eaa;
-            font-size: 16px;
-            max-width: 480px;
-            line-height: 1.7;
-        }
-        .welcome-content .tool-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 14px;
-            margin-top: 28px;
-            justify-content: center;
-            max-width: 800px;
-        }
-        .welcome-content .tool-grid .card {
-            background: #f8fafd;
-            border: 1px solid #e2edf5;
-            border-radius: 12px;
-            padding: 16px 24px;
-            cursor: pointer;
-            transition: 0.2s;
-            text-align: left;
-            min-width: 180px;
-            flex: 1 0 auto;
-            max-width: 220px;
-        }
-        .welcome-content .tool-grid .card:hover {
-            border-color: #1a5d8c;
-            background: #f1f6fc;
-            transform: translateY(-2px);
-        }
-        .welcome-content .tool-grid .card .icon {
-            font-size: 24px;
-        }
-        .welcome-content .tool-grid .card .name {
-            font-weight: 600;
-            color: #1f3a5f;
-            margin-top: 4px;
-            font-size: 14px;
-        }
-        .welcome-content .tool-grid .card .desc {
-            font-size: 12px;
-            color: #7a8eaa;
-            margin-top: 2px;
-        }
+        .welcome-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 40px; background: white; border-radius: 12px; border: 1px solid #e2edf5; overflow-y: auto; }
+        .welcome-content .logo-big { font-size: 72px; margin-bottom: 20px; }
+        .welcome-content h2 { font-size: 28px; color: #1f3a5f; margin-bottom: 10px; }
+        .welcome-content p { color: #7a8eaa; font-size: 16px; max-width: 480px; line-height: 1.7; }
+        .welcome-content .tool-grid { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; justify-content: center; max-width: 800px; }
+        .welcome-content .tool-grid .card { background: #f8fafd; border: 1px solid #e2edf5; border-radius: 12px; padding: 16px 24px; cursor: pointer; transition: 0.2s; text-align: left; min-width: 180px; flex: 1 0 auto; max-width: 220px; }
+        .welcome-content .tool-grid .card:hover { border-color: #1a5d8c; background: #f1f6fc; transform: translateY(-2px); }
+        .welcome-content .tool-grid .card .icon { font-size: 24px; }
+        .welcome-content .tool-grid .card .name { font-weight: 600; color: #1f3a5f; margin-top: 4px; font-size: 14px; }
+        .welcome-content .tool-grid .card .desc { font-size: 12px; color: #7a8eaa; margin-top: 2px; }
 
-        /* ===== 统计页面样式 ===== */
-        .stats-dashboard {
-            height: 100%;
-            overflow-y: auto;
-            padding: 4px 0 12px;
-            background: #f0f3f7;
-        }
-        .stats-dashboard::-webkit-scrollbar {
-            width: 6px;
-        }
-        .stats-dashboard::-webkit-scrollbar-thumb {
-            background: #c0d0e0;
-            border-radius: 4px;
-        }
+        /* ===== 统计页面 ===== */
+        .stats-dashboard { height: 100%; overflow-y: auto; padding: 4px 0 12px; background: #f0f3f7; }
+        .stats-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stats-summary .stat-card { background: white; border-radius: 14px; padding: 18px 20px; border: 1px solid #e2edf5; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); transition: 0.2s; }
+        .stats-summary .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06); }
+        .stats-summary .stat-card .stat-label { font-size: 12px; color: #7a8eaa; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stats-summary .stat-card .stat-value { font-size: 28px; font-weight: 700; color: #1f3a5f; margin-top: 4px; }
+        .stats-summary .stat-card .stat-icon { font-size: 22px; float: right; opacity: 0.4; }
+        .stats-summary .stat-card .stat-sub { font-size: 12px; color: #7a8eaa; margin-top: 4px; }
+        .stat-card.color-primary .stat-value { color: #1a5d8c; }
+        .stat-card.color-success .stat-value { color: #2a7f6e; }
+        .stat-card.color-warning .stat-value { color: #d48c2c; }
+        .stat-card.color-danger .stat-value { color: #b13b3b; }
+        .stat-card.color-purple .stat-value { color: #6c5b7b; }
 
-        .stats-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-        .stats-summary .stat-card {
-            background: white;
-            border-radius: 14px;
-            padding: 18px 20px;
-            border: 1px solid #e2edf5;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            transition: 0.2s;
-        }
-        .stats-summary .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
-        }
-        .stats-summary .stat-card .stat-label {
-            font-size: 12px;
-            color: #7a8eaa;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .stats-summary .stat-card .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1f3a5f;
-            margin-top: 4px;
-        }
-        .stats-summary .stat-card .stat-icon {
-            font-size: 22px;
-            float: right;
-            opacity: 0.4;
-        }
-        .stats-summary .stat-card .stat-sub {
-            font-size: 12px;
-            color: #7a8eaa;
-            margin-top: 4px;
-        }
-        .stat-card.color-primary .stat-value {
-            color: #1a5d8c;
-        }
-        .stat-card.color-success .stat-value {
-            color: #2a7f6e;
-        }
-        .stat-card.color-warning .stat-value {
-            color: #d48c2c;
-        }
-        .stat-card.color-danger .stat-value {
-            color: #b13b3b;
-        }
-        .stat-card.color-purple .stat-value {
-            color: #6c5b7b;
-        }
+        .stats-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .stats-chart-box { background: white; border-radius: 14px; border: 1px solid #e2edf5; padding: 16px 18px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); }
+        .stats-chart-box .chart-title { font-size: 14px; font-weight: 600; color: #1f3a5f; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .stats-chart-box .chart-container { position: relative; height: 220px; }
+        .stats-table-wrap { background: white; border-radius: 14px; border: 1px solid #e2edf5; overflow: hidden; margin-top: 4px; }
+        .stats-table-wrap .table-header { padding: 12px 18px; background: #f8fafd; border-bottom: 1px solid #e2edf5; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 14px; color: #1f3a5f; }
+        .stats-table-wrap table { width: 100%; font-size: 13px; border-collapse: collapse; }
+        .stats-table-wrap table th { background: #f5f8fc; color: #2c4a6e; font-weight: 600; padding: 8px 14px; text-align: left; border-bottom: 2px solid #dce6f0; position: sticky; top: 0; z-index: 2; font-size: 12px; }
+        .stats-table-wrap table td { padding: 7px 14px; border-bottom: 1px solid #e8eef5; color: #2c3e66; }
+        .stats-table-wrap table tr:hover td { background: #f0f6fe; }
 
-        .stats-charts-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-        @media (max-width: 900px) {
-            .stats-charts-row {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .stats-chart-box {
-            background: white;
-            border-radius: 14px;
-            border: 1px solid #e2edf5;
-            padding: 16px 18px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-        .stats-chart-box .chart-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1f3a5f;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .stats-chart-box .chart-container {
-            position: relative;
-            height: 220px;
-        }
-
-        .stats-table-wrap {
-            background: white;
-            border-radius: 14px;
-            border: 1px solid #e2edf5;
-            overflow: hidden;
-            margin-top: 4px;
-        }
-        .stats-table-wrap .table-header {
-            padding: 12px 18px;
-            background: #f8fafd;
-            border-bottom: 1px solid #e2edf5;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-            font-size: 14px;
-            color: #1f3a5f;
-        }
-        .stats-table-wrap .table-header .btn-clear-stats {
-            background: none;
-            border: 1px solid #e0d6d6;
-            padding: 4px 14px;
-            border-radius: 30px;
-            font-size: 12px;
-            color: #b13b3b;
-            cursor: pointer;
-            transition: 0.2s;
-            font-weight: 500;
-        }
-        .stats-table-wrap .table-header .btn-clear-stats:hover {
-            background: #fce4e4;
-            border-color: #b13b3b;
-        }
-        .stats-table-wrap .table-scroll {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        .stats-table-wrap table {
-            width: 100%;
-            font-size: 13px;
-            border-collapse: collapse;
-        }
-        .stats-table-wrap table th {
-            background: #f5f8fc;
-            color: #2c4a6e;
-            font-weight: 600;
-            padding: 8px 14px;
-            text-align: left;
-            border-bottom: 2px solid #dce6f0;
-            position: sticky;
-            top: 0;
-            z-index: 2;
-            font-size: 12px;
-        }
-        .stats-table-wrap table td {
-            padding: 7px 14px;
-            border-bottom: 1px solid #e8eef5;
-            color: #2c3e66;
-        }
-        .stats-table-wrap table tr:hover td {
-            background: #f0f6fe;
-        }
-        .stats-table-wrap .empty-stats {
-            padding: 30px;
-            text-align: center;
-            color: #a0b8cc;
-        }
-
-        .tool-error {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            background: white;
-            border-radius: 12px;
-            border: 1px solid #e2edf5;
-            padding: 40px;
-            text-align: center;
-            color: #7a8eaa;
-        }
-        .tool-error .icon-big {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-        .tool-error h3 {
-            color: #1f3a5f;
-            margin-bottom: 8px;
-        }
-        .tool-error .btn-open {
-            margin-top: 16px;
-            padding: 10px 32px;
-            border-radius: 60px;
-            border: none;
-            background: #1a5d8c;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .tool-error .btn-open:hover {
-            background: #0e466b;
-            transform: translateY(-1px);
-        }
-
-        /* ===== 响应式 ===== */
+        /* ===== 工作流说明页 ===== */
+        .workflow-intro-page { padding: 20px; height: 100%; overflow-y: auto; }
+        .workflow-info-card { background: white; border-radius: 14px; border: 1px solid #e2edf5; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+        .workflow-info-card h2 { font-size: 20px; color: #1f3a5f; margin-bottom: 12px; }
+        .workflow-info-card p { font-size: 14px; color: #5a7a9a; line-height: 1.8; margin-bottom: 12px; }
+        .workflow-step-list { list-style: none; }
+        .workflow-step-list li { font-size: 14px; color: #4a6a8a; margin-bottom: 10px; background: #f0f4f8; border-radius: 8px; padding: 12px 16px; }
+        .workflow-step-list li strong { color: #1a5d8c; }
+        
         @media (max-width: 768px) {
-            .sidebar {
-                width: 200px;
-                min-width: 200px;
-            }
-            .nav-item {
-                font-size: 13px;
-                padding: 8px 16px 8px 24px;
-            }
-            .content-header {
-                padding: 12px 16px;
-            }
-            .content-body {
-                padding: 12px;
-            }
-            .welcome-content .tool-grid .card {
-                min-width: 140px;
-                padding: 12px 16px;
-            }
-            .stats-summary {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        @media (max-width: 600px) {
-            .sidebar {
-                width: 56px;
-                min-width: 56px;
-            }
-            .sidebar-brand h1 {
-                font-size: 0;
-            }
-            .sidebar-brand h1 span {
-                font-size: 24px;
-            }
-            .sidebar-brand p,
-            .nav-item .label,
-            .nav-section-title,
-            .sidebar-footer {
-                display: none;
-            }
-            .nav-item {
-                padding: 12px 16px;
-                justify-content: center;
-            }
-            .nav-item .icon {
-                font-size: 20px;
-                width: auto;
-            }
-            .nav-section-title .arrow {
-                display: none;
-            }
-            .content-header h2 {
-                font-size: 15px;
-            }
-            .content-header .logout-top {
-                font-size: 12px;
-                padding: 4px 14px;
-            }
-            .stats-summary {
-                grid-template-columns: 1fr 1fr;
-            }
-            .stats-summary .stat-card .stat-value {
-                font-size: 20px;
-            }
-            .welcome-content .tool-grid .card {
-                min-width: 120px;
-                padding: 10px 14px;
-                flex: 1 0 40%;
-            }
-            .welcome-content .tool-grid .card .name {
-                font-size: 12px;
-            }
-            .welcome-content .tool-grid .card .desc {
-                font-size: 10px;
-            }
+            .sidebar { width: 200px; min-width: 200px; }
+            .content-body { padding: 12px; }
         }
     </style>
 </head>
 <body>
-
-    <!-- ===== 应用容器 ===== -->
     <div class="app-container">
         <!-- 左侧导航 -->
         <nav class="sidebar" id="sidebar">
@@ -594,33 +110,23 @@
                 <h1><span>📦</span> 物流工具箱</h1>
                 <p>Logistics Toolbox</p>
             </div>
-
-            <div class="sidebar-nav" id="sidebarNav">
-                <!-- 导航树由 JS 动态渲染 -->
-            </div>
-
-            <div class="sidebar-footer">
-                v2.0 · 本地工具集
-            </div>
+            <div class="sidebar-nav" id="sidebarNav"></div>
+            <div class="sidebar-footer">v2.0 · 本地工具集</div>
         </nav>
 
         <!-- 右侧内容区 -->
         <main class="main-content">
             <header class="content-header">
                 <h2 id="pageTitle">📦 物流工具箱</h2>
-                <span class="breadcrumb" id="breadcrumb">首页 / <span id="breadcrumbCurrent">欢迎</span></span>
                 <button class="logout-top" id="logoutTopBtn">🚪 退出登录</button>
             </header>
-
-            <div class="content-body" id="contentBody">
-                <!-- 默认显示欢迎页，由 JS 渲染 -->
-            </div>
+            <div class="content-body" id="contentBody"></div>
         </main>
     </div>
 
     <script>
         // ============================================================
-        //  工具导航树配置 ★★★ 新增"VMI拉动平衡"工具 ★★★
+        //  工具导航树配置 (保留所有工具)
         // ============================================================
         const TOOLS = [{
             id: 'welcome',
@@ -629,6 +135,13 @@
             section: '导航',
             desc: '工具箱主页',
             isWelcome: true
+        }, {
+            id: 'workflow-intro',
+            icon: '💡',
+            label: '工作流说明',
+            section: '导航',
+            desc: '如何使用联动数据',
+            isWorkflow: true
         }, {
             id: 'excel-merge-sheets',
             icon: '📊',
@@ -700,7 +213,6 @@
             desc: '道口·拖拽排程·周视图·复制',
             file: 'dock-scheduling.html'
         }, {
-            // ★★★ 新增：VMI拉动平衡 ★★★
             id: 'vmi-pull-balance',
             icon: '⚖️',
             label: 'VMI拉动平衡',
@@ -717,105 +229,46 @@
         }];
 
         // ============================================================
-        //  统计数据管理
+        //  统计数据管理 (保留原版)
         // ============================================================
         const STATS_KEY = 'toolbox_stats_data';
 
         function getStatsData() {
-            try {
-                const raw = localStorage.getItem(STATS_KEY);
-                if (raw) return JSON.parse(raw);
-            } catch (e) {}
+            try { const raw = localStorage.getItem(STATS_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
             return { totalVisits: 0, toolUsage: {}, history: [] };
         }
-
-        function saveStatsData(data) {
-            localStorage.setItem(STATS_KEY, JSON.stringify(data));
-        }
-
+        function saveStatsData(data) { localStorage.setItem(STATS_KEY, JSON.stringify(data)); }
         function recordToolUsage(toolId) {
-            const data = getStatsData();
-            const now = new Date();
-            const timeStr = now.toLocaleString('zh-CN');
-
+            const data = getStatsData(); const now = new Date(); const timeStr = now.toLocaleString('zh-CN');
             data.totalVisits = (data.totalVisits || 0) + 1;
-
-            if (!data.toolUsage[toolId]) {
-                data.toolUsage[toolId] = { count: 0, firstUse: timeStr, lastUse: timeStr };
-            }
-            data.toolUsage[toolId].count += 1;
-            data.toolUsage[toolId].lastUse = timeStr;
-
+            if (!data.toolUsage[toolId]) data.toolUsage[toolId] = { count: 0, firstUse: timeStr, lastUse: timeStr };
+            data.toolUsage[toolId].count += 1; data.toolUsage[toolId].lastUse = timeStr;
             if (!data.history) data.history = [];
-            data.history.push({
-                toolId: toolId,
-                time: timeStr,
-                timestamp: now.getTime()
-            });
-
-            if (data.history.length > 500) {
-                data.history = data.history.slice(-500);
-            }
-
-            saveStatsData(data);
-            return data;
+            data.history.push({ toolId: toolId, time: timeStr, timestamp: now.getTime() });
+            if (data.history.length > 500) data.history = data.history.slice(-500);
+            saveStatsData(data); return data;
         }
-
         function clearStatsData() {
-            if (confirm('确定要清空所有统计数据吗？此操作不可恢复！')) {
-                saveStatsData({ totalVisits: 0, toolUsage: {}, history: [] });
-                loadTool('stats');
-            }
+            if (confirm('确定要清空所有统计数据吗？')) { saveStatsData({ totalVisits: 0, toolUsage: {}, history: [] }); loadTool('stats'); }
         }
 
         // ============================================================
-        //  DOM 引用
-        // ============================================================
-        const logoutTopBtn = document.getElementById('logoutTopBtn');
-
-        // ============================================================
-        //  退出登录
-        // ============================================================
-        function doLogout() {
-            sessionStorage.removeItem('isLoggedIn');
-            sessionStorage.removeItem('username');
-            window.location.href = 'index.html';
-        }
-
-        // ============================================================
-        //  渲染导航树
+        //  渲染导航树 (保留原版逻辑)
         // ============================================================
         function renderNav() {
             const nav = document.getElementById('sidebarNav');
             const sections = {};
-
-            TOOLS.forEach(t => {
-                if (!sections[t.section]) sections[t.section] = [];
-                sections[t.section].push(t);
-            });
-
-            let html = '';
-            let isFirst = true;
+            TOOLS.forEach(t => { if (!sections[t.section]) sections[t.section] = []; sections[t.section].push(t); });
+            let html = ''; let isFirst = true;
             for (const [section, items] of Object.entries(sections)) {
                 const collapsedClass = isFirst ? '' : 'collapsed';
                 const arrowClass = isFirst ? '' : 'collapsed';
-                html += `
-                        <div class="nav-section">
-                            <div class="nav-section-title" onclick="toggleSection(this)">
-                                ${section}
-                                <span class="arrow ${arrowClass}">▼</span>
-                            </div>
-                            <div class="nav-items ${collapsedClass}" style="max-height:${isFirst ? '999px' : '0'}">
-                    `;
+                html += `<div class="nav-section"><div class="nav-section-title" onclick="toggleSection(this)">${section}<span class="arrow ${arrowClass}">▼</span></div><div class="nav-items ${collapsedClass}" style="max-height:${isFirst ? '999px' : '0'}">`;
                 items.forEach(t => {
                     const active = t.isWelcome ? 'active' : '';
-                    html += `
-                            <a class="nav-item ${active}" href="#" data-id="${t.id}" onclick="loadTool('${t.id}')">
-                                <span class="icon">${t.icon}</span>
-                                <span class="label">${t.label}</span>
-                                ${t.desc ? `<span class="badge">${t.desc}</span>` : ''}
-                            </a>
-                        `;
+                    const extraClass = t.isWorkflow ? 'workflow-item' : '';
+                    const badgeText = t.isWorkflow ? '💡' : '';
+                    html += `<a class="nav-item ${active} ${extraClass}" href="#" data-id="${t.id}" onclick="loadTool('${t.id}')"><span class="icon">${t.icon}</span><span class="label">${t.label}</span>${badgeText ? `<span class="badge">${badgeText}</span>` : ''}</a>`;
                 });
                 html += `</div></div>`;
                 isFirst = false;
@@ -823,297 +276,45 @@
             nav.innerHTML = html;
         }
 
-        // ============================================================
-        //  折叠/展开
-        // ============================================================
         function toggleSection(el) {
             const items = el.nextElementSibling;
             const arrow = el.querySelector('.arrow');
-            if (items.classList.contains('collapsed')) {
-                items.classList.remove('collapsed');
-                items.style.maxHeight = items.scrollHeight + 'px';
-                arrow.classList.remove('collapsed');
-            } else {
-                items.classList.add('collapsed');
-                items.style.maxHeight = '0';
-                arrow.classList.add('collapsed');
-            }
+            if (items.classList.contains('collapsed')) { items.classList.remove('collapsed'); items.style.maxHeight = items.scrollHeight + 'px'; arrow.classList.remove('collapsed'); }
+            else { items.classList.add('collapsed'); items.style.maxHeight = '0'; arrow.classList.add('collapsed'); }
         }
 
         // ============================================================
-        //  渲染统计页面
-        // ============================================================
-        let usageChartInstance = null;
-        let trendChartInstance = null;
-
-        function renderStatsPage() {
-            const data = getStatsData();
-            const body = document.getElementById('contentBody');
-
-            const toolNameMap = {};
-            TOOLS.forEach(t => { toolNameMap[t.id] = t.label; });
-
-            const totalUsage = data.totalVisits || 0;
-            const toolCount = Object.keys(data.toolUsage).length;
-            const historyCount = data.history ? data.history.length : 0;
-
-            let mostUsedTool = '无数据';
-            let mostUsedCount = 0;
-            for (const [id, stat] of Object.entries(data.toolUsage)) {
-                if (stat.count > mostUsedCount) {
-                    mostUsedCount = stat.count;
-                    mostUsedTool = toolNameMap[id] || id;
-                }
-            }
-
-            const today = new Date().toDateString();
-            let todayCount = 0;
-            if (data.history) {
-                data.history.forEach(h => {
-                    const hDate = new Date(h.timestamp).toDateString();
-                    if (hDate === today) todayCount++;
-                });
-            }
-
-            let tableHtml = '';
-            const sortedTools = Object.entries(data.toolUsage)
-                .sort((a, b) => b[1].count - a[1].count);
-
-            if (sortedTools.length === 0) {
-                tableHtml = `<div class="empty-stats">📭 暂无使用记录，开始使用工具吧！</div>`;
-            } else {
-                tableHtml = `
-                        <table>
-                            <thead><tr>
-                                <th>#</th>
-                                <th>工具名称</th>
-                                <th>使用次数</th>
-                                <th>首次使用</th>
-                                <th>最近使用</th>
-                            </tr></thead>
-                            <tbody>
-                    `;
-                sortedTools.forEach(([id, stat], idx) => {
-                    const name = toolNameMap[id] || id;
-                    tableHtml += `
-                            <tr>
-                                <td>${idx + 1}</td>
-                                <td><strong>${name}</strong></td>
-                                <td>${stat.count}</td>
-                                <td>${stat.firstUse || '-'}</td>
-                                <td>${stat.lastUse || '-'}</td>
-                            </tr>
-                        `;
-                });
-                tableHtml += `</tbody></table>`;
-            }
-
-            body.innerHTML = `
-                    <div class="stats-dashboard">
-                        <div class="stats-summary">
-                            <div class="stat-card color-primary">
-                                <span class="stat-icon">📊</span>
-                                <div class="stat-label">总访问量</div>
-                                <div class="stat-value">${totalUsage}</div>
-                                <div class="stat-sub">累计工具使用次数</div>
-                            </div>
-                            <div class="stat-card color-success">
-                                <span class="stat-icon">🔧</span>
-                                <div class="stat-label">已使用工具</div>
-                                <div class="stat-value">${toolCount}</div>
-                                <div class="stat-sub">共 ${TOOLS.filter(t => !t.isWelcome && !t.isStats).length} 个工具</div>
-                            </div>
-                            <div class="stat-card color-warning">
-                                <span class="stat-icon">🏆</span>
-                                <div class="stat-label">最常用工具</div>
-                                <div class="stat-value">${mostUsedTool}</div>
-                                <div class="stat-sub">使用 ${mostUsedCount} 次</div>
-                            </div>
-                            <div class="stat-card color-purple">
-                                <span class="stat-icon">📅</span>
-                                <div class="stat-label">今日使用</div>
-                                <div class="stat-value">${todayCount}</div>
-                                <div class="stat-sub">${today}</div>
-                            </div>
-                        </div>
-
-                        <div class="stats-charts-row">
-                            <div class="stats-chart-box">
-                                <div class="chart-title">📊 各工具使用次数</div>
-                                <div class="chart-container">
-                                    <canvas id="usageChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="stats-chart-box">
-                                <div class="chart-title">📈 使用趋势 (最近30条)</div>
-                                <div class="chart-container">
-                                    <canvas id="trendChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="stats-table-wrap">
-                            <div class="table-header">
-                                <span>📋 工具使用明细</span>
-                                <button class="btn-clear-stats" onclick="clearStatsData()">🗑️ 清空数据</button>
-                            </div>
-                            <div class="table-scroll">
-                                ${tableHtml}
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-            const ctx1 = document.getElementById('usageChart');
-            if (ctx1) {
-                if (usageChartInstance) { usageChartInstance.destroy();
-                    usageChartInstance = null; }
-                const labels = [];
-                const values = [];
-                const colors = [];
-                const palette = ['#4A9EFF', '#2ED573', '#FF9F43', '#A29BFE', '#FF6B6B', '#48DBFB', '#FECA57', '#6C5CE7', '#00B894',
-                    '#FD79A8'
-                ];
-                let idx = 0;
-                for (const [id, stat] of sortedTools) {
-                    const name = toolNameMap[id] || id;
-                    if (name.length > 8) {
-                        labels.push(name.substring(0, 6) + '..');
-                    } else {
-                        labels.push(name);
-                    }
-                    values.push(stat.count);
-                    colors.push(palette[idx % palette.length]);
-                    idx++;
-                }
-                usageChartInstance = new Chart(ctx1, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: '使用次数',
-                            data: values,
-                            backgroundColor: colors.map(c => c + '80'),
-                            borderColor: colors,
-                            borderWidth: 2,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { stepSize: 1 }
-                            },
-                            x: {
-                                grid: { display: false }
-                            }
-                        }
-                    }
-                });
-            }
-
-            const ctx2 = document.getElementById('trendChart');
-            if (ctx2) {
-                if (trendChartInstance) { trendChartInstance.destroy();
-                    trendChartInstance = null; }
-                const history = data.history || [];
-                const recent = history.slice(-30);
-                const timeMap = {};
-                recent.forEach(h => {
-                    const date = new Date(h.timestamp);
-                    const key = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
-                    if (!timeMap[key]) timeMap[key] = 0;
-                    timeMap[key]++;
-                });
-                const trendLabels = Object.keys(timeMap);
-                const trendValues = Object.values(timeMap);
-                if (trendLabels.length < 2) {
-                    trendLabels.push('暂无足够数据');
-                    trendValues.push(0);
-                }
-                trendChartInstance = new Chart(ctx2, {
-                    type: 'line',
-                    data: {
-                        labels: trendLabels,
-                        datasets: [{
-                            label: '使用次数',
-                            data: trendValues,
-                            borderColor: '#1a5d8c',
-                            backgroundColor: 'rgba(26, 93, 140, 0.1)',
-                            fill: true,
-                            tension: 0.3,
-                            pointBackgroundColor: '#1a5d8c',
-                            pointRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { stepSize: 1 }
-                            },
-                            x: {
-                                grid: { display: false }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        // ============================================================
-        //  加载工具
+        //  加载工具 (平铺模式，无弹窗，无工作流强制跳转)
         // ============================================================
         function loadTool(toolId) {
             const tool = TOOLS.find(t => t.id === toolId);
             if (!tool) return;
-
-            if (!tool.isWelcome && !tool.isStats) {
-                recordToolUsage(toolId);
-            }
-
+            if (!tool.isWelcome && !tool.isStats && tool.id !== 'workflow-intro') recordToolUsage(toolId);
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             const navItem = document.querySelector(`.nav-item[data-id="${toolId}"]`);
             if (navItem) navItem.classList.add('active');
-
             document.getElementById('pageTitle').textContent = tool.icon + ' ' + tool.label;
-            document.getElementById('breadcrumbCurrent').textContent = tool.label;
-
             const body = document.getElementById('contentBody');
 
             if (tool.isWelcome) {
+                body.innerHTML = `<div class="welcome-content"><div class="logo-big">📦</div><h2>物流工具箱</h2><p>请从左侧选择工具。工具之间支持数据流转，例如：先做完地址解析后，再打开聚类工具即可一键导入数据。</p></div>`;
+                return;
+            }
+
+            if (tool.isWorkflow) {
                 body.innerHTML = `
-                        <div class="welcome-content">
-                            <div class="logo-big">📦</div>
-                            <h2>物流工具箱</h2>
-                            <p>欢迎使用物流工具箱 · 集成了Excel合并、地理编码、路线规划、聚类分析、3D装载可视化、仓库规划、VMI拉动平衡等核心工具</p>
-                            <div class="tool-grid">
-                                ${TOOLS.filter(t => !t.isWelcome && !t.isStats).map(t => `
-                                    <div class="card" onclick="loadTool('${t.id}')">
-                                        <div class="icon">${t.icon}</div>
-                                        <div class="name">${t.label}</div>
-                                        <div class="desc">${t.desc || ''}</div>
-                                    </div>
-                                `).join('')}
-                                <div class="card" onclick="loadTool('stats')" style="border-color:#6c5b7b;background:#f5f0f8;">
-                                    <div class="icon">📈</div>
-                                    <div class="name">使用统计</div>
-                                    <div class="desc">查看工具使用分析</div>
-                                </div>
-                            </div>
+                    <div class="workflow-intro-page">
+                        <div class="workflow-info-card">
+                            <h2>💡 如何实现工具间的工作流联动？</h2>
+                            <p>我们采用“上游保存数据，下游主动读取”的独立工作流机制，这是一种最简单、最稳定，且不会影响任何单一工具性能的设计。</p>
+                            <ul class="workflow-step-list">
+                                <li><strong>第1步：</strong>在左侧打开【地址转经纬度】工具，上传Excel文件并完成查询。</li>
+                                <li><strong>第2步：</strong>查询完成后，地址工具会在底部提示：“数据已保存”。此时点击左侧的【K-Means聚类规划】。</li>
+                                <li><strong>第3步：</strong>打开聚类工具后，它会自动检测到地址工具保存的数据，页面顶部会出现【检测到上游数据】的提示条，点击【导入】即可完成数据对接。</li>
+                                <li><strong>第4步：</strong>聚类工具计算完成后，同样可以保存结果，供后续工具（如线路排程）读取。</li>
+                            </ul>
                         </div>
-                    `;
+                    </div>`;
                 return;
             }
 
@@ -1122,47 +323,73 @@
                 return;
             }
 
-            const filePath = tool.file;
-            if (!filePath) {
-                body.innerHTML = `
-                        <div class="tool-error">
-                            <div class="icon-big">🔧</div>
-                            <h3>${tool.label}</h3>
-                            <p>此工具配置错误，未指定文件路径。</p>
-                        </div>
-                    `;
-                return;
-            }
-
-            body.innerHTML = `
-                    <div class="iframe-wrapper">
-                        <iframe src="${filePath}" allow="geolocation"></iframe>
-                    </div>
-                `;
+            body.innerHTML = `<div class="iframe-wrapper"><iframe src="${tool.file}" allow="geolocation"></iframe></div>`;
         }
 
         // ============================================================
-        //  事件绑定
+        //  统计页面
         // ============================================================
-        logoutTopBtn.addEventListener('click', doLogout);
+        let usageChartInstance = null;
+        let trendChartInstance = null;
+        function renderStatsPage() {
+            const data = getStatsData(); const body = document.getElementById('contentBody');
+            const toolNameMap = {}; TOOLS.forEach(t => { toolNameMap[t.id] = t.label; });
+            const totalUsage = data.totalVisits || 0; const toolCount = Object.keys(data.toolUsage).length;
+            let mostUsedTool = '无数据'; let mostUsedCount = 0;
+            for (const [id, stat] of Object.entries(data.toolUsage)) { if (stat.count > mostUsedCount) { mostUsedCount = stat.count; mostUsedTool = toolNameMap[id] || id; } }
+            const today = new Date().toDateString(); let todayCount = 0;
+            if (data.history) { data.history.forEach(h => { const hDate = new Date(h.timestamp).toDateString(); if (hDate === today) todayCount++; }); }
+            
+            let tableHtml = '';
+            const sortedTools = Object.entries(data.toolUsage).sort((a, b) => b[1].count - a[1].count);
+            if (sortedTools.length === 0) { tableHtml = `<div class="empty-stats">📭 暂无使用记录，开始使用工具吧！</div>`; }
+            else {
+                tableHtml = `<table><thead><tr><th>#</th><th>工具名称</th><th>使用次数</th><th>首次使用</th><th>最近使用</th></tr></thead><tbody>`;
+                sortedTools.forEach(([id, stat], idx) => { const name = toolNameMap[id] || id; tableHtml += `<tr><td>${idx + 1}</td><td><strong>${name}</strong></td><td>${stat.count}</td><td>${stat.firstUse || '-'}</td><td>${stat.lastUse || '-'}</td></tr>`; });
+                tableHtml += `</tbody></table>`;
+            }
+
+            body.innerHTML = `<div class="stats-dashboard">
+                <div class="stats-summary">
+                    <div class="stat-card color-primary"><span class="stat-icon">📊</span><div class="stat-label">总访问量</div><div class="stat-value">${totalUsage}</div><div class="stat-sub">累计工具使用次数</div></div>
+                    <div class="stat-card color-success"><span class="stat-icon">🔧</span><div class="stat-label">已使用工具</div><div class="stat-value">${toolCount}</div><div class="stat-sub">共 ${TOOLS.filter(t => !t.isWelcome && !t.isStats).length} 个工具</div></div>
+                    <div class="stat-card color-warning"><span class="stat-icon">🏆</span><div class="stat-label">最常用工具</div><div class="stat-value">${mostUsedTool}</div><div class="stat-sub">使用 ${mostUsedCount} 次</div></div>
+                    <div class="stat-card color-purple"><span class="stat-icon">📅</span><div class="stat-label">今日使用</div><div class="stat-value">${todayCount}</div><div class="stat-sub">${today}</div></div>
+                </div>
+                <div class="stats-charts-row">
+                    <div class="stats-chart-box"><div class="chart-title">📊 各工具使用次数</div><div class="chart-container"><canvas id="usageChart"></canvas></div></div>
+                    <div class="stats-chart-box"><div class="chart-title">📈 使用趋势</div><div class="chart-container"><canvas id="trendChart"></canvas></div></div>
+                </div>
+                <div class="stats-table-wrap"><div class="table-header"><span>📋 工具使用明细</span></div><div class="table-scroll">${tableHtml}</div></div>
+            </div>`;
+
+            const ctx1 = document.getElementById('usageChart');
+            if (ctx1) {
+                if (usageChartInstance) { usageChartInstance.destroy(); usageChartInstance = null; }
+                const labels = [], values = [], colors = []; const palette = ['#4A9EFF', '#2ED573', '#FF9F43', '#A29BFE', '#FF6B6B', '#48DBFB', '#FECA57', '#6C5CE7', '#00B894', '#FD79A8'];
+                let idx = 0; for (const [id, stat] of sortedTools) { const name = toolNameMap[id] || id; labels.push(name.length > 8 ? name.substring(0, 6) + '..' : name); values.push(stat.count); colors.push(palette[idx % palette.length]); idx++; }
+                usageChartInstance = new Chart(ctx1, { type: 'bar', data: { labels: labels, datasets: [{ label: '使用次数', data: values, backgroundColor: colors.map(c => c + '80'), borderColor: colors, borderWidth: 2, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } } });
+            }
+            const ctx2 = document.getElementById('trendChart');
+            if (ctx2) {
+                if (trendChartInstance) { trendChartInstance.destroy(); trendChartInstance = null; }
+                const history = data.history || []; const recent = history.slice(-30); const timeMap = {};
+                recent.forEach(h => { const date = new Date(h.timestamp); const key = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }); if (!timeMap[key]) timeMap[key] = 0; timeMap[key]++; });
+                const trendLabels = Object.keys(timeMap); const trendValues = Object.values(timeMap);
+                if (trendLabels.length < 2) { trendLabels.push('暂无足够数据'); trendValues.push(0); }
+                trendChartInstance = new Chart(ctx2, { type: 'line', data: { labels: trendLabels, datasets: [{ label: '使用次数', data: trendValues, borderColor: '#1a5d8c', backgroundColor: 'rgba(26, 93, 140, 0.1)', fill: true, tension: 0.3, pointBackgroundColor: '#1a5d8c', pointRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } } });
+            }
+        }
 
         // ============================================================
-        //  初始化
+        //  事件绑定 & 初始化
         // ============================================================
-        renderNav();
-        loadTool('welcome');
-
-        window.addEventListener('resize', () => {
-            document.querySelectorAll('.nav-items').forEach(el => {
-                if (!el.classList.contains('collapsed')) {
-                    el.style.maxHeight = el.scrollHeight + 'px';
-                }
-            });
-        });
-
+        document.getElementById('logoutTopBtn').addEventListener('click', function() { sessionStorage.removeItem('isLoggedIn'); window.location.href = 'index.html'; });
         window.loadTool = loadTool;
         window.toggleSection = toggleSection;
         window.clearStatsData = clearStatsData;
+        renderNav();
+        loadTool('welcome');
     </script>
 </body>
 </html>
