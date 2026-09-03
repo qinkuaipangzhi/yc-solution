@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>站点地址批量转经纬度 - 工作流联动版</title>
+    <title>站点地址批量转经纬度 - 多结果快照管理</title>
     <!-- SheetJS 核心库 -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <!-- Leaflet CSS + JS -->
@@ -21,11 +21,35 @@
         
         .main-body { flex: 1; display: flex; flex-direction: column; padding: 8px 12px; gap: 6px; overflow: hidden; min-height: 0; }
         
-        .workflow-hint { background: linear-gradient(135deg, #e8f0fa, #d4e4f0); border-radius: 0.5rem; padding: 6px 12px; border: 1px solid #b8cde0; display: none; align-items: center; gap: 10px; flex-shrink: 0; }
-        .workflow-hint.show { display: flex; }
-        .workflow-hint .info { font-size: 0.7rem; color: #1f3a5f; flex: 1; }
-        .workflow-hint .status { font-size: 0.6rem; color: #2a7f6e; font-weight: 600; background: rgba(42, 127, 110, 0.12); padding: 2px 10px; border-radius: 30px; }
-        
+        /* ★★★ 快照记录管理区 ★★★ */
+        .snapshot-manage-area {
+            background: #f4f7fb; border: 1px solid #dbe4ee; border-radius: 0.8rem;
+            padding: 8px 12px; flex-shrink: 0;
+        }
+        .snapshot-row {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        }
+        .snapshot-row label {
+            font-size: 0.7rem; font-weight: 600; color: #4a6a8a;
+        }
+        .snapshot-select {
+            flex: 1; max-width: 300px; padding: 4px 10px; border-radius: 6px;
+            border: 1px solid #cbdde9; background: white; font-size: 0.75rem;
+        }
+        .snapshot-btn {
+            background: #1a5d8c; color: white; border: none; padding: 4px 16px;
+            border-radius: 40px; cursor: pointer; font-size: 0.7rem; font-weight: 600;
+        }
+        .snapshot-btn:hover { background: #0e466b; }
+        .snapshot-del {
+            background: #fce4e4; border: 1px solid #f5c2c2; color: #b13b3b;
+            padding: 3px 12px; border-radius: 40px; cursor: pointer; font-size: 0.7rem;
+        }
+        .snapshot-del:hover { background: #fccfcf; }
+        .snapshot-info {
+            font-size: 0.6rem; color: #7a8eaa;
+        }
+
         .data-pass-bar { background: #e8f5ee; border-radius: 0.5rem; padding: 4px 10px; border: 1px solid #b8ddd0; display: none; align-items: center; justify-content: space-between; flex-shrink: 0; }
         .data-pass-bar.show { display: flex; }
         .data-pass-bar .info { font-size: 0.55rem; color: #1e6657; }
@@ -82,21 +106,25 @@
 
 <div class="container">
     <div class="header">
-        <h1>📍 地址转经纬度 <small>批量地理编码 · 工作流联动版</small></h1>
+        <h1>📍 地址转经纬度 <small>批量地理编码 · 多快照管理</small></h1>
     </div>
 
     <div class="main-body">
-        <div class="workflow-hint" id="workflowHint">
-            <span class="info">🔗 <strong>工作流模式</strong> · 查询完成后数据将自动保存，供下游工具使用</span>
-            <span class="status" id="workflowStatus">⏳ 等待查询</span>
+        <!-- ★★★ 快照记录管理区 ★★★ -->
+        <div class="snapshot-manage-area">
+            <div class="snapshot-row">
+                <label>📂 查询结果记录：</label>
+                <select id="snapshotSelect" class="snapshot-select">
+                    <option value="">--- 暂无保存的记录 ---</option>
+                </select>
+                <button class="snapshot-btn" id="saveSnapshotBtn" disabled>💾 保存当前结果为快照</button>
+                <button class="snapshot-del" id="deleteSnapshotBtn" disabled>🗑️ 删除当前快照</button>
+                <span class="snapshot-info" id="snapshotInfo">查询完成后可保存快照，供下游工具调用或回看</span>
+            </div>
         </div>
 
         <div class="data-pass-bar" id="dataPassBar">
-            <span class="info">💾 数据已保存，可传递给下游工具：<strong id="passInfo">K-Means聚类</strong></span>
-            <div class="actions" style="display:flex; gap:4px;">
-                <button class="btn btn-success" id="saveAndPassBtn" disabled>💾 保存并传递</button>
-                <button class="btn btn-outline" id="clearPassBtn">✕ 清除</button>
-            </div>
+            <span class="info">💾 数据已传递：<strong id="passInfo">暂无</strong></span>
         </div>
 
         <div class="top-section">
@@ -195,8 +223,8 @@
     //  全局变量
     // ============================================================
     var CONFIG = { QPS_LIMIT: 3, REQUEST_INTERVAL: 350, MAX_RETRIES: 3, RETRY_DELAY: 1000 };
-    var PASS_KEY = 'toolbox_data_pass';
     var TOOL_ID = 'address-geocode';
+    var SAVE_KEY = 'toolbox_data_snapshots'; // 用于存储多个快照
 
     var dataRows = [];
     var uploadedFiles = [];
@@ -207,7 +235,9 @@
     var mapInstance = null;
     var mapLayers = [];
     var isMapInitialized = false;
-    var isInWorkflow = false;
+    
+    var lastSuccessResults = []; // 刚查询出来的结果
+    var currentSnapshotId = null; // 当前选中的快照ID
 
     // DOM 获取
     var tableBody = document.getElementById('tableBody');
@@ -229,27 +259,129 @@
     var mapContainer = document.getElementById('mapContainer');
     var mapStatus = document.getElementById('mapStatus');
     var mapCount = document.getElementById('mapCount');
-    var workflowHint = document.getElementById('workflowHint');
-    var workflowStatus = document.getElementById('workflowStatus');
-    var dataPassBar = document.getElementById('dataPassBar');
-    var passInfo = document.getElementById('passInfo');
-    var saveAndPassBtn = document.getElementById('saveAndPassBtn');
-    var clearPassBtn = document.getElementById('clearPassBtn');
+    
+    var snapshotSelect = document.getElementById('snapshotSelect');
+    var saveSnapshotBtn = document.getElementById('saveSnapshotBtn');
+    var deleteSnapshotBtn = document.getElementById('deleteSnapshotBtn');
+    var snapshotInfo = document.getElementById('snapshotInfo');
+
+    // ============================================================
+    //  ★★★ 多快照管理逻辑 ★★★
+    // ============================================================
+    
+    // 获取所有快照
+    function getAllSnapshots() {
+        try {
+            var raw = localStorage.getItem(SAVE_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return [];
+    }
+
+    // 渲染下拉框
+    function renderSnapshotSelect() {
+        var snapshots = getAllSnapshots();
+        var html = '<option value="">--- 请选择记录 ---</option>';
+        for (var i = snapshots.length - 1; i >= 0; i--) {
+            var item = snapshots[i];
+            var dateStr = new Date(item.timestamp).toLocaleString();
+            html += `<option value="${item.id}">${item.name} (${item.count}条, ${dateStr})</option>`;
+        }
+        snapshotSelect.innerHTML = html;
+        
+        // 如果当前有选中的快照，重新选中它
+        if (currentSnapshotId) {
+            snapshotSelect.value = currentSnapshotId;
+        }
+        
+        // 控制删除按钮状态
+        deleteSnapshotBtn.disabled = !currentSnapshotId;
+        saveSnapshotBtn.disabled = lastSuccessResults.length === 0;
+    }
+
+    // 保存当前结果为新快照
+    function saveCurrentSnapshot() {
+        if (lastSuccessResults.length === 0) {
+            showToast('⚠️ 当前没有可保存的结果');
+            return;
+        }
+        var snapshots = getAllSnapshots();
+        var newSnapshot = {
+            id: 'snap_' + Date.now(),
+            name: '快照 #' + (snapshots.length + 1),
+            timestamp: Date.now(),
+            count: lastSuccessResults.length,
+            data: lastSuccessResults
+        };
+        snapshots.push(newSnapshot);
+        localStorage.setItem(SAVE_KEY, JSON.stringify(snapshots));
+        
+        // 重置并选中新保存的快照
+        currentSnapshotId = newSnapshot.id;
+        renderSnapshotSelect();
+        addLog('💾 已保存快照: ' + newSnapshot.name, false);
+        showToast('✅ 快照已保存！');
+    }
+
+    // 切换查看快照
+    function onSnapshotChange() {
+        var selectedId = snapshotSelect.value;
+        if (!selectedId) {
+            currentSnapshotId = null;
+            // 清空表格
+            dataRows = [];
+            renderTable();
+            snapshotInfo.textContent = '请选择或保存一个快照';
+            return;
+        }
+        
+        var snapshots = getAllSnapshots();
+        var snapshot = snapshots.find(function(s) { return s.id === selectedId; });
+        if (snapshot) {
+            currentSnapshotId = selectedId;
+            // 将快照数据重新填充到表格进行回看
+            dataRows = snapshot.data.map(function(item, idx) {
+                return {
+                    id: idx + 1,
+                    code: item['站点代码'],
+                    name: item['站点名称'],
+                    addr: item['地址'],
+                    demand: item['单次提货量'] || 0,
+                    lng: item['经度'],
+                    lat: item['纬度'],
+                    status: '成功',
+                    province: item['省'] || '',
+                    city: item['市'] || '',
+                    district: item['区'] || ''
+                };
+            });
+            renderTable();
+            if (isMapInitialized) renderMapMarkers();
+            snapshotInfo.textContent = `当前查看: ${snapshot.name}`;
+            addLog('📂 已加载快照: ' + snapshot.name, false);
+        }
+    }
+
+    // 删除当前快照
+    function deleteCurrentSnapshot() {
+        if (!currentSnapshotId) return;
+        if (!confirm('确定要删除当前选中的快照吗？')) return;
+        
+        var snapshots = getAllSnapshots();
+        snapshots = snapshots.filter(function(s) { return s.id !== currentSnapshotId; });
+        localStorage.setItem(SAVE_KEY, JSON.stringify(snapshots));
+        
+        currentSnapshotId = null;
+        dataRows = [];
+        renderTable();
+        renderSnapshotSelect();
+        showToast('🗑️ 快照已删除');
+        addLog('🗑️ 已删除快照', false);
+    }
 
     // ============================================================
     //  核心逻辑
     // ============================================================
-    function detectWorkflowMode() {
-        try {
-            if (window.parent && window.parent !== window) {
-                isInWorkflow = true;
-                workflowHint.classList.add('show');
-                workflowStatus.textContent = '⚡ 工作流模式';
-                addLog('🔗 检测到工作流模式，查询完成后将自动通知父页面', false);
-            }
-        } catch (e) {}
-    }
-
     function addLog(msg, isError) {
         var time = new Date().toLocaleTimeString();
         var prefix = isError ? '❌' : '📌';
@@ -266,7 +398,7 @@
 
     function escHtml(str) { return String(str || '').replace(/[&<>]/g, function(m) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m; }); }
 
-    // 解析 Excel（包含识别可选货量）
+    // 解析 Excel
     function parseExcelToRows(file) {
         return new Promise(function(resolve, reject) {
             var reader = new FileReader();
@@ -377,6 +509,8 @@
         queryBtn.disabled = dataRows.length === 0 || isQuerying;
         document.getElementById('exportResultBtn').disabled = !(succ > 0 || fail > 0);
         document.getElementById('copyResultBtn').disabled = !(succ > 0 || fail > 0);
+        
+        saveSnapshotBtn.disabled = lastSuccessResults.length === 0 && currentSnapshotId === null;
     }
 
     // 地图
@@ -432,7 +566,7 @@
         });
     }
 
-    // 查询主入口（按照QPS限制逐步查询）
+    // 查询主入口
     function startQuery() {
         if (dataRows.length === 0) { addLog('请先上传数据', true); return; }
         var key = amapKeyInput.value.trim();
@@ -461,12 +595,28 @@
                 stopBtn.disabled = true;
                 progressFill.style.width = '100%';
                 progressText.textContent = '✅ 完成！成功 ' + success + ' 条，失败 ' + failed + ' 条';
+                
+                // 提取成功数据用于保存
+                lastSuccessResults = dataRows.filter(function(r) { return r.status === '成功' && r.lng !== null; })
+                    .map(function(r) {
+                        return {
+                            '站点代码': r.code || '',
+                            '站点名称': r.name || '',
+                            '地址': r.addr,
+                            '经度': r.lng,
+                            '纬度': r.lat,
+                            '单次提货量': r.demand || 0,
+                            '省': r.province || '',
+                            '市': r.city || '',
+                            '区': r.district || ''
+                        };
+                    });
+
                 renderTable();
+                renderSnapshotSelect(); // 刷新快照按钮状态
                 if (isMapInitialized) renderMapMarkers();
                 addLog('✅ 查询结束，成功 ' + success + ' 条，失败 ' + failed + ' 条', false);
-                
-                // ★★★ 自动传递数据 ★★★
-                if (success > 0) setTimeout(function(){ saveAndPass(); }, 300);
+                addLog('💡 可以点击上方【保存当前结果为快照】存档。', false);
                 return;
             }
 
@@ -500,43 +650,7 @@
         processNext(0);
     }
 
-    // ★★★ 保存并传递数据（增加单次提货量） ★★★
-    function saveAndPass() {
-        var successResults = dataRows.filter(function(r) { return r.status === '成功' && r.lng !== null; });
-        if (successResults.length === 0) { showToast('⚠️ 没有成功解析的地址可以传递'); return; }
-
-        var passData = {
-            tool: TOOL_ID,
-            timestamp: new Date().toISOString(),
-            count: successResults.length,
-            data: successResults.map(function(r) {
-                return {
-                    '站点代码': r.code || '',
-                    '站点名称': r.name || '',
-                    '地址': r.addr,
-                    '经度': r.lng,
-                    '纬度': r.lat,
-                    '单次提货量': r.demand || 0, // ★★★ 自动传递货量 ★★★
-                    '省': r.province || '',
-                    '市': r.city || '',
-                    '区': r.district || ''
-                };
-            })
-        };
-
-        localStorage.setItem(PASS_KEY, JSON.stringify(passData));
-        dataPassBar.classList.add('show');
-        passInfo.textContent = 'K-Means聚类 (' + successResults.length + ' 条)';
-        saveAndPassBtn.disabled = true;
-        addLog('💾 数据已保存并传递给下游工具', 'success');
-        if (isInWorkflow) workflowStatus.textContent = '✅ 已通知工作流';
-        
-        try {
-            window.parent.postMessage({ type: 'toolbox_data_saved', tool: TOOL_ID, count: successResults.length, data: passData }, '*');
-        } catch (e) {}
-    }
-
-    // 下载模板（可选列：单次提货量）
+    // 下载模板
     function downloadTemplate() {
         var headers = ['站点代码', '站点名称', '站点地址', '单次提货量(m³)'];
         var sampleData = [ ['S001', '上海仓库', '上海市浦东新区世纪大道1号', 12.5], ['S002', '北京物流中心', '北京市通州区物流园区路4号', ''] ];
@@ -558,15 +672,24 @@
     folderInput.addEventListener('change', function(e) { if (e.target.files.length) handleFiles(e.target.files); folderInput.value=''; });
     queryBtn.addEventListener('click', startQuery);
     stopBtn.addEventListener('click', function(){ abortFlag = true; });
-    clearBtn.addEventListener('click', function(){ dataRows = []; uploadedFiles = []; renderTable(); updateFileUI(); localStorage.removeItem(PASS_KEY); });
+    clearBtn.addEventListener('click', function(){ 
+        dataRows = []; uploadedFiles = []; renderTable(); updateFileUI(); 
+        lastSuccessResults = []; 
+        currentSnapshotId = null;
+        renderSnapshotSelect(); 
+    });
     downloadTemplateBtn.addEventListener('click', function(e) { e.preventDefault(); downloadTemplate(); });
-    saveAndPassBtn.addEventListener('click', saveAndPass);
-    clearPassBtn.addEventListener('click', function(){ localStorage.removeItem(PASS_KEY); dataPassBar.classList.remove('show'); });
+    
+    // ★★★ 快照管理事件 ★★★
+    saveSnapshotBtn.addEventListener('click', saveCurrentSnapshot);
+    deleteSnapshotBtn.addEventListener('click', deleteCurrentSnapshot);
+    snapshotSelect.addEventListener('change', onSnapshotChange);
 
     // 初始化
     renderTable();
-    detectWorkflowMode();
+    renderSnapshotSelect();
     addLog('📋 上传包含「站点代码、站点名称、站点地址」的Excel文件，单次提货量为可选字段', false);
+    addLog('📂 查询完毕后可保存为多个快照，供下游工具调用。', false);
     setTimeout(function() { initMap(); }, 400);
 </script>
 </body>
