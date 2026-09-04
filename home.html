@@ -45,21 +45,84 @@
         .content-header .logout-top:hover { background: #1a5d8c; color: white; border-color: #1a5d8c; }
         .content-body { flex: 1; overflow: hidden; padding: 16px 20px 20px; background: #f0f3f7; }
 
-        /* ★★★ 关键：去掉弹窗，工具直接平铺展示 ★★★ */
+        /* ★★★ 工具直接平铺展示 ★★★ */
         .iframe-wrapper { width: 100%; height: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06); border: 1px solid #e2edf5; }
         .iframe-wrapper iframe { width: 100%; height: 100%; border: none; display: block; }
 
-        /* ===== 欢迎页 ===== */
-        .welcome-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 40px; background: white; border-radius: 12px; border: 1px solid #e2edf5; overflow-y: auto; }
-        .welcome-content .logo-big { font-size: 72px; margin-bottom: 20px; }
-        .welcome-content h2 { font-size: 28px; color: #1f3a5f; margin-bottom: 10px; }
-        .welcome-content p { color: #7a8eaa; font-size: 16px; max-width: 480px; line-height: 1.7; }
-        .welcome-content .tool-grid { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; justify-content: center; max-width: 800px; }
-        .welcome-content .tool-grid .card { background: #f8fafd; border: 1px solid #e2edf5; border-radius: 12px; padding: 16px 24px; cursor: pointer; transition: 0.2s; text-align: left; min-width: 180px; flex: 1 0 auto; max-width: 220px; }
-        .welcome-content .tool-grid .card:hover { border-color: #1a5d8c; background: #f1f6fc; transform: translateY(-2px); }
-        .welcome-content .tool-grid .card .icon { font-size: 24px; }
-        .welcome-content .tool-grid .card .name { font-weight: 600; color: #1f3a5f; margin-top: 4px; font-size: 14px; }
-        .welcome-content .tool-grid .card .desc { font-size: 12px; color: #7a8eaa; margin-top: 2px; }
+        /* ===== 首页 - 工具卡片网格（恢复截图效果） ===== */
+        .home-content {
+            height: 100%;
+            overflow-y: auto;
+            padding: 4px 0 12px;
+            background: #f0f3f7;
+        }
+        .home-content .welcome-banner {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2a5f8a 100%);
+            border-radius: 16px;
+            padding: 28px 32px;
+            margin-bottom: 20px;
+            color: white;
+            box-shadow: 0 4px 20px rgba(30, 58, 95, 0.25);
+        }
+        .home-content .welcome-banner h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #f9e0a8;
+        }
+        .home-content .welcome-banner p {
+            font-size: 14px;
+            opacity: 0.85;
+            line-height: 1.6;
+            max-width: 700px;
+        }
+        .home-content .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 14px;
+        }
+        .home-content .tool-grid .tool-card {
+            background: white;
+            border: 1px solid #e2edf5;
+            border-radius: 12px;
+            padding: 18px 16px 16px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .home-content .tool-grid .tool-card:hover {
+            border-color: #1a5d8c;
+            background: #f7faff;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(26, 93, 140, 0.12);
+        }
+        .home-content .tool-grid .tool-card .card-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        .home-content .tool-grid .tool-card .card-name {
+            font-weight: 600;
+            color: #1f3a5f;
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+        .home-content .tool-grid .tool-card .card-desc {
+            font-size: 12px;
+            color: #7a8eaa;
+            line-height: 1.4;
+        }
+
+        /* ===== 工作流说明页 ===== */
+        .workflow-intro-page { padding: 20px; height: 100%; overflow-y: auto; }
+        .workflow-info-card { background: white; border-radius: 14px; border: 1px solid #e2edf5; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+        .workflow-info-card h2 { font-size: 20px; color: #1f3a5f; margin-bottom: 12px; }
+        .workflow-info-card p { font-size: 14px; color: #5a7a9a; line-height: 1.8; margin-bottom: 12px; }
+        .workflow-step-list { list-style: none; }
+        .workflow-step-list li { font-size: 14px; color: #4a6a8a; margin-bottom: 10px; background: #f0f4f8; border-radius: 8px; padding: 12px 16px; }
+        .workflow-step-list li strong { color: #1a5d8c; }
 
         /* ===== 统计页面 ===== */
         .stats-dashboard { height: 100%; overflow-y: auto; padding: 4px 0 12px; background: #f0f3f7; }
@@ -86,19 +149,12 @@
         .stats-table-wrap table th { background: #f5f8fc; color: #2c4a6e; font-weight: 600; padding: 8px 14px; text-align: left; border-bottom: 2px solid #dce6f0; position: sticky; top: 0; z-index: 2; font-size: 12px; }
         .stats-table-wrap table td { padding: 7px 14px; border-bottom: 1px solid #e8eef5; color: #2c3e66; }
         .stats-table-wrap table tr:hover td { background: #f0f6fe; }
+        .empty-stats { padding: 30px; text-align: center; color: #7a8eaa; font-size: 15px; }
 
-        /* ===== 工作流说明页 ===== */
-        .workflow-intro-page { padding: 20px; height: 100%; overflow-y: auto; }
-        .workflow-info-card { background: white; border-radius: 14px; border: 1px solid #e2edf5; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
-        .workflow-info-card h2 { font-size: 20px; color: #1f3a5f; margin-bottom: 12px; }
-        .workflow-info-card p { font-size: 14px; color: #5a7a9a; line-height: 1.8; margin-bottom: 12px; }
-        .workflow-step-list { list-style: none; }
-        .workflow-step-list li { font-size: 14px; color: #4a6a8a; margin-bottom: 10px; background: #f0f4f8; border-radius: 8px; padding: 12px 16px; }
-        .workflow-step-list li strong { color: #1a5d8c; }
-        
         @media (max-width: 768px) {
             .sidebar { width: 200px; min-width: 200px; }
             .content-body { padding: 12px; }
+            .home-content .tool-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
         }
     </style>
 </head>
@@ -126,7 +182,7 @@
 
     <script>
         // ============================================================
-        //  工具导航树配置 (保留所有工具)
+        //  工具导航树配置
         // ============================================================
         const TOOLS = [{
             id: 'welcome',
@@ -229,7 +285,7 @@
         }];
 
         // ============================================================
-        //  统计数据管理 (保留原版)
+        //  统计数据管理
         // ============================================================
         const STATS_KEY = 'toolbox_stats_data';
 
@@ -253,7 +309,7 @@
         }
 
         // ============================================================
-        //  渲染导航树 (保留原版逻辑)
+        //  渲染导航树
         // ============================================================
         function renderNav() {
             const nav = document.getElementById('sidebarNav');
@@ -284,20 +340,23 @@
         }
 
         // ============================================================
-        //  加载工具 (平铺模式，无弹窗，无工作流强制跳转)
+        //  加载工具
         // ============================================================
         function loadTool(toolId) {
             const tool = TOOLS.find(t => t.id === toolId);
             if (!tool) return;
+            // 首页和工作流说明不记录使用统计
             if (!tool.isWelcome && !tool.isStats && tool.id !== 'workflow-intro') recordToolUsage(toolId);
+            
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             const navItem = document.querySelector(`.nav-item[data-id="${toolId}"]`);
             if (navItem) navItem.classList.add('active');
             document.getElementById('pageTitle').textContent = tool.icon + ' ' + tool.label;
             const body = document.getElementById('contentBody');
 
+            // --- 首页：显示欢迎横幅 + 工具卡片网格 ---
             if (tool.isWelcome) {
-                body.innerHTML = `<div class="welcome-content"><div class="logo-big">📦</div><h2>物流工具箱</h2><p>请从左侧选择工具。工具之间支持数据流转，例如：先做完地址解析后，再打开聚类工具即可一键导入数据。</p></div>`;
+                renderHomePage(body);
                 return;
             }
 
@@ -306,10 +365,10 @@
                     <div class="workflow-intro-page">
                         <div class="workflow-info-card">
                             <h2>💡 如何实现工具间的工作流联动？</h2>
-                            <p>我们采用“上游保存数据，下游主动读取”的独立工作流机制，这是一种最简单、最稳定，且不会影响任何单一工具性能的设计。</p>
+                            <p>我们采用"上游保存数据，下游主动读取"的独立工作流机制，这是一种最简单、最稳定，且不会影响任何单一工具性能的设计。</p>
                             <ul class="workflow-step-list">
                                 <li><strong>第1步：</strong>在左侧打开【地址转经纬度】工具，上传Excel文件并完成查询。</li>
-                                <li><strong>第2步：</strong>查询完成后，地址工具会在底部提示：“数据已保存”。此时点击左侧的【K-Means聚类规划】。</li>
+                                <li><strong>第2步：</strong>查询完成后，地址工具会在底部提示："数据已保存"。此时点击左侧的【K-Means聚类规划】。</li>
                                 <li><strong>第3步：</strong>打开聚类工具后，它会自动检测到地址工具保存的数据，页面顶部会出现【检测到上游数据】的提示条，点击【导入】即可完成数据对接。</li>
                                 <li><strong>第4步：</strong>聚类工具计算完成后，同样可以保存结果，供后续工具（如线路排程）读取。</li>
                             </ul>
@@ -324,6 +383,37 @@
             }
 
             body.innerHTML = `<div class="iframe-wrapper"><iframe src="${tool.file}" allow="geolocation"></iframe></div>`;
+        }
+
+        // ============================================================
+        //  首页渲染（恢复截图中的工具卡片展示）
+        // ============================================================
+        function renderHomePage(body) {
+            // 过滤出所有非导航、非工作流说明、非统计的工具卡片
+            const toolCards = TOOLS.filter(t => !t.isWelcome && !t.isWorkflow && !t.isStats);
+            
+            let cardsHtml = '';
+            toolCards.forEach(t => {
+                cardsHtml += `
+                    <div class="tool-card" onclick="loadTool('${t.id}')">
+                        <div class="card-icon">${t.icon}</div>
+                        <div class="card-name">${t.label}</div>
+                        <div class="card-desc">${t.desc || ''}</div>
+                    </div>
+                `;
+            });
+
+            body.innerHTML = `
+                <div class="home-content">
+                    <div class="welcome-banner">
+                        <h2>📦 欢迎使用物流工具箱</h2>
+                        <p>集成了Excel合并、地理编码、路线规划、聚类分析、3D装载可视化、仓库规划、VMI拉动平衡等核心工具</p>
+                    </div>
+                    <div class="tool-grid">
+                        ${cardsHtml}
+                    </div>
+                </div>
+            `;
         }
 
         // ============================================================
