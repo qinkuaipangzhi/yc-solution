@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>K-Means聚类规划 - 容量约束 + 快照联动 + 完整BI图表</title>
+    <title>K-Means聚类规划 - 以卸货点为核心的线路组合</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
     <style>
@@ -16,17 +16,20 @@
         .badge-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
         .badge { background: #2c6288; padding: 4px 16px; border-radius: 40px; font-size: 0.7rem; }
         .badge.link { background: #6c5b7b; }
+        .badge.highlight { background: #2a7f6e; }
         .content { padding: 2rem; }
         
-        /* ★★★ 快照管理区 ★★★ */
+        /* 快照管理区 */
         .snapshot-manage-area { background: #f4f7fb; border: 1px solid #dbe4ee; border-radius: 0.8rem; padding: 8px 12px; margin-bottom: 12px; }
         .snapshot-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .snapshot-row label { font-size: 0.7rem; font-weight: 600; color: #4a6a8a; }
         .snapshot-select { flex: 1; max-width: 350px; padding: 4px 10px; border-radius: 6px; border: 1px solid #cbdde9; background: white; font-size: 0.75rem; }
         .snapshot-btn { background: #1a5d8c; color: white; border: none; padding: 4px 16px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; font-weight: 600; }
-        .snapshot-btn:hover { background: #0e466b; }
+        .snapshot-btn:hover:not(:disabled) { background: #0e466b; }
+        .snapshot-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .snapshot-del { background: #fce4e4; border: 1px solid #f5c2c2; color: #b13b3b; padding: 3px 12px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; }
-        .snapshot-del:hover { background: #fccfcf; }
+        .snapshot-del:hover:not(:disabled) { background: #fccfcf; }
+        .snapshot-del:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .upload-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.8rem; }
         .upload-card { background: #f8fafd; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid #e2edf5; }
@@ -47,6 +50,27 @@
         
         .param-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 16px; background: #f1f5f9; border-radius: 1rem; margin-top: 12px; }
         .param-row input { padding: 6px 12px; border-radius: 40px; border: 1px solid #cbdde9; font-size: 0.8rem; width: 80px; }
+        .param-row select { padding: 6px 12px; border-radius: 6px; border: 1px solid #cbdde9; font-size: 0.8rem; }
+        .param-hint { font-size: 0.7rem; color: #7a8eaa; }
+        
+        /* 导出功能栏 */
+        .export-bar {
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+            padding: 12px 16px; background: #f0f7f4; border-radius: 1rem;
+            margin-top: 10px; border: 1px solid #c8e6d8;
+        }
+        .export-bar .export-label {
+            font-size: 0.8rem; font-weight: 600; color: #1e6657;
+        }
+        .export-bar .export-btn {
+            padding: 6px 18px; font-size: 0.78rem;
+            background: white; border-color: #b8ddd0; color: #1e6657;
+        }
+        .export-bar .export-btn:hover:not(:disabled) {
+            background: #2a7f6e; color: white; border-color: #2a7f6e;
+            transform: translateY(-1px);
+        }
+        .export-bar .export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .result-summary-wrap { margin-top: 12px; margin-bottom: 10px; display: none; }
         .result-summary-wrap.show { display: block; }
@@ -60,7 +84,7 @@
         
         .report-section { margin-top: 12px; }
         .table-wrap { overflow-x: auto; border-radius: 1.2rem; border: 1px solid #e3ecf5; background: white; margin-top: 0.5rem; height: 380px; overflow-y: auto; }
-        .data-table { width: 100%; font-size: 0.75rem; border-collapse: collapse; min-width: 1200px; }
+        .data-table { width: 100%; font-size: 0.75rem; border-collapse: collapse; min-width: 1400px; }
         .data-table th { background: #f1f6fc; color: #1f3a5f; font-weight: 600; padding: 8px 6px; border-bottom: 2px solid #d3e0ee; position: sticky; top: 0; z-index: 10; }
         .data-table td { padding: 6px 6px; border-bottom: 1px solid #e6edf5; }
         .data-table .cluster-header td { border-bottom: 2px solid #b8cde0; padding: 4px 6px; font-size: 0.7rem; }
@@ -68,6 +92,8 @@
         .data-table .over-capacity { color: #b13b3b; font-weight: 700; }
         .data-table .within-capacity { color: #2a7f6e; font-weight: 700; }
         .data-table .isolation-row { background: #fef9e7; }
+        .data-table .role-delivery { color: #1a5d8c; font-weight: 600; }
+        .data-table .role-pickup { color: #7a8eaa; }
         
         .chart-section { margin-top: 16px; }
         .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -92,6 +118,11 @@
         .data-pass-bar.show { display: flex; }
         .data-pass-bar .info { font-size: 0.7rem; color: #1e6657; }
         .data-pass-bar .actions { display: flex; gap: 6px; }
+        
+        /* OD统计信息 */
+        .od-stats { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 8px 12px; background: #f0f4f8; border-radius: 0.6rem; margin-top: 8px; font-size: 0.7rem; color: #4a6a8a; }
+        .od-stats span { display: flex; align-items: center; gap: 4px; }
+        .od-stats .num { font-weight: 700; color: #1a5d8c; }
     </style>
 </head>
 <body>
@@ -99,24 +130,28 @@
 
 <div class="container">
     <div class="header">
-        <h1>📦 K-Means 聚类规划 · 容量约束 + 快照联动</h1>
-        <p>基于经纬度聚类站点，强制总货量不超过车辆容量；<strong>单城市单站点且货量＜5m³ 自动单独成线</strong></p>
+        <h1>📦 K-Means 聚类规划 · 卸货点为核心</h1>
+        <p>基于<strong>卸货点经纬度</strong>聚类站点，相同卸货点的OD任务自动聚合为同一线路；强制总货量不超过车辆容量</p>
         <div class="badge-group">
-            <span class="badge">📁 站点 + 车型数据</span><span class="badge">🧠 K-Means 聚类</span>
-            <span class="badge">📐 严格容量约束</span><span class="badge">📍 孤立站点单独成线</span>
-            <span class="badge">📊 数据报表 + 分析图表</span><span class="badge link">🔗 快照联动</span>
+            <span class="badge highlight">🏁 卸货点为核心聚类</span>
+            <span class="badge">📁 提货点+卸货点OD数据</span>
+            <span class="badge">📐 严格容量约束</span>
+            <span class="badge">📍 孤立站点单独成线</span>
+            <span class="badge">📊 数据报表 + 分析图表</span>
+            <span class="badge link">🔗 快照联动</span>
+            <span class="badge">📤 多格式导出</span>
         </div>
     </div>
 
     <div class="content">
-        <!-- ★★★ 快照管理区 ★★★ -->
+        <!-- 快照管理区 -->
         <div class="snapshot-manage-area">
             <div class="snapshot-row">
                 <label>📂 上游地址结果：</label>
                 <select id="upstreamSnapshotSelect" class="snapshot-select">
                     <option value="">--- 暂无上游数据快照 ---</option>
                 </select>
-                <button class="snapshot-btn" id="importUpstreamBtn">📥 导入所选快照数据</button>
+                <button class="snapshot-btn" id="importUpstreamBtn" disabled>📥 导入所选快照数据</button>
             </div>
             <div class="snapshot-row" style="margin-top: 6px;">
                 <label>💾 保存聚类结果为：</label>
@@ -125,21 +160,28 @@
                 </select>
                 <button class="snapshot-btn" id="saveClusterSnapshotBtn" disabled>💾 保存当前结果</button>
                 <button class="snapshot-del" id="deleteClusterSnapshotBtn" disabled>🗑️ 删除所选</button>
-                <span class="snapshot-info" style="font-size:0.6rem;color:#7a8eaa;">保存后可供下游“线路排程”工具选择调用</span>
+                <span class="snapshot-info" style="font-size:0.6rem;color:#7a8eaa;">保存后可供下游"线路排程"工具选择调用</span>
             </div>
         </div>
 
         <div class="upload-section">
             <div class="upload-card">
-                <h3>📍 站点数据</h3>
+                <h3>📍 提货点/卸货点OD数据</h3>
                 <div class="drop-zone" id="siteDropZone">
                     <div class="icon">📂</div>
-                    <div class="title">拖拽或点击上传站点Excel</div>
-                    <div class="sub">需包含：站点代码, 名称, 省, 市, 地址, 经度, 纬度, 单次提货量(m³)</div>
+                    <div class="title">拖拽或点击上传OD数据Excel</div>
+                    <div class="sub">需包含：站点代码, 提货点名称/省/市/地址/经度/纬度, 卸货点名称/省/市/地址/经度/纬度, 单次提货量(m³)</div>
                     <input type="file" id="siteFileInput" accept=".xlsx,.xls,.csv" style="display:none;">
                     <div class="file-tags" id="siteFileTags"></div>
                 </div>
-                <div class="template-download"><a id="downloadSiteTemplate">📋 下载站点模板</a></div>
+                <div class="template-download"><a id="downloadSiteTemplate">📋 下载OD数据模板</a></div>
+                <!-- OD统计信息 -->
+                <div class="od-stats" id="odStats" style="display:none;">
+                    <span>📊 原始记录：<span class="num" id="rawRecordCount">0</span> 条</span>
+                    <span>📍 唯一提货点：<span class="num" id="uniquePickupCount">0</span> 个</span>
+                    <span>🏁 唯一卸货点：<span class="num" id="uniqueDeliveryCount">0</span> 个</span>
+                    <span>📦 总货量：<span class="num" id="totalVolumeOD">0</span> m³</span>
+                </div>
             </div>
             <div class="upload-card">
                 <h3>🚛 车型参数</h3>
@@ -158,9 +200,20 @@
             <label>最大迭代：</label><input type="number" id="maxIterations" value="200">
             <label>阈值：</label><input type="number" id="convergenceThreshold" value="0.001" step="0.0001">
             <label>孤立阈值：</label><input type="number" id="isolationThreshold" value="5" step="0.5" style="width:60px;">
-            <span style="font-size:0.7rem;color:#7a8eaa;">m³（单城市单站点且货量小于此值→单独成线）</span>
+            <span class="param-hint">m³（单城市单卸货点且货量小于此值→单独成线）</span>
+            <span class="param-hint" style="color:#2a7f6e;font-weight:600;">🎯 聚类主体：卸货点</span>
             <button class="btn btn-success" id="runClusterBtn" disabled>🧠 运行聚类优化</button>
             <button class="btn btn-outline" id="clearResultBtn">🗑️ 清空结果</button>
+        </div>
+
+        <!-- 导出功能栏 -->
+        <div class="export-bar" id="exportBar" style="display:none;">
+            <div class="export-label">📤 导出结果：</div>
+            <button class="btn btn-outline export-btn" id="exportDetailBtn">📋 导出OD明细</button>
+            <button class="btn btn-outline export-btn" id="exportRouteBtn">🚛 导出线路汇总</button>
+            <button class="btn btn-outline export-btn" id="exportSiteBtn">📍 导出站点汇总</button>
+            <button class="btn btn-outline export-btn" id="copyTableBtn">📄 复制明细表</button>
+            <button class="btn btn-outline export-btn" id="exportAllBtn">📦 一键导出全部(3Sheet)</button>
         </div>
 
         <div class="result-summary-wrap" id="resultSummary">
@@ -168,7 +221,7 @@
             <div class="status-legend">
                 <span class="legend-item"><span class="legend-dot dot-valid"></span>✅ 容量合格</span>
                 <span class="legend-item"><span class="legend-dot dot-invalid"></span>❌ 超载：需要拆分或更换车型</span>
-                <span class="legend-item"><span class="legend-dot dot-isolation"></span>📍 孤立线路：单城市单站点货量小</span>
+                <span class="legend-item"><span class="legend-dot dot-isolation"></span>📍 孤立线路：单城市单卸货点货量小</span>
             </div>
         </div>
 
@@ -182,12 +235,21 @@
 
         <div class="report-section">
             <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
-                <span class="title">📋 聚类明细数据</span><span class="count" id="rowCount">共 0 条记录</span>
+                <span class="title">📋 聚类明细数据（按卸货点聚合）</span><span class="count" id="rowCount">共 0 条记录</span>
             </div>
             <div class="table-wrap" id="tableWrap">
                 <table class="data-table">
-                    <thead><tr><th>线路代码</th><th>车型代码</th><th>站点代码</th><th>站点名称</th><th>省</th><th>市</th><th>站点地址</th><th>经度</th><th>纬度</th><th>提货量</th><th>线路总货量</th><th>车辆容量</th><th>容量利用率</th><th>线路类型</th><th>状态</th></tr></thead>
-                    <tbody id="tableBody"><tr><td colspan="15" style="text-align:center;color:#a18163;padding:30px;">请上传站点数据和车型参数，然后点击「运行聚类优化」</td></tr></tbody>
+                    <thead>
+                        <tr>
+                            <th>线路代码</th><th>车型代码</th><th>站点代码</th><th>站点名称</th>
+                            <th>省</th><th>市</th><th>地址</th><th>经度</th><th>纬度</th>
+                            <th>提货量</th><th>线路总货量</th><th>车辆容量</th><th>容量利用率</th>
+                            <th>线路类型</th><th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="15" style="text-align:center;color:#a18163;padding:30px;">请上传OD数据和车型参数，然后点击「运行聚类优化」</td></tr>
+                    </tbody>
                 </table>
             </div>
 
@@ -196,34 +258,38 @@
                 <div class="chart-grid">
                     <div class="chart-card"><h4>📊 线路容量利用率分布</h4><div id="chartUtilization" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div></div>
                     <div class="chart-card"><h4>📈 货量 vs 车型容量匹配度</h4><div id="chartMatch" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div></div>
-                    <div class="chart-card"><h4>📋 各线路站点数量分布</h4><div id="chartSites" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div></div>
-                    <div class="chart-card"><h4>📍 孤立站点分析</h4><div id="chartIsolation" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div></div>
+                    <div class="chart-card"><h4>📋 各线路卸货点数量分布</h4><div id="chartSites" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div></div>
+                    <div class="chart-card"><h4>📍 孤立卸货点分析</h4><div id="chartIsolation" class="chart-container"><div class="chart-no-data">运行聚类后自动生成</div></div></div>
                 </div>
             </div>
         </div>
 
         <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
         <div class="stat-bar">
-            <span>📌 总站点：<strong id="totalSites">0</strong></span>
+            <span>🏁 卸货点数：<strong id="totalSites">0</strong></span>
             <span>📦 线路数：<strong id="totalClusters">0</strong></span>
             <span>📐 总货量：<strong id="totalVolume">0</strong> m³</span>
             <span>📍 孤立线路：<strong id="isolationCount">0</strong></span>
             <span id="progressText">⏳ 就绪</span>
         </div>
 
-        <div class="log-card"><div class="log-content" id="logArea">⚙️ 等待操作… 请上传站点数据和车型参数</div></div>
+        <div class="log-card"><div class="log-content" id="logArea">⚙️ 等待操作… 请上传OD数据和车型参数</div></div>
     </div>
 </div>
 
 <script>
     // ============================================================
-    //  ★★★ 快照存储KEY ★★★
+    //  快照存储KEY
     // ============================================================
     const UPSTREAM_KEY = 'toolbox_data_snapshots';
     const CLUSTER_KEY = 'toolbox_cluster_snapshots';
     const TOOL_ID = 'kmeans-cluster';
 
-    let siteData = [], vehicleData = [], clusterResults = [];
+    // 数据状态
+    let rawODData = [];          // 原始OD行数据
+    let aggregatedSites = [];    // 聚合后的站点（卸货点为主体，提货点仅记录）
+    let vehicleData = [];
+    let clusterResults = [];
     let siteFileLoaded = false, vehicleFileLoaded = false;
     
     // 图表实例
@@ -240,6 +306,7 @@
     const clusterSnapshotSelect = document.getElementById('clusterSnapshotSelect');
     const saveClusterSnapshotBtn = document.getElementById('saveClusterSnapshotBtn');
     const deleteClusterSnapshotBtn = document.getElementById('deleteClusterSnapshotBtn');
+    const odStats = document.getElementById('odStats');
 
     function addLog(msg, isError = false) {
         const time = new Date().toLocaleTimeString();
@@ -257,7 +324,7 @@
     }
 
     // ============================================================
-    //  快照管理逻辑（与 Address 完美同步）
+    //  快照管理
     // ============================================================
     function loadUpstreamSnapshots() {
         let snapshots = [];
@@ -287,33 +354,142 @@
         const selected = snapshots.find(s => s.id === selectedId);
         if (!selected) return;
 
-        // ★★★ 核心：严格校验并提取“单次提货量” ★★★
-        const mapped = selected.data.map((item, idx) => {
-            const lng = parseFloat(item['经度']);
-            const lat = parseFloat(item['纬度']);
-            let volume = parseFloat(item['单次提货量']);
-            if (isNaN(volume) || volume <= 0) volume = 5; // 默认给5m³保证能计算
-
-            return {
+        const firstItem = selected.data[0] || {};
+        const isODFormat = '提货点经度' in firstItem || '卸货点经度' in firstItem;
+        
+        if (isODFormat) {
+            rawODData = selected.data.map(item => ({
+                code: String(item['站点代码'] || ''),
+                pickupName: String(item['提货点名称'] || ''),
+                pickupProvince: String(item['提货点省份'] || ''),
+                pickupCity: String(item['提货点市'] || ''),
+                pickupAddr: String(item['提货点地址'] || ''),
+                pickupLng: parseFloat(item['提货点经度']) || 0,
+                pickupLat: parseFloat(item['提货点纬度']) || 0,
+                deliveryName: String(item['卸货点名称'] || ''),
+                deliveryProvince: String(item['卸货点省份'] || ''),
+                deliveryCity: String(item['卸货点市'] || ''),
+                deliveryAddr: String(item['卸货点地址'] || ''),
+                deliveryLng: parseFloat(item['卸货点经度']) || 0,
+                deliveryLat: parseFloat(item['卸货点纬度']) || 0,
+                volume: parseFloat(item['单次提货量(m³)'] || item['单次提货量'] || 0)
+            })).filter(d => d.pickupLng !== 0 && d.pickupLat !== 0);
+        } else {
+            addLog('⚠️ 该快照为旧格式，尝试转换...', false);
+            rawODData = selected.data.map((item, idx) => ({
                 code: String(item['站点代码'] || `UP${idx+1}`),
-                name: String(item['站点名称'] || item['地址'] || `站点${idx+1}`),
-                province: String(item['省'] || ''),
-                city: String(item['市'] || ''),
-                addr: String(item['地址'] || ''),
-                lng: isNaN(lng) ? 0 : lng,
-                lat: isNaN(lat) ? 0 : lat,
-                volume: volume
-            };
-        }).filter(d => d.lng !== 0 && d.lat !== 0);
+                pickupName: String(item['站点名称'] || item['地址'] || `站点${idx+1}`),
+                pickupProvince: String(item['省'] || ''),
+                pickupCity: String(item['市'] || ''),
+                pickupAddr: String(item['地址'] || ''),
+                pickupLng: parseFloat(item['经度']) || 0,
+                pickupLat: parseFloat(item['纬度']) || 0,
+                deliveryName: '',
+                deliveryProvince: '',
+                deliveryCity: '',
+                deliveryAddr: '',
+                deliveryLng: 0,
+                deliveryLat: 0,
+                volume: parseFloat(item['单次提货量'] || 5)
+            })).filter(d => d.pickupLng !== 0 && d.pickupLat !== 0);
+        }
 
-        if (mapped.length === 0) { addLog('该快照数据无效，无有效经纬度', true); return; }
+        if (rawODData.length === 0) { addLog('该快照数据无效，无有效经纬度', true); return; }
 
-        siteData = mapped;
+        processODData();
         siteFileLoaded = true;
-        document.getElementById('siteFileTags').innerHTML = `<span class="file-tag">📥 从上游快照导入 (${siteData.length}条)</span>`;
+        document.getElementById('siteFileTags').innerHTML = `<span class="file-tag">📥 从上游快照导入 (${rawODData.length}条OD)</span>`;
         updateUI();
-        addLog(`✅ 成功导入 ${siteData.length} 条上游快照数据`, false);
+        addLog(`✅ 成功导入 ${rawODData.length} 条OD数据`, false);
         showToast('✅ 上游数据导入成功');
+    }
+
+    // ============================================================
+    //  核心：OD数据处理与站点聚合（以卸货点为主体）
+    // ============================================================
+    function processODData() {
+        if (rawODData.length === 0) {
+            aggregatedSites = [];
+            return;
+        }
+
+        const siteMap = new Map();
+        
+        // ★★★ 核心：以卸货点为主体聚合 ★★★
+        // 卸货点作为聚类主体，其货量 = 所有服务该卸货点的OD任务货量之和
+        rawODData.forEach(row => {
+            if (!row.deliveryName && !row.deliveryLng && !row.deliveryLat) return;
+            
+            const deliveryKey = `DEL_${row.deliveryName}_${row.deliveryLng}_${row.deliveryLat}`;
+            if (!siteMap.has(deliveryKey)) {
+                siteMap.set(deliveryKey, {
+                    code: deliveryKey,
+                    name: row.deliveryName,
+                    province: row.deliveryProvince,
+                    city: row.deliveryCity,
+                    addr: row.deliveryAddr,
+                    lng: row.deliveryLng,
+                    lat: row.deliveryLat,
+                    volume: 0,          // 卸货点货量 = 所有服务它的OD任务货量之和
+                    role: 'delivery',
+                    pickupCount: 0,
+                    deliveryCount: 0,
+                    relatedPickups: []  // 关联的提货点
+                });
+            }
+            const site = siteMap.get(deliveryKey);
+            site.volume += row.volume;
+            site.deliveryCount++;
+            
+            const pickupKey = row.code || `PICK_${row.pickupLng}_${row.pickupLat}`;
+            if (!site.relatedPickups.includes(pickupKey)) {
+                site.relatedPickups.push(pickupKey);
+            }
+        });
+
+        // 提货点信息：不参与聚类，仅用于展示和导出
+        rawODData.forEach(row => {
+            const pickupKey = row.code || `PICK_${row.pickupLng}_${row.pickupLat}`;
+            if (!siteMap.has(pickupKey)) {
+                siteMap.set(pickupKey, {
+                    code: pickupKey,
+                    name: row.pickupName,
+                    province: row.pickupProvince,
+                    city: row.pickupCity,
+                    addr: row.pickupAddr,
+                    lng: row.pickupLng,
+                    lat: row.pickupLat,
+                    volume: 0,
+                    role: 'pickup',
+                    pickupCount: 0,
+                    deliveryCount: 0,
+                    relatedPickups: []
+                });
+            }
+            const site = siteMap.get(pickupKey);
+            site.pickupCount++;
+        });
+
+        aggregatedSites = Array.from(siteMap.values());
+
+        // 更新统计显示
+        const uniquePickups = new Set(rawODData.map(r => r.code)).size;
+        const uniqueDeliveries = new Set(
+            rawODData
+                .filter(r => r.deliveryName || r.deliveryLng || r.deliveryLat)
+                .map(r => `${r.deliveryName}_${r.deliveryLng}_${r.deliveryLat}`)
+        ).size;
+        const totalVol = rawODData.reduce((sum, r) => sum + r.volume, 0);
+        const deliverySiteCount = aggregatedSites.filter(s => s.role === 'delivery').length;
+
+        document.getElementById('rawRecordCount').textContent = rawODData.length;
+        document.getElementById('uniquePickupCount').textContent = uniquePickups;
+        document.getElementById('uniqueDeliveryCount').textContent = uniqueDeliveries;
+        document.getElementById('totalVolumeOD').textContent = totalVol.toFixed(1);
+        odStats.style.display = 'flex';
+
+        addLog(`📊 OD数据处理完成：${rawODData.length}条记录 → ${deliverySiteCount}个卸货点（聚类主体）`, false);
+        addLog(`   📍 唯一提货点: ${uniquePickups} | 🏁 唯一卸货点: ${uniqueDeliveries} | 📦 总货量: ${totalVol.toFixed(1)}m³`, false);
     }
 
     // ============================================================
@@ -338,42 +514,74 @@
     async function loadSiteData(file) {
         try {
             const rows = await parseExcel(file);
+            if (rows.length === 0) { addLog('文件为空', true); return false; }
+            
             const headers = Object.keys(rows[0] || {});
-            const codeCol = headers.find(h => /站点代码|code|代码/i.test(h));
-            const nameCol = headers.find(h => /站点名称|名称|name/i.test(h));
-            const provinceCol = headers.find(h => /省|省份|province/i.test(h));
-            const cityCol = headers.find(h => /市|城市|city/i.test(h));
-            const addrCol = headers.find(h => /站点地址|地址|addr/i.test(h));
-            const lngCol = headers.find(h => /经度|lng|longitude|Lng/i.test(h));
-            const latCol = headers.find(h => /纬度|lat|latitude|Lat/i.test(h));
+            
+            const codeCol = headers.find(h => /站点代码|^code$|提货点代码/i.test(h));
+            const pickupNameCol = headers.find(h => /提货点名称|提货点|^站点名称$/i.test(h));
+            const pickupProvinceCol = headers.find(h => /提货点省份|提货点省/i.test(h));
+            const pickupCityCol = headers.find(h => /提货点市|提货市/i.test(h));
+            const pickupAddrCol = headers.find(h => /提货点地址|提货地址/i.test(h));
+            const pickupLngCol = headers.find(h => /提货点经度|提货经度/i.test(h));
+            const pickupLatCol = headers.find(h => /提货点纬度|提货纬度/i.test(h));
+            const deliveryNameCol = headers.find(h => /卸货点名称|卸货点/i.test(h));
+            const deliveryProvinceCol = headers.find(h => /卸货点省份|卸货点省/i.test(h));
+            const deliveryCityCol = headers.find(h => /卸货点市|卸货市/i.test(h));
+            const deliveryAddrCol = headers.find(h => /卸货点地址|卸货地址/i.test(h));
+            const deliveryLngCol = headers.find(h => /卸货点经度|卸货经度/i.test(h));
+            const deliveryLatCol = headers.find(h => /卸货点纬度|卸货纬度/i.test(h));
             const volCol = headers.find(h => /提货量|货量|volume|m³|需求/i.test(h));
 
-            if (!codeCol || !nameCol || !provinceCol || !cityCol || !lngCol || !latCol) {
-                addLog('缺少必要列！', true);
+            if (!codeCol || !pickupNameCol || !pickupLngCol || !pickupLatCol || !volCol) {
+                addLog('缺少必要列！需要：站点代码, 提货点名称, 提货点经度, 提货点纬度, 单次提货量', true);
+                return false;
+            }
+            if (!deliveryNameCol || !deliveryLngCol || !deliveryLatCol) {
+                addLog('缺少卸货点列！需要：卸货点名称, 卸货点经度, 卸货点纬度', true);
                 return false;
             }
 
-            siteData = [];
+            rawODData = [];
             for (let row of rows) {
-                let code = row[codeCol]?.toString().trim();
-                let name = row[nameCol]?.toString().trim();
-                let province = row[provinceCol]?.toString().trim() || '';
-                let city = row[cityCol]?.toString().trim() || '';
-                let addr = row[addrCol]?.toString().trim() || '';
-                let lng = parseFloat(row[lngCol]);
-                let lat = parseFloat(row[latCol]);
-                let volume = row[volCol] ? (parseFloat(row[volCol]) || 0) : 0;
-                if (isNaN(volume) || volume <= 0) volume = 5;
+                const code = row[codeCol]?.toString().trim();
+                const pickupName = row[pickupNameCol]?.toString().trim();
+                const pickupLng = parseFloat(row[pickupLngCol]);
+                const pickupLat = parseFloat(row[pickupLatCol]);
+                const deliveryName = row[deliveryNameCol]?.toString().trim();
+                const deliveryLng = parseFloat(row[deliveryLngCol]);
+                const deliveryLat = parseFloat(row[deliveryLatCol]);
+                const volume = parseFloat(row[volCol]) || 0;
 
-                if (code && name && !isNaN(lng) && !isNaN(lat)) {
-                    siteData.push({ code, name, province, city, addr, lng, lat, volume });
-                }
+                if (!code || !pickupName || isNaN(pickupLng) || isNaN(pickupLat)) continue;
+                if (!deliveryName || isNaN(deliveryLng) || isNaN(deliveryLat)) continue;
+
+                rawODData.push({
+                    code,
+                    pickupName,
+                    pickupProvince: pickupProvinceCol ? row[pickupProvinceCol]?.toString().trim() || '' : '',
+                    pickupCity: pickupCityCol ? row[pickupCityCol]?.toString().trim() || '' : '',
+                    pickupAddr: pickupAddrCol ? row[pickupAddrCol]?.toString().trim() || '' : '',
+                    pickupLng,
+                    pickupLat,
+                    deliveryName,
+                    deliveryProvince: deliveryProvinceCol ? row[deliveryProvinceCol]?.toString().trim() || '' : '',
+                    deliveryCity: deliveryCityCol ? row[deliveryCityCol]?.toString().trim() || '' : '',
+                    deliveryAddr: deliveryAddrCol ? row[deliveryAddrCol]?.toString().trim() || '' : '',
+                    deliveryLng,
+                    deliveryLat,
+                    volume: volume > 0 ? volume : 5
+                });
             }
-            if (siteData.length === 0) return false;
-            document.getElementById('siteFileTags').innerHTML = `<span class="file-tag">📄 ${file.name} (${siteData.length}条)</span>`;
+
+            if (rawODData.length === 0) { addLog('没有有效数据行', true); return false; }
+
+            processODData();
+
+            document.getElementById('siteFileTags').innerHTML = `<span class="file-tag">📄 ${file.name} (${rawODData.length}条OD)</span>`;
             siteFileLoaded = true;
             updateUI();
-            addLog(`✅ 成功加载 ${siteData.length} 个站点数据`, false);
+            addLog(`✅ 成功加载 ${rawODData.length} 条OD数据`, false);
             return true;
         } catch (err) { addLog(`解析失败: ${err.message}`, true); return false; }
     }
@@ -382,11 +590,14 @@
         try {
             const rows = await parseExcel(file);
             const headers = Object.keys(rows[0] || {});
-            const codeCol = headers.find(h => /车型代码|车型|code/i.test(h));
-            const lenCol = headers.find(h => /车厢内径长|长|length/i.test(h));
-            const widCol = headers.find(h => /车厢内径宽|宽|width/i.test(h));
-            const heiCol = headers.find(h => /车厢内径高|高|height/i.test(h));
-            if (!codeCol || !lenCol || !widCol || !heiCol) return false;
+            const codeCol = headers.find(h => /车型代码|车型|^code$/i.test(h));
+            const lenCol = headers.find(h => /车厢内径长|^长$|length/i.test(h));
+            const widCol = headers.find(h => /车厢内径宽|^宽$|width/i.test(h));
+            const heiCol = headers.find(h => /车厢内径高|^高$|height/i.test(h));
+            if (!codeCol || !lenCol || !widCol || !heiCol) {
+                addLog('车型文件缺少必要列：车型代码/车厢内径长/宽/高', true);
+                return false;
+            }
 
             vehicleData = [];
             for (let row of rows) {
@@ -406,7 +617,21 @@
     }
 
     function updateUI() {
-        runClusterBtn.disabled = !(siteFileLoaded && vehicleFileLoaded && siteData.length > 0 && vehicleData.length > 0);
+        const canRun = siteFileLoaded && vehicleFileLoaded && 
+                       rawODData.length > 0 && 
+                       aggregatedSites.filter(s => s.role === 'delivery').length > 0 && 
+                       vehicleData.length > 0;
+        runClusterBtn.disabled = !canRun;
+        
+        if (!canRun && siteFileLoaded && vehicleFileLoaded) {
+            console.log('按钮禁用原因:', {
+                siteFileLoaded,
+                vehicleFileLoaded,
+                rawODDataLength: rawODData.length,
+                deliverySiteCount: aggregatedSites.filter(s => s.role === 'delivery').length,
+                vehicleDataLength: vehicleData.length
+            });
+        }
     }
 
     // ============================================================
@@ -489,24 +714,42 @@
     }
 
     function runClustering() {
-        if (siteData.length === 0 || vehicleData.length === 0) return;
+        if (aggregatedSites.length === 0 || vehicleData.length === 0) {
+            addLog('数据不足，无法运行聚类', true);
+            return;
+        }
         const maxIter = parseInt(document.getElementById('maxIterations').value) || 200;
         const threshold = parseFloat(document.getElementById('convergenceThreshold').value) || 0.001;
         const isoTh = parseFloat(document.getElementById('isolationThreshold').value) || 5;
 
+        // ★★★ 核心：聚类主体固定为卸货点 ★★★
+        let sitesToCluster = aggregatedSites.filter(s => s.role === 'delivery');
+
+        if (sitesToCluster.length === 0) {
+            addLog('没有可用的卸货点进行聚类', true);
+            return;
+        }
+
+        addLog(`🧠 开始聚类优化（以卸货点为核心, 最大迭代 ${maxIter}）...`, false);
+        addLog(`   卸货点数量: ${sitesToCluster.length}`, false);
+
+        const clusterSites = sitesToCluster.filter(s => s.volume > 0);
+
+        if (clusterSites.length === 0) {
+            addLog('所有卸货点货量都为0，无法聚类', true);
+            return;
+        }
+
         const maxCap = Math.max(...vehicleData.map(v => v.capacity));
-        const totalVol = siteData.reduce((sum, s) => sum + s.volume, 0);
-        let k = Math.min(Math.max(1, Math.ceil(totalVol / maxCap)), siteData.length);
+        const totalVol = clusterSites.reduce((sum, s) => sum + s.volume, 0);
+        let k = Math.min(Math.max(1, Math.ceil(totalVol / maxCap)), clusterSites.length);
 
-        addLog(`🧠 开始聚类优化 (最大迭代 ${maxIter})...`, false);
-
-        const centers = siteData.slice(0, k).map(s => ({lng: s.lng, lat: s.lat}));
+        const centers = clusterSites.slice(0, k).map(s => ({lng: s.lng, lat: s.lat}));
         let clusters = centers.map((c, idx) => ({clusterId: idx+1, sites: [], totalVolume: 0, vehicle: null, capacity: 0, utilization: 0, isValid: true, isIsolated:false}));
         
-        // 迭代更新
         for (let iter = 0; iter < maxIter; iter++) {
             clusters.forEach(c => c.sites = []);
-            siteData.forEach(s => {
+            clusterSites.forEach(s => {
                 let minDist = Infinity, minIdx = 0;
                 centers.forEach((c, idx) => {
                     const d = haversineDistance(s.lat, s.lng, c.lat, c.lng);
@@ -520,18 +763,26 @@
                     const nc = getClusterCenter(c.sites);
                     if (haversineDistance(c.lat||0, c.lng||0, nc.lat, nc.lng) > threshold) moved = true;
                     c.lng = nc.lng; c.lat = nc.lat;
-                    c.totalVolume = c.sites.reduce((sum, s) => sum + s.volume, 0);
-                    const v = getMatchingVehicle(c.totalVolume, vehicleData);
-                    if (v) { c.vehicle = v; c.capacity = v.capacity; c.utilization = (c.totalVolume / v.capacity)*100; c.isValid = c.totalVolume <= v.capacity; }
-                    else { c.isValid = false; c.capacity = 0; c.utilization = 0; }
                 }
             });
             if (!moved) break;
         }
 
-        // 处理容量超限和孤立站点
+        clusters.forEach(c => {
+            c.totalVolume = c.sites.reduce((sum, s) => sum + s.volume, 0);
+            const v = getMatchingVehicle(c.totalVolume, vehicleData);
+            if (v) {
+                c.vehicle = v; c.capacity = v.capacity;
+                c.utilization = (c.totalVolume / v.capacity) * 100;
+                c.isValid = c.totalVolume <= v.capacity;
+            } else {
+                c.isValid = false; c.capacity = 0; c.utilization = 0;
+            }
+        });
+
         let finalClusters = [];
         clusters.forEach(c => {
+            if (c.sites.length === 0) return;
             if (c.isValid) {
                 finalClusters.push(c);
             } else {
@@ -540,7 +791,7 @@
             }
         });
 
-        const { isolated } = detectIsolatedSites(siteData, isoTh);
+        const { isolated } = detectIsolatedSites(clusterSites, isoTh);
         const isolatedClusters = isolated.map(site => {
             const v = getMatchingVehicle(site.volume, vehicleData);
             return {
@@ -557,13 +808,23 @@
 
         finalClusters.push(...isolatedClusters);
         finalClusters.forEach((c, idx) => c.clusterId = idx + 1);
+        
+        // ★★★ 核心：OD任务归属判定 —— 仅按卸货点匹配 ★★★
+        finalClusters.forEach(cluster => {
+            const deliveryCodeSet = new Set(cluster.sites.map(s => s.code));
+            cluster.odTasks = rawODData.filter(task => {
+                const deliveryKey = `DEL_${task.deliveryName}_${task.deliveryLng}_${task.deliveryLat}`;
+                return deliveryCodeSet.has(deliveryKey);
+            });
+        });
+        
         clusterResults = finalClusters;
 
-        // ★★★ 触发完整的渲染和图表 ★★★
         renderResults();
         renderCharts();
         saveClusterSnapshotBtn.disabled = false;
-        addLog('✅ 聚类优化完成', false);
+        addLog('✅ 聚类优化完成（以卸货点为核心）', false);
+        showToast('✅ 聚类优化完成');
     }
     
     function renderResults() {
@@ -575,9 +836,32 @@
             if (c.isValid) validClusters++; else invalidClusters++;
             if (c.isIsolated) isoCount++;
             const vehicleCode = c.vehicle ? c.vehicle.code : '无';
-            html += `<tr class="cluster-header ${c.isIsolated?'isolation-row':''}"><td colspan="15" style="font-weight:700;">${typeText} Route${c.clusterId} | 车型: ${vehicleCode} | 站点: ${c.sites.length} | 总货量: ${c.totalVolume.toFixed(1)} | 容量利用率: ${c.utilization.toFixed(1)}% | <span class="${classStatus}">${statusText}</span></td></tr>`;
+            // 统计本线路关联的提货点数量
+            const relatedPickups = new Set();
+            (c.odTasks || []).forEach(t => {
+                relatedPickups.add(t.code || `PICK_${t.pickupLng}_${t.pickupLat}`);
+            });
+            
+            html += `<tr class="cluster-header ${c.isIsolated?'isolation-row':''}"><td colspan="15" style="font-weight:700;">${typeText} Route${c.clusterId} | 车型: ${vehicleCode} | 卸货点: ${c.sites.length} | 关联提货点: ${relatedPickups.size} | 总货量: ${c.totalVolume.toFixed(1)} | 容量利用率: ${c.utilization.toFixed(1)}% | <span class="${classStatus}">${statusText}</span></td></tr>`;
             c.sites.forEach(site => {
-                html += `<tr class="${c.isIsolated?'isolation-row':''}"><td>Route${c.clusterId}</td><td>${vehicleCode}</td><td>${site.code}</td><td>${site.name}</td><td>${site.province}</td><td>${site.city}</td><td>${site.addr}</td><td>${site.lng}</td><td>${site.lat}</td><td>${site.volume.toFixed(1)}</td><td>${c.totalVolume.toFixed(1)}</td><td>${c.capacity.toFixed(1)}</td><td>${c.utilization.toFixed(1)}%</td><td>${typeText}</td><td class="${classStatus}">${statusText}</td></tr>`;
+                const roleText = '🏁 卸货点（聚类主体）';
+                html += `<tr class="${c.isIsolated?'isolation-row':''}">
+                    <td>Route${c.clusterId}</td>
+                    <td>${vehicleCode}</td>
+                    <td>${site.code}</td>
+                    <td>${site.name}</td>
+                    <td>${site.province || ''}</td>
+                    <td>${site.city || ''}</td>
+                    <td>${site.addr || ''}</td>
+                    <td>${site.lng}</td>
+                    <td>${site.lat}</td>
+                    <td>${site.volume.toFixed(1)}</td>
+                    <td>${c.totalVolume.toFixed(1)}</td>
+                    <td>${c.capacity.toFixed(1)}</td>
+                    <td>${c.utilization.toFixed(1)}%</td>
+                    <td>${typeText} <span style="font-size:0.6rem;color:#7a8eaa;">(${roleText})</span></td>
+                    <td class="${classStatus}">${statusText}</td>
+                </tr>`;
                 totalSitesCount++;
                 totalVol += site.volume;
             });
@@ -588,13 +872,11 @@
         document.getElementById('totalVolume').textContent = totalVol.toFixed(1);
         document.getElementById('isolationCount').textContent = isoCount;
         document.getElementById('progressText').textContent = `✅ 完成！`;
-        document.getElementById('copyResultBtn') ? document.getElementById('copyResultBtn').disabled = false : null;
-        document.getElementById('exportResultBtn') ? document.getElementById('exportResultBtn').disabled = false : null;
+        document.getElementById('rowCount').textContent = `共 ${totalSitesCount} 条记录`;
         
-        // 更新汇总栏
         document.getElementById('resultSummary').classList.add('show');
         let statsHtml = `
-            <span class="stat-item"><span class="label">📌 总站点</span><span class="value">${totalSitesCount}</span></span>
+            <span class="stat-item"><span class="label">🏁 卸货点</span><span class="value">${totalSitesCount}</span></span>
             <span class="stat-item"><span class="label">📦 线路数</span><span class="value">${clusterResults.length}</span></span>
             <span class="stat-item"><span class="label">📐 总货量</span><span class="value">${totalVol.toFixed(1)}m³</span></span>
             <span class="stat-item"><span class="label">✅ 合格</span><span class="value" style="color:#2a7f6e;">${validClusters}</span></span>
@@ -602,10 +884,12 @@
             <span class="stat-item"><span class="label">📍 孤立</span><span class="value" style="color:#f0a030;">${isoCount}</span></span>
         `;
         document.getElementById('summaryStats').innerHTML = statsHtml;
+        
+        updateExportBar();
     }
 
     // ============================================================
-    //  ★★★ 完整的 ECharts 渲染（修复了之前缺失的图表代码） ★★★
+    //  ECharts 渲染
     // ============================================================
     function renderCharts() {
         if (!clusterResults || clusterResults.length === 0) return;
@@ -631,7 +915,7 @@
         }));
         
         chartUtilizationInstance.setOption({
-            tooltip: { trigger: 'axis', formatter: function(params) { const d = clusterList[params[0].dataIndex]; return `<strong>线路 ${d.id}</strong><br/>利用率: ${d.utilization.toFixed(1)}%<br/>货量: ${d.volume.toFixed(1)}m³ / 容量: ${d.capacity.toFixed(1)}m³<br/>站点数: ${d.siteCount} | ${d.isIsolated ? '📍孤立' : '聚合'}`; } },
+            tooltip: { trigger: 'axis', formatter: function(params) { const d = clusterList[params[0].dataIndex]; return `<strong>线路 ${d.id}</strong><br/>利用率: ${d.utilization.toFixed(1)}%<br/>货量: ${d.volume.toFixed(1)}m³ / 容量: ${d.capacity.toFixed(1)}m³<br/>卸货点数: ${d.siteCount} | ${d.isIsolated ? '📍孤立' : '聚合'}`; } },
             grid: { left: '8%', right: '5%', bottom: '15%', top: '8%' },
             xAxis: { type: 'category', data: clusterList.map(d => `R${d.id}`), axisLabel: { rotate: 30, fontSize: 10 } },
             yAxis: { type: 'value', max: Math.max(120, Math.ceil(Math.max(...clusterList.map(d => d.utilization)) / 10) * 10 + 10), name: '利用率(%)' },
@@ -639,7 +923,7 @@
         }, true);
         chartUtilizationInstance.resize();
 
-        // 2. 货量 vs 车型容量匹配度（散点图）
+        // 2. 货量 vs 车型容量匹配度
         if (!chartMatchInstance) chartMatchInstance = echarts.init(document.getElementById('chartMatch'));
         else chartMatchInstance.clear();
         
@@ -655,25 +939,25 @@
             grid: { left: '10%', right: '8%', bottom: '12%', top: '8%' },
             xAxis: { type: 'value', name: '车辆容量', splitLine: { lineStyle: { type: 'dashed', color: '#e0e8f0' } }, max: maxVal },
             yAxis: { type: 'value', name: '线路总货量', splitLine: { lineStyle: { type: 'dashed', color: '#e0e8f0' } }, max: maxVal },
-            series: [{ type: 'scatter', data: scatterData, markLine: { silent: true, data: [{ type: 'line', yAxis: 0, xAxis: 0 }], lineStyle: { color: '#888', type: 'dashed', width: 1.5 } } }]
+            series: [{ type: 'scatter', data: scatterData }]
         }, true);
         chartMatchInstance.resize();
 
-        // 3. 各线路站点数量分布
+        // 3. 各线路卸货点数量分布
         if (!chartSitesInstance) chartSitesInstance = echarts.init(document.getElementById('chartSites'));
         else chartSitesInstance.clear();
         const avgSites = clusterList.reduce((sum, d) => sum + d.siteCount, 0) / clusterList.length;
         
         chartSitesInstance.setOption({
-            tooltip: { trigger: 'axis', formatter: function(params) { const d = clusterList[params[0].dataIndex]; return `<strong>线路 ${d.id}</strong><br/>站点数: ${d.siteCount} 个<br/>货量: ${d.volume.toFixed(1)}m³<br/>${d.isIsolated ? '📍 孤立线路' : '聚合线路'}`; } },
+            tooltip: { trigger: 'axis', formatter: function(params) { const d = clusterList[params[0].dataIndex]; return `<strong>线路 ${d.id}</strong><br/>卸货点数: ${d.siteCount} 个<br/>货量: ${d.volume.toFixed(1)}m³<br/>${d.isIsolated ? '📍 孤立线路' : '聚合线路'}`; } },
             grid: { left: '8%', right: '5%', bottom: '15%', top: '8%' },
             xAxis: { type: 'category', data: clusterList.map(d => `R${d.id}`), axisLabel: { rotate: 30, fontSize: 10 } },
-            yAxis: { type: 'value', name: '站点数', min: 0, splitLine: { lineStyle: { type: 'dashed', color: '#e0e8f0' } } },
+            yAxis: { type: 'value', name: '卸货点数', min: 0, splitLine: { lineStyle: { type: 'dashed', color: '#e0e8f0' } } },
             series: [{ type: 'bar', data: clusterList.map(d => ({ value: d.siteCount, itemStyle: { color: d.isIsolated ? '#f0ad4e' : d.siteCount > 10 ? '#d9534f' : '#5cb85c' } })), barWidth: '50%', markLine: { silent: true, data: [{ yAxis: avgSites }], lineStyle: { color: '#d9534f', type: 'dashed', width: 2 }, label: { formatter: `平均 ${avgSites.toFixed(1)}`, color: '#d9534f', fontSize: 10 } }, label: { show: true, position: 'top', formatter: function(p) { return p.value; }, fontSize: 9, color: '#4a6a8a' } }]
         }, true);
         chartSitesInstance.resize();
 
-        // 4. 孤立站点分析（饼图）
+        // 4. 孤立卸货点分析
         if (!chartIsolationInstance) chartIsolationInstance = echarts.init(document.getElementById('chartIsolation'));
         else chartIsolationInstance.clear();
         const isolatedCount = clusterList.filter(d => d.isIsolated).length;
@@ -703,12 +987,32 @@
             '容量利用率': cluster.utilization,
             '线路类型': cluster.isIsolated ? '孤立线路' : '聚合线路',
             '状态': cluster.isValid ? '容量合格' : '超载',
-            '站点列表': cluster.sites.map(site => ({
+            '聚类主体': '卸货点',
+            '卸货点列表': cluster.sites.map(site => ({
                 '站点代码': site.code,
                 '站点名称': site.name,
+                '省': site.province,
+                '市': site.city,
+                '地址': site.addr,
                 '经度': site.lng,
                 '纬度': site.lat,
                 '单次提货量': site.volume
+            })),
+            'OD任务列表': (cluster.odTasks || []).map(task => ({
+                '站点代码': task.code,
+                '提货点名称': task.pickupName,
+                '提货点省份': task.pickupProvince,
+                '提货点市': task.pickupCity,
+                '提货点地址': task.pickupAddr,
+                '提货点经度': task.pickupLng,
+                '提货点纬度': task.pickupLat,
+                '卸货点名称': task.deliveryName,
+                '卸货点省份': task.deliveryProvince,
+                '卸货点市': task.deliveryCity,
+                '卸货点地址': task.deliveryAddr,
+                '卸货点经度': task.deliveryLng,
+                '卸货点纬度': task.deliveryLat,
+                '单次提货量': task.volume
             }))
         }));
 
@@ -755,6 +1059,437 @@
     }
 
     // ============================================================
+    //  模板下载
+    // ============================================================
+    function downloadSiteTemplate() {
+        const template = [
+            {
+                '站点代码': '常熟',
+                '提货点名称': '常熟',
+                '提货点省份': '江苏省',
+                '提货点市': '常熟市',
+                '提货点地址': '常熟市碧溪街道乐成路8号',
+                '提货点经度': 120.933207,
+                '提货点纬度': 31.747466,
+                '卸货点名称': '安亭',
+                '卸货点省份': '上海市',
+                '卸货点市': '嘉定区',
+                '卸货点地址': '上海市嘉定区安亭镇百安公路168号3幢',
+                '卸货点经度': 121.207787,
+                '卸货点纬度': 31.307489,
+                '单次提货量(m³)': 4.39
+            },
+            {
+                '站点代码': '娄塘',
+                '提货点名称': '娄塘',
+                '提货点省份': '上海市',
+                '提货点市': '嘉定区',
+                '提货点地址': '上海市嘉定区兴贤路1288号',
+                '提货点经度': 121.183395,
+                '提货点纬度': 31.431748,
+                '卸货点名称': '航发',
+                '卸货点省份': '上海市',
+                '卸货点市': '宝山区',
+                '卸货点地址': '上海市宝山区富联路686近宝安公路富联路',
+                '卸货点经度': 121.405407,
+                '卸货点纬度': 31.362596,
+                '单次提货量(m³)': 14.99
+            }
+        ];
+        
+        const ws = XLSX.utils.json_to_sheet(template);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'OD数据模板');
+        XLSX.writeFile(wb, 'OD数据导入模板.xlsx');
+        addLog('📋 OD数据模板已下载', false);
+    }
+
+    function downloadVehicleTemplate() {
+        const template = [
+            { '车型代码': '4.2米厢车', '车厢内径长(m)': 4.2, '车厢内径宽(m)': 2.1, '车厢内径高(m)': 2.1 },
+            { '车型代码': '6.8米厢车', '车厢内径长(m)': 6.8, '车厢内径宽(m)': 2.4, '车厢内径高(m)': 2.6 },
+            { '车型代码': '9.6米厢车', '车厢内径长(m)': 9.6, '车厢内径宽(m)': 2.4, '车厢内径高(m)': 2.7 }
+        ];
+        
+        const ws = XLSX.utils.json_to_sheet(template);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '车型参数');
+        XLSX.writeFile(wb, '车型参数模板.xlsx');
+        addLog('📋 车型模板已下载', false);
+    }
+
+    // ============================================================
+    //  清空结果
+    // ============================================================
+    function clearResults() {
+        clusterResults = [];
+        tableBody.innerHTML = '<tr><td colspan="15" style="text-align:center;color:#a18163;padding:30px;">请上传OD数据和车型参数，然后点击「运行聚类优化」</td></tr>';
+        document.getElementById('totalSites').textContent = '0';
+        document.getElementById('totalClusters').textContent = '0';
+        document.getElementById('totalVolume').textContent = '0';
+        document.getElementById('isolationCount').textContent = '0';
+        document.getElementById('progressText').textContent = '⏳ 就绪';
+        document.getElementById('rowCount').textContent = '共 0 条记录';
+        document.getElementById('resultSummary').classList.remove('show');
+        saveClusterSnapshotBtn.disabled = true;
+        updateExportBar();
+        addLog('🗑️ 已清空结果', false);
+    }
+
+    // ============================================================
+    //  导出功能模块
+    // ============================================================
+    
+    function updateExportBar() {
+        const exportBar = document.getElementById('exportBar');
+        if (clusterResults && clusterResults.length > 0) {
+            exportBar.style.display = 'flex';
+        } else {
+            exportBar.style.display = 'none';
+        }
+    }
+
+    /**
+     * 构建导出用的数据结构（以卸货点为核心的OD视角）
+     */
+    function buildExportData() {
+        // ---- 1. OD明细：每行 = 一条OD任务（提货点→卸货点） ----
+        const detailRows = [];
+        let globalSeq = 1;
+        clusterResults.forEach(cluster => {
+            const routeCode = `Route${cluster.clusterId}`;
+            const typeText = cluster.isIsolated ? '孤立线路' : '聚合线路';
+            const statusText = cluster.isValid ? '容量合格' : '超载';
+            const vehicleCode = cluster.vehicle ? cluster.vehicle.code : '无';
+            const odTasks = cluster.odTasks || [];
+
+            odTasks.forEach((task, taskIdx) => {
+                detailRows.push({
+                    '序号': globalSeq++,
+                    '线路代码': routeCode,
+                    '线路类型': typeText,
+                    '线路状态': statusText,
+                    '线路内序号': taskIdx + 1,
+                    '车型代码': vehicleCode,
+                    '车辆容量(m³)': parseFloat(cluster.capacity.toFixed(2)),
+                    '线路总货量(m³)': parseFloat(cluster.totalVolume.toFixed(2)),
+                    '容量利用率(%)': parseFloat(cluster.utilization.toFixed(1)),
+                    // 提货点信息
+                    '站点代码': task.code,
+                    '提货点名称': task.pickupName,
+                    '提货点省份': task.pickupProvince || '',
+                    '提货点市': task.pickupCity || '',
+                    '提货点地址': task.pickupAddr || '',
+                    '提货点经度': task.pickupLng,
+                    '提货点纬度': task.pickupLat,
+                    // 卸货点信息
+                    '卸货点名称': task.deliveryName || '',
+                    '卸货点省份': task.deliveryProvince || '',
+                    '卸货点市': task.deliveryCity || '',
+                    '卸货点地址': task.deliveryAddr || '',
+                    '卸货点经度': task.deliveryLng || '',
+                    '卸货点纬度': task.deliveryLat || '',
+                    // 货量
+                    '单次提货量(m³)': parseFloat(task.volume.toFixed(2))
+                });
+            });
+        });
+
+        // ---- 2. 线路汇总：以卸货点为主体 ----
+        const routeRows = clusterResults.map(cluster => {
+            const routeCode = `Route${cluster.clusterId}`;
+            const typeText = cluster.isIsolated ? '孤立线路' : '聚合线路';
+            const statusText = cluster.isValid ? '容量合格' : '超载';
+            const vehicleCode = cluster.vehicle ? cluster.vehicle.code : '无';
+            const odTasks = cluster.odTasks || [];
+            
+            // 提货点（去重）
+            const pickups = [...new Set(odTasks.map(t => t.pickupName))].filter(Boolean);
+            const pickupCodes = [...new Set(odTasks.map(t => t.code))].filter(Boolean);
+            // 卸货点（去重）—— 聚类主体
+            const deliveries = [...new Set(cluster.sites.map(s => s.name))].filter(Boolean);
+            const deliveryCodes = [...new Set(cluster.sites.map(s => s.code))].filter(Boolean);
+            
+            const allCities = [...new Set([
+                ...odTasks.map(t => t.pickupCity),
+                ...odTasks.map(t => t.deliveryCity)
+            ].filter(Boolean))];
+            const allProvinces = [...new Set([
+                ...odTasks.map(t => t.pickupProvince),
+                ...odTasks.map(t => t.deliveryProvince)
+            ].filter(Boolean))];
+            
+            return {
+                '线路代码': routeCode,
+                '线路类型': typeText,
+                '线路状态': statusText,
+                '车型代码': vehicleCode,
+                '车辆容量(m³)': parseFloat(cluster.capacity.toFixed(2)),
+                '线路总货量(m³)': parseFloat(cluster.totalVolume.toFixed(2)),
+                '容量利用率(%)': parseFloat(cluster.utilization.toFixed(1)),
+                '卸货点数量': cluster.sites.length,
+                'OD任务数': odTasks.length,
+                '关联提货点数量': pickups.length,
+                '卸货点列表（聚类主体）': deliveries.join(' | '),
+                '卸货点代码列表': deliveryCodes.join(' | '),
+                '关联提货点列表': pickups.join(' | '),
+                '关联提货点代码列表': pickupCodes.join(' | '),
+                '途径省份': allProvinces.join('、'),
+                '途径城市': allCities.join('、')
+            };
+        });
+
+        // ---- 3. 站点汇总：卸货点为主体 ----
+        const siteMap = new Map();
+        clusterResults.forEach(cluster => {
+            const routeCode = `Route${cluster.clusterId}`;
+            const vehicleCode = cluster.vehicle ? cluster.vehicle.code : '无';
+            cluster.sites.forEach(site => {
+                const key = site.code;
+                if (!siteMap.has(key)) {
+                    siteMap.set(key, {
+                        '站点代码': site.code,
+                        '站点名称': site.name,
+                        '站点角色': '卸货点（聚类主体）',
+                        '省份': site.province || '',
+                        '城市': site.city || '',
+                        '地址': site.addr || '',
+                        '经度': site.lng,
+                        '纬度': site.lat,
+                        '提货量(m³)': 0,
+                        '所属线路': [],
+                        '车型': vehicleCode,
+                        '关联提货点数': site.relatedPickups ? site.relatedPickups.length : 0
+                    });
+                }
+                const item = siteMap.get(key);
+                item['提货量(m³)'] += site.volume;
+                if (!item['所属线路'].includes(routeCode)) {
+                    item['所属线路'].push(routeCode);
+                }
+            });
+        });
+        const siteRows = Array.from(siteMap.values()).map(item => ({
+            ...item,
+            '提货量(m³)': parseFloat(item['提货量(m³)'].toFixed(2)),
+            '所属线路': item['所属线路'].join('、'),
+            '线路数量': item['所属线路'].length
+        }));
+
+        return { detailRows, routeRows, siteRows };
+    }
+
+    /**
+     * 导出OD明细 Excel
+     */
+    function exportDetail() {
+        if (!clusterResults || clusterResults.length === 0) {
+            showToast('❌ 没有可导出的数据，请先运行聚类');
+            return;
+        }
+        try {
+            const { detailRows } = buildExportData();
+            const ws = XLSX.utils.json_to_sheet(detailRows);
+            
+            ws['!cols'] = [
+                { wch: 6 },   { wch: 12 },  { wch: 10 },  { wch: 10 },  { wch: 10 },  { wch: 14 },
+                { wch: 14 },  { wch: 16 },  { wch: 14 },  { wch: 14 },  { wch: 18 },  { wch: 12 },
+                { wch: 12 },  { wch: 40 },  { wch: 14 },  { wch: 14 },  { wch: 18 },  { wch: 12 },
+                { wch: 12 },  { wch: 40 },  { wch: 14 },  { wch: 14 },  { wch: 12 }
+            ];
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'OD明细');
+            const fileName = `KMeans_OD明细_${formatTimestamp()}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            addLog(`📤 已导出OD明细：${fileName}（${detailRows.length}条OD任务）`, false);
+            showToast('✅ OD明细导出成功');
+        } catch (err) {
+            addLog(`导出失败：${err.message}`, true);
+            showToast('❌ 导出失败：' + err.message);
+        }
+    }
+
+    /**
+     * 导出线路汇总 Excel
+     */
+    function exportRoute() {
+        if (!clusterResults || clusterResults.length === 0) {
+            showToast('❌ 没有可导出的数据，请先运行聚类');
+            return;
+        }
+        try {
+            const { routeRows } = buildExportData();
+            const ws = XLSX.utils.json_to_sheet(routeRows);
+            
+            ws['!cols'] = [
+                { wch: 12 },  { wch: 10 },  { wch: 10 },  { wch: 14 },  { wch: 14 },  { wch: 16 },
+                { wch: 14 },  { wch: 12 },  { wch: 10 },  { wch: 14 },  { wch: 40 },  { wch: 40 },
+                { wch: 40 },  { wch: 40 },  { wch: 20 },  { wch: 30 }
+            ];
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '线路汇总');
+            const fileName = `KMeans线路汇总_${formatTimestamp()}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            addLog(`📤 已导出线路汇总：${fileName}（${routeRows.length}条线路）`, false);
+            showToast('✅ 线路汇总导出成功');
+        } catch (err) {
+            addLog(`导出失败：${err.message}`, true);
+            showToast('❌ 导出失败：' + err.message);
+        }
+    }
+
+    /**
+     * 导出站点汇总 Excel
+     */
+    function exportSite() {
+        if (!clusterResults || clusterResults.length === 0) {
+            showToast('❌ 没有可导出的数据，请先运行聚类');
+            return;
+        }
+        try {
+            const { siteRows } = buildExportData();
+            const ws = XLSX.utils.json_to_sheet(siteRows);
+            
+            ws['!cols'] = [
+                { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 40 },
+                { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 20 }, { wch: 10 }, { wch: 14 },
+                { wch: 14 }
+            ];
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '卸货点汇总');
+            const fileName = `KMeans卸货点汇总_${formatTimestamp()}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            addLog(`📤 已导出卸货点汇总：${fileName}（${siteRows.length}个卸货点）`, false);
+            showToast('✅ 卸货点汇总导出成功');
+        } catch (err) {
+            addLog(`导出失败：${err.message}`, true);
+            showToast('❌ 导出失败：' + err.message);
+        }
+    }
+
+    /**
+     * 一键导出全部（3个Sheet在一个Excel中）
+     */
+    function exportAll() {
+        if (!clusterResults || clusterResults.length === 0) {
+            showToast('❌ 没有可导出的数据，请先运行聚类');
+            return;
+        }
+        try {
+            const { detailRows, routeRows, siteRows } = buildExportData();
+            const wb = XLSX.utils.book_new();
+            
+            // Sheet1: OD明细
+            const ws1 = XLSX.utils.json_to_sheet(detailRows);
+            ws1['!cols'] = [
+                { wch: 6 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 14 },
+                { wch: 14 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 12 },
+                { wch: 12 }, { wch: 40 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 12 },
+                { wch: 12 }, { wch: 40 }, { wch: 14 }, { wch: 14 }, { wch: 12 }
+            ];
+            XLSX.utils.book_append_sheet(wb, ws1, 'OD明细');
+            
+            // Sheet2: 线路汇总
+            const ws2 = XLSX.utils.json_to_sheet(routeRows);
+            ws2['!cols'] = [
+                { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 16 },
+                { wch: 14 }, { wch: 12 }, { wch: 10 }, { wch: 14 }, { wch: 40 }, { wch: 40 },
+                { wch: 40 }, { wch: 40 }, { wch: 20 }, { wch: 30 }
+            ];
+            XLSX.utils.book_append_sheet(wb, ws2, '线路汇总');
+            
+            // Sheet3: 卸货点汇总
+            const ws3 = XLSX.utils.json_to_sheet(siteRows);
+            ws3['!cols'] = [
+                { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 40 },
+                { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 20 }, { wch: 10 }, { wch: 14 },
+                { wch: 14 }
+            ];
+            XLSX.utils.book_append_sheet(wb, ws3, '卸货点汇总');
+            
+            const fileName = `KMeans聚类结果_卸货点核心_${formatTimestamp()}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            addLog(`📦 已导出完整结果：${fileName}`, false);
+            addLog(`   📋 OD明细 ${detailRows.length}行 | 🚛 线路汇总 ${routeRows.length}条 | 🏁 卸货点汇总 ${siteRows.length}个`, false);
+            showToast('✅ 完整结果导出成功');
+        } catch (err) {
+            addLog(`导出失败：${err.message}`, true);
+            showToast('❌ 导出失败：' + err.message);
+        }
+    }
+
+    /**
+     * 复制OD明细表到剪贴板（TSV格式）
+     */
+    function copyTableToClipboard() {
+        if (!clusterResults || clusterResults.length === 0) {
+            showToast('❌ 没有可复制的数据');
+            return;
+        }
+        try {
+            const { detailRows } = buildExportData();
+            if (detailRows.length === 0) { showToast('❌ 无数据'); return; }
+            
+            const headers = Object.keys(detailRows[0]);
+            const headerLine = headers.join('\t');
+            
+            const dataLines = detailRows.map(row => 
+                headers.map(h => {
+                    const val = row[h];
+                    if (val === null || val === undefined) return '';
+                    return String(val).replace(/\t/g, ' ').replace(/\n/g, ' ');
+                }).join('\t')
+            );
+            
+            const tsv = [headerLine, ...dataLines].join('\n');
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(tsv).then(() => {
+                    addLog(`📄 已复制OD明细到剪贴板（${detailRows.length}行）`, false);
+                    showToast('✅ 已复制，可直接粘贴到Excel');
+                }).catch(err => {
+                    fallbackCopy(tsv, detailRows.length);
+                });
+            } else {
+                fallbackCopy(tsv, detailRows.length);
+            }
+        } catch (err) {
+            addLog(`复制失败：${err.message}`, true);
+            showToast('❌ 复制失败：' + err.message);
+        }
+    }
+
+    function fallbackCopy(text, count) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            addLog(`📄 已复制OD明细到剪贴板（${count}行）`, false);
+            showToast('✅ 已复制，可直接粘贴到Excel');
+        } catch (e) {
+            addLog('复制失败，请手动选择表格内容', true);
+            showToast('❌ 复制失败');
+        }
+        document.body.removeChild(ta);
+    }
+
+    /**
+     * 格式化时间戳用于文件名
+     */
+    function formatTimestamp() {
+        const d = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    }
+
+    // ============================================================
     //  事件绑定
     // ============================================================
     siteDropZone.addEventListener('click', () => siteFileInput.click());
@@ -765,6 +1500,16 @@
     importUpstreamBtn.addEventListener('click', importUpstreamData);
     saveClusterSnapshotBtn.addEventListener('click', saveClusterSnapshot);
     deleteClusterSnapshotBtn.addEventListener('click', deleteClusterSnapshot);
+    document.getElementById('downloadSiteTemplate').addEventListener('click', downloadSiteTemplate);
+    document.getElementById('downloadVehicleTemplate').addEventListener('click', downloadVehicleTemplate);
+    document.getElementById('clearResultBtn').addEventListener('click', clearResults);
+    
+    // 导出功能绑定
+    document.getElementById('exportDetailBtn').addEventListener('click', exportDetail);
+    document.getElementById('exportRouteBtn').addEventListener('click', exportRoute);
+    document.getElementById('exportSiteBtn').addEventListener('click', exportSite);
+    document.getElementById('copyTableBtn').addEventListener('click', copyTableToClipboard);
+    document.getElementById('exportAllBtn').addEventListener('click', exportAll);
     
     // 窗口自适应
     window.addEventListener('resize', function() {
@@ -777,7 +1522,8 @@
     // ============================================================
     //  初始化
     // ============================================================
-    addLog('📋 请上传站点数据和车型参数，然后点击「运行聚类优化」', false);
+    addLog('📋 请上传OD数据（提货点→卸货点）和车型参数，然后点击「运行聚类优化」', false);
+    addLog('🎯 当前聚类模式：以卸货点为核心（相同卸货点的OD任务聚合为同一线路）', false);
     loadUpstreamSnapshots();
     loadClusterSnapshots();
 </script>
