@@ -28,8 +28,10 @@
         .snapshot-select { flex: 1; max-width: 300px; padding: 4px 10px; border-radius: 6px; border: 1px solid #cbdde9; background: white; font-size: 0.75rem; }
         .snapshot-btn { background: #1a5d8c; color: white; border: none; padding: 4px 16px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; font-weight: 600; }
         .snapshot-btn:hover { background: #0e466b; }
+        .snapshot-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .snapshot-del { background: #fce4e4; border: 1px solid #f5c2c2; color: #b13b3b; padding: 3px 12px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; }
         .snapshot-del:hover { background: #fccfcf; }
+        .snapshot-del:disabled { opacity: 0.5; cursor: not-allowed; }
         .snapshot-info { font-size: 0.6rem; color: #7a8eaa; }
 
         .data-pass-bar { background: #e8f5ee; border-radius: 0.5rem; padding: 4px 10px; border: 1px solid #b8ddd0; display: none; align-items: center; justify-content: space-between; flex-shrink: 0; }
@@ -70,7 +72,7 @@
         .data-table { width: 100%; font-size: 0.55rem; border-collapse: collapse; min-width: 450px; }
         .data-table th { background: #f1f6fc; color: #1f3a5f; font-weight: 600; padding: 3px 4px; border-bottom: 2px solid #d3e0ee; position: sticky; top: 0; z-index: 5; }
         
-        .map-section { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 3px; border-top: 1px solid #e2edf5; padding-top: 4px; }
+        .map-section { flex: 1; min-height: 300px; display: flex; flex-direction: column; gap: 3px; border-top: 1px solid #e2edf5; padding-top: 4px; }
         #mapContainer { flex: 1; border-radius: 0.6rem; border: 1px solid #e2edf5; overflow: hidden; background: #e8ecf0; }
         .map-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: #8aa0b8; font-size: 0.7rem; flex-direction: column; gap: 2px; }
         
@@ -82,7 +84,7 @@
         .copy-toast.show { display: block; }
         .file-tag { background: white; border-radius: 30px; padding: 1px 5px; margin: 1px 2px; display: inline-flex; font-size: 0.45rem; border: 1px solid #d4e2f0; }
 
-        /* ★★★ 新增：小巧清晰的站点图标样式 ★★★ */
+        /* ★★★ 小巧清晰的站点图标样式 ★★★ */
         .custom-station-icon {
             background: transparent;
             border: none;
@@ -90,10 +92,10 @@
         .station-dot {
             width: 10px;
             height: 10px;
-            background: #1a5d8c; /* 深蓝色 */
-            border: 2px solid #ffffff; /* 白边 */
+            background: #1a5d8c;
+            border: 2px solid #ffffff;
             border-radius: 50%;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 0 0 2px rgba(26, 93, 140, 0.15); /* 增加一层光晕，更清晰 */
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 0 0 2px rgba(26, 93, 140, 0.15);
             display: block;
         }
     </style>
@@ -270,18 +272,40 @@
         for (var i = snapshots.length - 1; i >= 0; i--) {
             var item = snapshots[i];
             var dateStr = new Date(item.timestamp).toLocaleString();
-            html += `<option value="${item.id}">${item.name} (${item.count}条, ${dateStr})</option>`;
+            html += '<option value="' + item.id + '">' + escHtml(item.name) + ' (' + item.count + '条, ' + dateStr + ')</option>';
         }
         snapshotSelect.innerHTML = html;
-        if (currentSnapshotId) snapshotSelect.value = currentSnapshotId;
+        if (currentSnapshotId) {
+            snapshotSelect.value = currentSnapshotId;
+            if (snapshotSelect.value !== currentSnapshotId) {
+                currentSnapshotId = null;
+            }
+        }
         deleteSnapshotBtn.disabled = !currentSnapshotId;
-        saveSnapshotBtn.disabled = lastSuccessResults.length === 0;
+        saveSnapshotBtn.disabled = (lastSuccessResults.length === 0);
     }
 
     function saveCurrentSnapshot() {
         if (lastSuccessResults.length === 0) { showToast('⚠️ 当前没有可保存的结果'); return; }
         var snapshots = getAllSnapshots();
-        var newSnapshot = { id: 'snap_' + Date.now(), name: '快照 #' + (snapshots.length + 1), timestamp: Date.now(), count: lastSuccessResults.length, data: lastSuccessResults };
+
+        // 数据去重
+        var newDataStr = JSON.stringify(lastSuccessResults);
+        for (var i = 0; i < snapshots.length; i++) {
+            if (JSON.stringify(snapshots[i].data) === newDataStr) {
+                showToast('⚠️ 已存在相同结果的快照');
+                addLog('⚠️ 该结果已保存过，跳过重复保存', true);
+                return;
+            }
+        }
+
+        var newSnapshot = {
+            id: 'snap_' + Date.now(),
+            name: '快照 #' + (snapshots.length + 1),
+            timestamp: Date.now(),
+            count: lastSuccessResults.length,
+            data: lastSuccessResults
+        };
         snapshots.push(newSnapshot);
         localStorage.setItem(SAVE_KEY, JSON.stringify(snapshots));
         currentSnapshotId = newSnapshot.id;
@@ -292,31 +316,80 @@
 
     function onSnapshotChange() {
         var selectedId = snapshotSelect.value;
-        if (!selectedId) { currentSnapshotId = null; dataRows = []; renderTable(); snapshotInfo.textContent = '请选择或保存一个快照'; return; }
+        if (!selectedId) {
+            currentSnapshotId = null;
+            dataRows = [];
+            renderTable();
+            deleteSnapshotBtn.disabled = true;
+            snapshotInfo.textContent = '请选择或保存一个快照';
+            return;
+        }
         var snapshots = getAllSnapshots();
-        var snapshot = snapshots.find(function(s) { return s.id === selectedId; });
+        var snapshot = null;
+        for (var i = 0; i < snapshots.length; i++) {
+            if (snapshots[i].id === selectedId) { snapshot = snapshots[i]; break; }
+        }
         if (snapshot) {
             currentSnapshotId = selectedId;
             dataRows = snapshot.data.map(function(item, idx) {
-                return { id: idx + 1, code: item['站点代码'], name: item['站点名称'], addr: item['地址'], demand: item['单次提货量'] || 0, lng: item['经度'], lat: item['纬度'], status: '成功', province: item['省'] || '', city: item['市'] || '', district: item['区'] || '' };
+                return {
+                    id: idx + 1,
+                    code: item['站点代码'] || '',
+                    name: item['站点名称'] || '',
+                    addr: item['地址'] || '',
+                    demand: item['单次提货量'] || 0,
+                    lng: item['经度'],
+                    lat: item['纬度'],
+                    status: '成功',
+                    province: item['省'] || '',
+                    city: item['市'] || '',
+                    district: item['区'] || ''
+                };
             });
             renderTable();
             if (isMapInitialized) renderMapMarkers();
-            snapshotInfo.textContent = `当前查看: ${snapshot.name}`;
+            snapshotInfo.textContent = '当前查看: ' + snapshot.name;
+            deleteSnapshotBtn.disabled = false;
+        } else {
+            currentSnapshotId = null;
+            deleteSnapshotBtn.disabled = true;
         }
     }
 
     function deleteCurrentSnapshot() {
-        if (!currentSnapshotId) return;
+        if (!currentSnapshotId) {
+            showToast('⚠️ 请先选择一个快照');
+            return;
+        }
         if (!confirm('确定要删除当前选中的快照吗？')) return;
+
         var snapshots = getAllSnapshots();
-        snapshots = snapshots.filter(function(s) { return s.id !== currentSnapshotId; });
-        localStorage.setItem(SAVE_KEY, JSON.stringify(snapshots));
+        var before = snapshots.length;
+        var deletedName = '';
+        var newSnapshots = [];
+        for (var i = 0; i < snapshots.length; i++) {
+            if (snapshots[i].id === currentSnapshotId) {
+                deletedName = snapshots[i].name;
+            } else {
+                newSnapshots.push(snapshots[i]);
+            }
+        }
+
+        if (newSnapshots.length === before) {
+            showToast('⚠️ 未找到该快照');
+            return;
+        }
+
+        localStorage.setItem(SAVE_KEY, JSON.stringify(newSnapshots));
         currentSnapshotId = null;
         dataRows = [];
+        lastSuccessResults = [];
         renderTable();
         renderSnapshotSelect();
-        showToast('🗑️ 快照已删除');
+        deleteSnapshotBtn.disabled = true;
+        snapshotInfo.textContent = '快照已删除';
+        showToast('🗑️ 快照「' + deletedName + '」已删除');
+        addLog('🗑️ 已删除快照: ' + deletedName, false);
     }
 
     // ===== 日志与提示 =====
@@ -334,7 +407,7 @@
         setTimeout(function() { copyToast.classList.remove('show'); }, 3000);
     }
 
-    function escHtml(str) { return String(str || '').replace(/[&<>]/g, function(m) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m] || m; }); }
+    function escHtml(str) { return String(str || '').replace(/[&<>"]/g, function(m) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[m] || m; }); }
 
     // ===== 文件解析 =====
     function parseExcelToRows(file) {
@@ -398,6 +471,9 @@
                 }
                 renderTable();
                 processFile(index + 1);
+            }).catch(function(err) {
+                addLog('解析文件失败: ' + err.message, true);
+                processFile(index + 1);
             });
         };
         processFile(0);
@@ -409,7 +485,7 @@
         document.getElementById('fileStatsArea').style.display = 'inline-flex';
         document.getElementById('fileStatsArea').innerHTML = '📁 ' + cnt + ' 个文件';
         document.getElementById('fileListBox').style.display = 'block';
-        document.getElementById('fileListBox').innerHTML = uploadedFiles.map(function(f) { return '<span class="file-tag">📄 ' + f.name + '</span>'; }).join('');
+        document.getElementById('fileListBox').innerHTML = uploadedFiles.map(function(f) { return '<span class="file-tag">📄 ' + escHtml(f.name) + '</span>'; }).join('');
     }
 
     // 渲染表格
@@ -424,6 +500,7 @@
         }
         tableBody.innerHTML = html;
         totalCount.textContent = dataRows.length;
+        document.getElementById('rowCount').textContent = '共 ' + dataRows.length + ' 条';
         var succ = 0, fail = 0;
         for (var j = 0; j < dataRows.length; j++) { if (dataRows[j].status === '成功') succ++; if (dataRows[j].status === '失败') fail++; }
         successCount.textContent = succ;
@@ -431,13 +508,13 @@
         queryBtn.disabled = dataRows.length === 0 || isQuerying;
         document.getElementById('exportResultBtn').disabled = !(succ > 0 || fail > 0);
         document.getElementById('copyResultBtn').disabled = !(succ > 0 || fail > 0);
-        saveSnapshotBtn.disabled = lastSuccessResults.length === 0 && currentSnapshotId === null;
+        saveSnapshotBtn.disabled = (lastSuccessResults.length === 0);
     }
 
-    // ★★★ 优化后的地图初始化 ★★★
+    // 地图初始化
     function initMap() {
         if (isMapInitialized && mapInstance) { 
-            mapInstance.invalidateSize(); // 强制重绘
+            mapInstance.invalidateSize();
             return; 
         }
         try {
@@ -447,7 +524,7 @@
         } catch (e) { addLog('地图初始化失败: ' + e.message, true); }
     }
 
-    // ★★★ 优化后的地图标记渲染（小圆点） ★★★
+    // 地图标记渲染
     function renderMapMarkers() {
         if (!isMapInitialized) return;
         if (mapLayers.length > 0) { for (var i = 0; i < mapLayers.length; i++) mapInstance.removeLayer(mapLayers[i]); mapLayers = []; }
@@ -455,14 +532,12 @@
         for (var j = 0; j < dataRows.length; j++) {
             var row = dataRows[j];
             if (row.status === '成功' && row.lng && row.lat) {
-                // ★★★ 使用自定义的小巧图标 ★★★
                 var customIcon = L.divIcon({
-                    className: 'custom-station-icon', // 必须清空默认样式
-                    html: '<div class="station-dot"></div>', // 由CSS控制的小圆点
-                    iconSize: [10, 10], // 覆盖原10x10
-                    iconAnchor: [5, 5]  // 使圆点中心对准经纬度
+                    className: 'custom-station-icon',
+                    html: '<div class="station-dot"></div>',
+                    iconSize: [10, 10],
+                    iconAnchor: [5, 5]
                 });
-
                 var marker = L.marker([row.lat, row.lng], { icon: customIcon });
                 marker.bindPopup('<strong>' + escHtml(row.name) + '</strong><br>📍 ' + row.lng + ', ' + row.lat);
                 mapInstance.addLayer(marker);
@@ -474,18 +549,132 @@
         if (bounds.length > 0) mapInstance.fitBounds(bounds, { padding: [40, 40] });
     }
 
-    // ===== 高德查询 =====
+    // ===== 高德查询（正地理编码 + 逆地理编码补充省市区）=====
     function geocodeAddressWithRetry(address, key) {
         return new Promise(function(resolve) {
             var attempt = 1;
+
+            // 直辖市列表
+            var MUNICIPALITIES = ['北京市', '上海市', '天津市', '重庆市'];
+            var MUNICIPALITIES_SHORT = ['北京', '上海', '天津', '重庆'];
+
+            // 判断是否直辖市（兼容带/不带「市」）
+            function isMunicipality(name) {
+                if (!name) return false;
+                for (var i = 0; i < MUNICIPALITIES.length; i++) {
+                    if (name === MUNICIPALITIES[i] || name === MUNICIPALITIES_SHORT[i]) return true;
+                }
+                return false;
+            }
+
+            // 取数组第一个（高德偶尔返回数组）
+            function pick(v) {
+                if (Array.isArray(v)) return v[0] || '';
+                return v || '';
+            }
+
+            // ★ 最终格式化
+            // 直辖市：省=直辖市名，市=区名，区=空
+            // 普通省：省=省，市=市，区=区
+            function formatRegion(province, city, district) {
+                province = pick(province);
+                city = pick(city);
+                district = pick(district);
+
+                if (isMunicipality(province) || isMunicipality(city)) {
+                    // 直辖市：规范化省名为带「市」的完整名
+                    var munName = '';
+                    for (var i = 0; i < MUNICIPALITIES.length; i++) {
+                        if (province === MUNICIPALITIES[i] || province === MUNICIPALITIES_SHORT[i] ||
+                            city === MUNICIPALITIES[i] || city === MUNICIPALITIES_SHORT[i]) {
+                            munName = MUNICIPALITIES[i];
+                            break;
+                        }
+                    }
+                    // 市的来源优先级：district > city（排除直辖市本身）
+                    var districtName = district;
+                    if (!districtName && city && !isMunicipality(city)) {
+                        districtName = city;
+                    }
+                    return {
+                        province: munName,
+                        city: districtName || '',
+                        district: ''
+                    };
+                }
+
+                // 普通省份
+                if (!city && province) city = province;
+                return { province: province, city: city, district: district };
+            }
+
+            // 逆地理编码
+            function reverseGeocode(lng, lat) {
+                return new Promise(function(resolveRegeo) {
+                    var url = 'https://restapi.amap.com/v3/geocode/regeo?location=' + lng + ',' + lat + '&output=json&key=' + key + '&extensions=base';
+                    fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+                        if (data.status === '1' && data.regeocode && data.regeocode.addressComponent) {
+                            var comp = data.regeocode.addressComponent;
+                            resolveRegeo({
+                                province: pick(comp.province),
+                                city: pick(comp.city),
+                                district: pick(comp.district)
+                            });
+                        } else {
+                            resolveRegeo({ province: '', city: '', district: '' });
+                        }
+                    }).catch(function() {
+                        resolveRegeo({ province: '', city: '', district: '' });
+                    });
+                });
+            }
+
             function doRequest() {
                 if (abortFlag) { resolve({ lng: null, lat: null, status: 'abort' }); return; }
                 var url = 'https://restapi.amap.com/v3/geocode/geo?address=' + encodeURIComponent(address) + '&output=json&key=' + key;
                 fetch(url).then(function(response) { return response.json(); }).then(function(data) {
                     if (data.status === '1' && data.geocodes && data.geocodes.length > 0) {
-                        var location = data.geocodes[0].location.split(',').map(Number);
-                        var component = data.geocodes[0].addressComponent || {};
-                        resolve({ lng: location[0], lat: location[1], status: 'ok', province: component.province || '', city: component.city || '', district: component.district || '' });
+                        var geo = data.geocodes[0];
+                        var location = geo.location.split(',').map(Number);
+                        var comp = geo.addressComponent || {};
+                        var province = pick(comp.province);
+                        var city = pick(comp.city);
+                        var district = pick(comp.district);
+
+                        // ★ 判定是否需要逆编码补充：
+                        // 1) province 为空；2) city 为空；3) 直辖市且 district 为空
+                        var needRegeo = false;
+                        if (!province || !city) needRegeo = true;
+                        if ((isMunicipality(province) || isMunicipality(city)) && !district) needRegeo = true;
+
+                        if (needRegeo) {
+                            reverseGeocode(location[0], location[1]).then(function(regeo) {
+                                // ★ 合并：正地理编码原始值优先，缺失才用 regeo 补
+                                var merged = formatRegion(
+                                    province || regeo.province || '',
+                                    city || regeo.city || '',
+                                    district || regeo.district || ''
+                                );
+                                resolve({
+                                    lng: location[0],
+                                    lat: location[1],
+                                    status: 'ok',
+                                    province: merged.province,
+                                    city: merged.city,
+                                    district: merged.district
+                                });
+                            });
+                        } else {
+                            var formatted = formatRegion(province, city, district);
+                            resolve({
+                                lng: location[0],
+                                lat: location[1],
+                                status: 'ok',
+                                province: formatted.province,
+                                city: formatted.city,
+                                district: formatted.district
+                            });
+                        }
                     } else {
                         if (attempt <= CONFIG.MAX_RETRIES) { attempt++; setTimeout(doRequest, CONFIG.RETRY_DELAY); return; }
                         resolve({ lng: null, lat: null, status: 'failed' });
@@ -512,6 +701,7 @@
         queryBtn.disabled = true;
         stopBtn.disabled = false;
         progressFill.style.width = '0%';
+        document.getElementById('fixedBar').style.display = 'none';
         addLog('🚀 开始查询 ' + dataRows.length + ' 个地址', false);
 
         var total = dataRows.length;
@@ -529,13 +719,28 @@
                 progressText.textContent = '✅ 完成！成功 ' + success + ' 条，失败 ' + failed + ' 条';
                 lastSuccessResults = dataRows.filter(function(r) { return r.status === '成功' && r.lng !== null; })
                     .map(function(r) {
-                        return { '站点代码': r.code || '', '站点名称': r.name || '', '地址': r.addr, '经度': r.lng, '纬度': r.lat, '单次提货量': r.demand || 0, '省': r.province || '', '市': r.city || '', '区': r.district || '' };
+                        return {
+                            '站点代码': r.code || '',
+                            '站点名称': r.name || '',
+                            '地址': r.addr,
+                            '经度': r.lng,
+                            '纬度': r.lat,
+                            '单次提货量': r.demand || 0,
+                            '省': r.province || '',
+                            '市': r.city || '',
+                            '区': r.district || ''
+                        };
                     });
                 renderTable();
                 if (isMapInitialized) renderMapMarkers();
                 renderSnapshotSelect();
                 addLog('✅ 查询结束，成功 ' + success + ' 条，失败 ' + failed + ' 条', false);
                 addLog('💡 可以点击上方【保存当前结果为快照】存档。', false);
+
+                if (success > 0 || failed > 0) {
+                    document.getElementById('fixedBar').style.display = 'flex';
+                    document.getElementById('dlStatus').textContent = '📦 查询完成：成功 ' + success + ' 条，失败 ' + failed + ' 条';
+                }
                 return;
             }
 
@@ -552,7 +757,9 @@
             geocodeAddressWithRetry(row.addr, key).then(function(result) {
                 if (result.status === 'ok') {
                     row.lng = result.lng; row.lat = result.lat; row.status = '成功';
-                    row.province = result.province || ''; row.city = result.city || ''; row.district = result.district || '';
+                    row.province = result.province || '';
+                    row.city = result.city || '';
+                    row.district = result.district || '';
                     success++;
                 } else { row.status = '失败'; failed++; }
                 completed++;
@@ -567,7 +774,7 @@
         processNext(0);
     }
 
-    // ===== 其他 =====
+    // ===== 模板下载 =====
     function downloadTemplate() {
         var headers = ['站点代码', '站点名称', '站点地址', '单次提货量(m³)'];
         var sampleData = [ ['S001', '上海仓库', '上海市浦东新区世纪大道1号', 12.5], ['S002', '北京物流中心', '北京市通州区物流园区路4号', ''] ];
@@ -581,19 +788,130 @@
         var a = document.createElement('a');
         a.href = url; a.download = '站点数据模板.xlsx';
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
         addLog('📥 已下载模板（含单次提货量，可空）', false);
     }
 
-    // 事件绑定
+    // ===== 导出结果到 Excel =====
+    function exportResults() {
+        if (dataRows.length === 0) { showToast('⚠️ 没有可导出的数据'); return; }
+        var hasResult = false;
+        for (var k = 0; k < dataRows.length; k++) {
+            if (dataRows[k].status === '成功' || dataRows[k].status === '失败') { hasResult = true; break; }
+        }
+        if (!hasResult) { showToast('⚠️ 尚无查询结果，请先查询'); return; }
+
+        var exportData = dataRows.map(function(r, idx) {
+            return {
+                '序号': idx + 1,
+                '站点代码': r.code || '',
+                '站点名称': r.name || '',
+                '地址': r.addr || '',
+                '经度': (r.lng !== null && r.lng !== undefined) ? r.lng : '',
+                '纬度': (r.lat !== null && r.lat !== undefined) ? r.lat : '',
+                '单次提货量': r.demand || 0,
+                '省': r.province || '',
+                '市': r.city || '',
+                '区': r.district || '',
+                '状态': r.status || ''
+            };
+        });
+        var ws = XLSX.utils.json_to_sheet(exportData);
+        ws['!cols'] = [
+            { wch: 6 }, { wch: 12 }, { wch: 20 }, { wch: 40 },
+            { wch: 12 }, { wch: 12 }, { wch: 12 },
+            { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }
+        ];
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '地理编码结果');
+        var buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        var blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        var ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        a.download = '地理编码结果_' + ts + '.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 1500);
+        showToast('📥 已开始下载');
+        addLog('📥 已导出 ' + exportData.length + ' 条数据', false);
+    }
+
+    // ===== 复制结果到剪贴板 =====
+    function copyResults() {
+        if (dataRows.length === 0) { showToast('⚠️ 没有可复制的数据'); return; }
+        var lines = ['站点代码\t站点名称\t地址\t经度\t纬度\t省\t市\t区\t状态'];
+        for (var i = 0; i < dataRows.length; i++) {
+            var r = dataRows[i];
+            lines.push([r.code, r.name, r.addr, r.lng || '', r.lat || '', r.province || '', r.city || '', r.district || '', r.status].join('\t'));
+        }
+        var text = lines.join('\n');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('✅ 已复制到剪贴板');
+                addLog('📋 已复制 ' + dataRows.length + ' 条数据', false);
+            }).catch(function() { fallbackCopy(text); });
+        } else {
+            fallbackCopy(text);
+        }
+    }
+
+    function fallbackCopy(text) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            showToast('✅ 已复制到剪贴板');
+        } catch (e) {
+            showToast('❌ 复制失败，请手动选择');
+        }
+        document.body.removeChild(ta);
+    }
+
+    // ===== 事件绑定 =====
     fileInput.addEventListener('change', function(e) { if (e.target.files.length) handleFiles(e.target.files); fileInput.value=''; });
     folderInput.addEventListener('change', function(e) { if (e.target.files.length) handleFiles(e.target.files); folderInput.value=''; });
     queryBtn.addEventListener('click', startQuery);
     stopBtn.addEventListener('click', function(){ abortFlag = true; });
-    clearBtn.addEventListener('click', function(){ dataRows = []; uploadedFiles = []; renderTable(); updateFileUI(); lastSuccessResults = []; currentSnapshotId = null; renderSnapshotSelect(); });
+    clearBtn.addEventListener('click', function(){
+        dataRows = []; uploadedFiles = [];
+        renderTable(); updateFileUI();
+        lastSuccessResults = []; currentSnapshotId = null;
+        renderSnapshotSelect();
+        document.getElementById('fixedBar').style.display = 'none';
+    });
     downloadTemplateBtn.addEventListener('click', function(e) { e.preventDefault(); downloadTemplate(); });
     saveSnapshotBtn.addEventListener('click', saveCurrentSnapshot);
     deleteSnapshotBtn.addEventListener('click', deleteCurrentSnapshot);
     snapshotSelect.addEventListener('change', onSnapshotChange);
+
+    // 导出/复制/底部栏按钮事件
+    document.getElementById('exportResultBtn').addEventListener('click', exportResults);
+    document.getElementById('copyResultBtn').addEventListener('click', copyResults);
+    document.getElementById('downloadBtn').addEventListener('click', exportResults);
+    document.getElementById('resetBottomBtn').addEventListener('click', function() {
+        document.getElementById('fixedBar').style.display = 'none';
+        for (var i = 0; i < dataRows.length; i++) {
+            dataRows[i].lng = null;
+            dataRows[i].lat = null;
+            dataRows[i].status = '待查询';
+            dataRows[i].province = '';
+            dataRows[i].city = '';
+            dataRows[i].district = '';
+        }
+        lastSuccessResults = [];
+        renderTable();
+        if (isMapInitialized) renderMapMarkers();
+        progressFill.style.width = '0%';
+        progressText.textContent = '⏳ 就绪';
+        addLog('🔄 已重置查询结果，可重新查询', false);
+    });
 
     // 初始化
     renderTable();
